@@ -91,6 +91,7 @@
       :title="confirmDialogTitle"
       :message="confirmDialogMessage"
       :danger="confirmDialogDanger"
+      :loading="confirmDialogLoading"
       @confirm="executeConfirmedAction"
       @cancel="confirmDialogVisible = false"
     />
@@ -166,6 +167,7 @@ const confirmDialogVisible = ref(false)
 const confirmDialogTitle = ref('')
 const confirmDialogMessage = ref('')
 const confirmDialogDanger = ref(false)
+const confirmDialogLoading = ref(false)
 const pendingAction = ref<(() => Promise<void>) | null>(null)
 
 const openConfirmDialog = (title: string, message: string, danger: boolean, action: () => Promise<void>) => {
@@ -178,19 +180,27 @@ const openConfirmDialog = (title: string, message: string, danger: boolean, acti
 
 const executeConfirmedAction = async () => {
   if (!pendingAction.value) return
-  confirmDialogVisible.value = false
+  // 进入 loading：弹窗保持打开、确认按钮转圈，防止重复点击
+  confirmDialogLoading.value = true
   try {
     await pendingAction.value
+    // 成功后才关闭弹窗（此时 fetchData 已刷新列表，按钮状态已更新）
+    confirmDialogVisible.value = false
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error) {
       const resp = (error as { response?: { status?: number } }).response
       if (resp?.status === 409) {
         showConflict()
         await fetchData()
+        confirmDialogVisible.value = false
         return
       }
     }
     showError(error instanceof Error ? error.message : '操作失败')
+    // 失败时关闭弹窗，让用户能看到错误后重试
+    confirmDialogVisible.value = false
+  } finally {
+    confirmDialogLoading.value = false
   }
 }
 

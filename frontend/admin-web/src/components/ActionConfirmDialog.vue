@@ -3,6 +3,9 @@
     :model-value="visible"
     :title="title"
     :width="width"
+    :close-on-click-modal="!loading"
+    :close-on-press-escape="!loading"
+    :show-close="!loading"
     @close="handleCancel"
   >
     <p class="pc-action-confirm-dialog__message">{{ message }}</p>
@@ -10,10 +13,11 @@
       <slot />
     </template>
     <template #footer>
-      <el-button @click="handleCancel">取消</el-button>
+      <el-button :disabled="loading" @click="handleCancel">取消</el-button>
       <el-button
         :type="danger ? 'danger' : 'primary'"
-        :loading="confirming"
+        :loading="loading"
+        :disabled="loading"
         @click="handleConfirm"
       >
         确认
@@ -23,8 +27,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
 const props = withDefaults(defineProps<{
   visible: boolean
   title?: string
@@ -45,13 +47,14 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const confirming = ref(false)
-
 const handleConfirm = () => {
+  // loading 时不允许重复触发
+  if (props.loading) return
   emit('confirm')
 }
 
 const handleCancel = () => {
+  if (props.loading) return
   emit('cancel')
 }
 </script>
