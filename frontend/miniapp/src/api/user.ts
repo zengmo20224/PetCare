@@ -233,3 +233,34 @@ export function updatePet(petId: string, data: {
 export function deletePet(petId: string): Promise<ApiResponse<void>> {
   return http.delete<void>(`/api/v1/user/pets/${petId}`)
 }
+
+// ---- Security question management (requires auth) ----
+
+/** 当前用户已设置的安全问题（仅题目，不回答案） */
+export interface MySecurityQuestion {
+  id: string
+  question: string
+  sort: number
+}
+
+/** 查看当前用户已设置的安全问题（我的-密保管理） */
+export function getMySecurityQuestions(): Promise<ApiResponse<MySecurityQuestion[]>> {
+  return http.get<MySecurityQuestion[]>('/api/v1/user/security-questions')
+}
+
+/** 整体更新当前用户的安全问题（强制 2 个有效密保） */
+export function updateSecurityQuestions(data: {
+  securityQuestions: { questionIndex: number; answer: string }[]
+}): Promise<ApiResponse<void>> {
+  return http.put<void>('/api/v1/user/security-questions', data as any)
+}
+
+// ---- Change password (requires auth) ----
+
+/** 修改密码（旧密码路径，密保重置路径见 resetPassword） */
+export function changePassword(data: {
+  oldPassword: string
+  newPassword: string
+}): Promise<ApiResponse<void>> {
+  return http.put<void>('/api/v1/user/password', data as any)
+}

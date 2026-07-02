@@ -129,6 +129,18 @@
       ]
     },
     {
+      "root": "pages/security-questions",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "密保管理" } }
+      ]
+    },
+    {
+      "root": "pages/change-password",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "修改密码" } }
+      ]
+    },
+    {
       "root": "pages/my-community",
       "pages": [
         { "path": "index", "style": { "navigationBarTitleText": "我的社区" } }

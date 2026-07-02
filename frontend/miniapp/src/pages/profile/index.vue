@@ -66,6 +66,14 @@
         <text class="profile-menu-item__label">我的地址</text>
         <text class="profile-menu-item__arrow">›</text>
       </view>
+      <view class="profile-menu-item" @tap="goPage('/pages/security-questions/index')">
+        <text class="profile-menu-item__label">密保管理</text>
+        <text class="profile-menu-item__arrow">›</text>
+      </view>
+      <view class="profile-menu-item" @tap="goPage('/pages/change-password/index')">
+        <text class="profile-menu-item__label">修改密码</text>
+        <text class="profile-menu-item__arrow">›</text>
+      </view>
       <view class="profile-menu-item profile-menu-item--logout" @tap="handleLogout">
         <text class="profile-menu-item__label profile-menu-item__label--danger">退出登录</text>
       </view>
