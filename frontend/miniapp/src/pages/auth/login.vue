@@ -2,17 +2,35 @@
   <view class="pc-page auth-page">
     <PcPageHeader title="登录" />
 
-    <view class="auth-form">
-      <PcFormField label="手机号">
-        <input class="pc-input" type="text" v-model="phoneInput" placeholder="请输入手机号" />
-      </PcFormField>
-      <PcFormField label="密码">
-        <input class="pc-input" type="text" v-model="passwordInput" placeholder="请输入密码" password />
-      </PcFormField>
+    <view class="auth-card">
+      <view class="auth-brand">
+        <text class="auth-brand__title">欢迎回来 👋</text>
+        <text class="auth-brand__subtitle">登录后即可预约服务、管理爱宠</text>
+      </view>
+
+      <wd-cell-group border class="auth-form">
+        <wd-input
+          v-model="phoneInput"
+          label="手机号"
+          label-width="80px"
+          placeholder="请输入手机号"
+          type="number"
+          :maxlength="11"
+          clearable
+        />
+        <wd-input
+          v-model="passwordInput"
+          label="密码"
+          label-width="80px"
+          placeholder="请输入密码"
+          show-password
+          clearable
+        />
+      </wd-cell-group>
 
       <view class="auth-links">
-        <text class="auth-link" @tap="goRegister">没有账号？去注册</text>
-        <text class="auth-link" @tap="goForgotPassword">忘记密码</text>
+        <wd-button type="text" size="small" @click="goRegister">没有账号？去注册</wd-button>
+        <wd-button type="text" size="small" @click="goForgotPassword">忘记密码</wd-button>
       </view>
 
       <PcPrimaryButton text="登录" :loading="loginLoading" @tap="handleLogin" />
@@ -23,7 +41,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import PcPageHeader from '@/components/PcPageHeader.vue'
-import PcFormField from '@/components/PcFormField.vue'
 import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
 import { useUserStore } from '@/store/user'
 
@@ -63,38 +80,42 @@ function goForgotPassword() {
   padding: 20px;
 }
 
-.auth-form {
+.auth-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   margin-top: 24px;
-  padding: 20px;
-  border: 1px solid #DCEBE7;
+  padding: 24px 20px;
   border-radius: 24px;
   background: #FFFFFF;
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-brand__title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0C4D48;
+}
+
+.auth-brand__subtitle {
+  font-size: 13px;
+  color: #71817D;
+}
+
+.auth-form {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .auth-links {
   display: flex;
   justify-content: space-between;
-}
-
-.auth-link {
-  font-size: 14px;
-  color: #11796F;
-  color: #11796F;
-  font-weight: 700;
-}
-
-.pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  align-items: center;
 }
 </style>

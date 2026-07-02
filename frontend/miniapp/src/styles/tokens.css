@@ -51,4 +51,22 @@
 
   --pc-shadow-card: 0 8px 24px rgba(25, 50, 46, 0.08);
   --pc-shadow-raised: 0 16px 40px rgba(12, 77, 72, 0.16);
+
+  /* ─── Wot Design Uni 主题对齐 ─── */
+  /* 把 wot 的主题色锚定到 PetCare 品牌青绿色，所有 type="primary" 组件自动跟随。 */
+
+  --wot-color-theme: #11796F;
+  --wot-color-success: #34d19d;
+  --wot-color-warning: #f0883a;
+  --wot-color-danger: #D84D4D;
+
+  /* 辅助色对齐品牌调性 */
+  --wot-color-blue: #4777C8;
+  --wot-color-yellow: #F5A623;
+  --wot-color-purple: #8268de;
+
+  /* 圆角统一（wot 默认偏小，贴合 PetCare 大圆角风格）*/
+  --wot-button-large-radius: 16px;
+  --wot-button-medium-radius: 12px;
+  --wot-button-small-radius: 8px;
 }

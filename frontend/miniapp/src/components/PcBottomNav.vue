@@ -8,7 +8,7 @@
       @tap="onTabSwitch(tab.pagePath)"
     >
       <view class="pc-bottom-nav__icon">
-        <text class="pc-bottom-nav__icon-text">{{ tab.iconText }}</text>
+        <wd-icon :name="tab.icon" size="20px" :color="currentPath === tab.pagePath ? '#00796B' : '#314D48'" />
       </view>
       <text class="pc-bottom-nav__text">{{ tab.text }}</text>
     </view>
@@ -23,19 +23,20 @@ import { isWeixinMiniProgram } from '@/utils/platform'
 interface TabItem {
   pagePath: string
   text: string
-  iconText: string
+  icon: string
 }
 
 const props = defineProps<{
   currentPath: string
 }>()
 
+// 图标使用 wot-design-uni 内置图标（语义匹配：首页/预约/社区/商品/我的）
 const tabs: TabItem[] = [
-  { pagePath: 'pages/home/index', text: '首页', iconText: '首' },
-  { pagePath: 'pages/services/index', text: '预约', iconText: '约' },
-  { pagePath: 'pages/community/index', text: '社区', iconText: '社' },
-  { pagePath: 'pages/products/index', text: '商品', iconText: '商' },
-  { pagePath: 'pages/profile/index', text: '我的', iconText: '我' },
+  { pagePath: 'pages/home/index', text: '首页', icon: 'home' },
+  { pagePath: 'pages/services/index', text: '预约', icon: 'calendar' },
+  { pagePath: 'pages/community/index', text: '社区', icon: 'chat' },
+  { pagePath: 'pages/products/index', text: '商品', icon: 'cart' },
+  { pagePath: 'pages/profile/index', text: '我的', icon: 'user' },
 ]
 
 const isWeixin = isWeixinMiniProgram()
@@ -96,12 +97,6 @@ onMounted(() => {
   justify-content: center;
 }
 
-.pc-bottom-nav__icon-text {
-  font-size: 12px;
-  font-weight: 800;
-  color: #314D48;
-}
-
 .pc-bottom-nav__text {
   font-size: 11px;
   line-height: 1.2;
@@ -112,7 +107,6 @@ onMounted(() => {
   background: #DFF2ED;
 }
 
-.pc-bottom-nav__item--active .pc-bottom-nav__icon-text,
 .pc-bottom-nav__item--active .pc-bottom-nav__text {
   color: #00796B;
 }

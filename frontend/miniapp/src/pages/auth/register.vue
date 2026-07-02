@@ -2,17 +2,38 @@
   <view class="pc-page auth-page">
     <PcPageHeader title="注册" />
 
-    <view class="auth-form">
-      <PcFormField label="手机号">
-        <input class="pc-input" type="text" v-model="form.phone" placeholder="请输入手机号" />
-      </PcFormField>
-      <PcFormField label="密码">
-        <input class="pc-input" type="text" v-model="form.password" placeholder="请输入密码" password />
-        <text class="pc-field-hint">8-32位，需同时包含数字和字母</text>
-      </PcFormField>
-      <PcFormField label="昵称">
-        <input class="pc-input" type="text" v-model="form.nickname" placeholder="给自己起个昵称" />
-      </PcFormField>
+    <view class="auth-card">
+      <view class="auth-brand">
+        <text class="auth-brand__title">创建账号 🐾</text>
+        <text class="auth-brand__subtitle">加入萌宠家园，开启科学养宠之旅</text>
+      </view>
+
+      <wd-cell-group border class="auth-form">
+        <wd-input
+          v-model="form.phone"
+          label="手机号"
+          label-width="80px"
+          placeholder="请输入手机号"
+          type="number"
+          :maxlength="11"
+          clearable
+        />
+        <wd-input
+          v-model="form.password"
+          label="密码"
+          label-width="80px"
+          placeholder="8-32位，含数字和字母"
+          show-password
+          clearable
+        />
+        <wd-input
+          v-model="form.nickname"
+          label="昵称"
+          label-width="80px"
+          placeholder="给自己起个昵称"
+          clearable
+        />
+      </wd-cell-group>
 
       <!-- Security Questions -->
       <text class="auth-section-title">安全问题（用于找回密码，请至少选择 2 个）</text>
@@ -40,8 +61,8 @@
       </view>
 
       <PcPrimaryButton text="注册" :loading="loading" @tap="handleRegister" />
-      <view class="auth-back" @tap="goLogin">
-        <text class="auth-link">已有账号？去登录</text>
+      <view class="auth-back">
+        <wd-button type="text" size="small" @click="goLogin">已有账号？去登录</wd-button>
       </view>
     </view>
   </view>
@@ -212,30 +233,50 @@ function goLogin() {
   padding: 20px;
 }
 
-.auth-form {
+.auth-card {
   display: flex;
   flex-direction: column;
   gap: 16px;
   margin-top: 24px;
-  padding: 20px;
-  border: 1px solid #DCEBE7;
+  padding: 24px 20px;
   border-radius: 24px;
   background: #FFFFFF;
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-brand__title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0C4D48;
+}
+
+.auth-brand__subtitle {
+  font-size: 13px;
+  color: #71817D;
+}
+
+.auth-form {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .auth-section-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #19322E;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .auth-sq-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #FFF7E6;
   background: #FAF8F3;
   border-radius: 16px;
   padding: 12px;
@@ -244,19 +285,11 @@ function goLogin() {
 .auth-back {
   display: flex;
   justify-content: center;
-  padding-top: 8px;
-}
-
-.auth-link {
-  font-size: 14px;
-  color: #11796F;
-  color: #11796F;
-  font-weight: 700;
+  padding-top: 4px;
 }
 
 .pc-input {
   height: 44px;
-  border: 1px solid #E2E9E6;
   border: 1px solid #E2E9E6;
   border-radius: 12px;
   padding: 0 14px;
@@ -278,7 +311,6 @@ function goLogin() {
 .pc-select {
   width: 100%;
   height: 44px;
-  border: 1px solid #E2E9E6;
   border: 1px solid #E2E9E6;
   border-radius: 12px;
   padding: 0 14px;

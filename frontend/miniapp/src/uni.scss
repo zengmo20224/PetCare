@@ -32,19 +32,10 @@ $uni-font-size-lg: 16px;
 $uni-border-radius-lg: 16px;
 
 /**
- * Wot Design Uni theme variables.
- * Required by wot-design-uni components; injected globally by uni-app compiler.
- * See https://wot-design-uni.cn/guide/custom-theme.html
+ * Wot Design Uni SCSS variables.
+ * Required at compile time so wot components can resolve their internal SCSS vars.
+ * Runtime theme color (CSS custom property --wot-color-theme) is set in
+ * src/styles/tokens.css — uni.scss only carries SCSS vars, plain CSS rules here
+ * are NOT emitted to the bundle.
  */
 @import 'wot-design-uni/components/common/abstracts/variable.scss';
-
-/**
- * 把 wot 主题色对齐到 PetCare 品牌青绿色。
- * wot 的颜色变量读取 var(--wot-color-theme, ...)，覆盖后所有 type="primary" 组件自动变色。
- */
-:root {
-  --wot-color-theme: #{$pc-user-primary};
-  --wot-success-color: #{$pc-user-primary};
-  --wot-button-primary-bg-color: #{$pc-user-primary};
-  --wot-button-primary-border-color: #{$pc-user-primary};
-}
