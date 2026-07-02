@@ -254,7 +254,8 @@ function initDateOptions() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() + i)
-    const value = d.toISOString().slice(0, 10)
+    // 用本地日期分量拼接，避免 toISOString() 走 UTC 导致日期偏移 -1 天
+    const value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
     const label = i === 0 ? '今天' : i === 1 ? '明天' : `${d.getMonth()+1}/${d.getDate()}`
     opts.push({ label, value })
   }

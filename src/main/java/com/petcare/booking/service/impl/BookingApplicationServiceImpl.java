@@ -170,6 +170,13 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
                 schedulesByStaff, unavailableByStaff, bookingsByStaff,
                 config.getTimeSlotMinutes(), item.getDurationMinutes());
 
+        // 8b. 过滤当天已过时段：若预约日期是今天，剔除开始时间已不晚于"现在"的时段。
+        // 例如现在 10:00，则 10:00 及更早的时段不可选，11:00 起仍可选。
+        if (request.bookingDate().isEqual(LocalDate.now())) {
+            LocalTime cutoff = LocalTime.now();
+            slotCounts.entrySet().removeIf(e -> !e.getKey().isAfter(cutoff));
+        }
+
         // 9. Build response (no staffId exposed)
         List<SlotInfo> slots = slotCounts.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
