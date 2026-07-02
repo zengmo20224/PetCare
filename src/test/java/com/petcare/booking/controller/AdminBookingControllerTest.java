@@ -210,7 +210,7 @@ class AdminBookingControllerTest {
         }
 
         @Test
-        @DisplayName("Cancel: PENDING_CONFIRM -> CANCELLED (admin)")
+        @DisplayName("Cancel: CONFIRMED -> CANCELLED with reason (admin)")
         void cancelBooking() throws Exception {
             mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/cancel")
                             .header("Authorization", "Bearer " + adminToken)
@@ -218,6 +218,26 @@ class AdminBookingControllerTest {
                             .content("{\"reason\":\"用户要求取消\"}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+        }
+
+        @Test
+        @DisplayName("Cancel without reason returns 400（管理端取消必须填写原因）")
+        void cancelWithoutReasonRejected() throws Exception {
+            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/cancel")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Cancel with blank reason returns 400")
+        void cancelWithBlankReasonRejected() throws Exception {
+            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/cancel")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"\"}"))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test

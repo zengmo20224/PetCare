@@ -107,6 +107,19 @@
         <el-button type="danger" @click="submitReject" :loading="rejectLoading">确认拒绝</el-button>
       </template>
     </el-dialog>
+
+    <!-- Cancel Dialog (需要填写取消原因) -->
+    <el-dialog title="取消预约" v-model="cancelVisible" width="400px">
+      <el-form ref="cancelFormRef" :model="cancelForm" :rules="cancelRules" label-width="80px">
+        <el-form-item label="取消原因" prop="reason">
+          <el-input v-model="cancelForm.reason" type="textarea" :rows="3" placeholder="请输入取消原因（必填，将记录留痕）" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="cancelVisible = false">返回</el-button>
+        <el-button type="danger" @click="submitCancel" :loading="cancelLoading">确认取消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -200,10 +213,43 @@ const handleComplete = (id: number) => {
 }
 
 const handleCancel = (id: number) => {
-  openConfirmDialog('取消预约', '确定取消此预约吗？此操作不可恢复。', true, async () => {
-    await cancelBooking(id)
-    showSuccess('预约已取消')
-    await fetchData()
+  cancelTargetId.value = id
+  cancelForm.reason = ''
+  cancelVisible.value = true
+}
+
+// ─── Cancel (需要填写原因) ───
+
+const cancelVisible = ref(false)
+const cancelLoading = ref(false)
+const cancelFormRef = ref<FormInstance>()
+const cancelTargetId = ref(0)
+const cancelForm = reactive({ reason: '' })
+const cancelRules: FormRules = { reason: [{ required: true, message: '请输入取消原因', trigger: 'blur' }] }
+
+const submitCancel = async () => {
+  if (!cancelFormRef.value) return
+  await cancelFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    cancelLoading.value = true
+    try {
+      await cancelBooking(cancelTargetId.value, { reason: cancelForm.reason })
+      showSuccess('预约已取消')
+      cancelVisible.value = false
+      await fetchData()
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const resp = (error as { response?: { status?: number } }).response
+        if (resp?.status === 409) {
+          showConflict()
+          await fetchData()
+          return
+        }
+      }
+      showError(error instanceof Error ? error.message : '操作失败')
+    } finally {
+      cancelLoading.value = false
+    }
   })
 }
 

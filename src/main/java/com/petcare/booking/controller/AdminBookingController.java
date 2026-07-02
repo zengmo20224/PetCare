@@ -4,6 +4,7 @@ import com.petcare.booking.dto.BookingConfirmRequest;
 import com.petcare.booking.dto.BookingReassignRequest;
 import com.petcare.booking.dto.BookingRejectRequest;
 import com.petcare.booking.dto.BookingResponse;
+import com.petcare.booking.dto.AdminBookingCancelRequest;
 import com.petcare.booking.service.BookingApplicationService;
 import com.petcare.common.api.ApiResponse;
 import com.petcare.common.pagination.PageResponse;
@@ -97,11 +98,10 @@ public class AdminBookingController {
     @PreAuthorize("hasAuthority('booking:booking:cancel')")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBooking(
             @PathVariable Long id,
-            @RequestBody(required = false) java.util.Map<String, String> body) {
+            @Valid @RequestBody AdminBookingCancelRequest request) {
         Long operatorId = SecurityContextHelper.getCurrentAdminId()
                 .orElseThrow(() -> new IllegalStateException("No admin identity"));
-        String reason = body != null ? body.get("reason") : null;
-        BookingResponse response = bookingApplicationService.cancelBookingAdmin(id, reason, operatorId);
+        BookingResponse response = bookingApplicationService.cancelBookingAdmin(id, request.reason(), operatorId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
