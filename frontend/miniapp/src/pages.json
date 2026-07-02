@@ -194,5 +194,11 @@
     "navigationBarTitleText": "PetCare",
     "navigationBarBackgroundColor": "#11796F",
     "backgroundColor": "#FAF8F3"
+  },
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^wd-(.*)": "wot-design-uni/components/wd-$1/wd-$1.vue"
+    }
   }
 }

@@ -17,26 +17,28 @@
       subtitle="洗护、美容与上门照护，为宠物安排专业服务"
     >
       <template #action>
-        <view class="home-hero__btn" @tap="goBooking">
-          <text class="home-hero__btn-text">马上预约</text>
-        </view>
+        <wd-button
+          class="home-hero__btn"
+          type="primary"
+          size="large"
+          round
+          @click="goBooking"
+        >
+          马上预约
+        </wd-button>
       </template>
     </PcHeroCard>
 
-    <!-- Announcement Banner -->
-    <view v-if="latestAnnouncement" class="home-announcement" @tap="goAnnouncementDetail(latestAnnouncement.id)">
-      <view class="home-announcement__icon">
-        <text>告</text>
-        <view v-if="hasUnreadAnnouncement" class="home-announcement__dot" />
-      </view>
-      <view class="home-announcement__body">
-        <text class="home-announcement__eyebrow">社区公告</text>
-        <text class="home-announcement__title">{{ latestAnnouncement.title }}</text>
-      </view>
-      <view class="home-announcement__action">
-        <text>查看</text>
-      </view>
-    </view>
+    <!-- Announcement Banner — wot notice-bar -->
+    <wd-notice-bar
+      v-if="latestAnnouncement"
+      class="home-announcement"
+      type="warning"
+      scrollable
+      prefix="warn-bold"
+      :text="`社区公告：${latestAnnouncement.title}`"
+      @click="goAnnouncementDetail(latestAnnouncement.id)"
+    />
 
     <!-- Quick Service Shortcuts -->
     <view class="pc-section">
@@ -69,7 +71,7 @@
           <text class="home-section-kicker">PET SELECT</text>
           <text class="home-section-title">精选好物</text>
         </view>
-        <text class="home-section-more" @tap="goProducts">逛逛商店</text>
+        <wd-button class="home-section-more" type="text" size="small" @click="goProducts">逛逛商店</wd-button>
       </view>
       <PcStatePanel :status="productsStatus" empty-text="暂无精选商品" error-message="">
         <scroll-view class="home-products-scroll" scroll-x>
@@ -98,7 +100,7 @@
           <text class="home-section-kicker">SPECIAL OFFERS</text>
           <text class="home-section-title">门店活动</text>
         </view>
-        <text class="home-section-more" @tap="goActivities">查看全部</text>
+        <wd-button class="home-section-more" type="text" size="small" @click="goActivities">查看全部</wd-button>
       </view>
       <PcStatePanel :status="activitiesStatus" empty-text="暂无活动" error-message="">
         <view class="home-posts">
@@ -375,123 +377,14 @@ onShow(loadAnnouncement)
 }
 
 .home-announcement {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 10px 12px;
   margin-top: 14px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(223, 242, 237, 0.72));
-  border: 1px solid rgba(17, 121, 111, 0.16);
   border-radius: 20px;
-  box-shadow: 0 8px 22px rgba(25, 50, 46, 0.07);
-}
-
-.home-announcement:active {
-  transform: scale(0.99);
-  background: linear-gradient(135deg, #fff, rgba(223, 242, 237, 0.95));
-}
-
-.home-announcement__icon {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 15px;
-  background: linear-gradient(145deg, #e8f7f3, #ccebe3);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.85);
-}
-
-.home-announcement__icon text {
-  font-size: 15px;
-  font-weight: 800;
-  color: #11796F;
-}
-
-.home-announcement__dot {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 6px;
-  height: 6px;
-  background: #E97951;
-  background: #E97951;
-  border: 2px solid #fff;
-  border-radius: 50%;
-}
-
-.home-announcement__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.home-announcement__eyebrow {
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1.3;
-  color: #11796F;
-  color: #11796F;
-  letter-spacing: 1px;
-}
-
-.home-announcement__title {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
-  color: #19322E;
-  color: #19322E;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.home-announcement__action {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(17, 121, 111, 0.12);
-  border-radius: 999px;
-}
-
-.home-announcement__action text {
-  font-size: 10px;
-  font-weight: 700;
-  color: #11796F;
-  color: #11796F;
-}
-
-.home-announcement__arrow {
-  margin-left: 2px;
 }
 
 .home-hero__btn {
   margin-top: 16px;
-  height: 42px;
-  background: #fff;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   align-self: flex-start;
-  padding: 0 24px;
-}
-
-.home-hero__btn-text {
-  color: #0C4D48;
-  color: #0C4D48;
-  font-size: 14px;
-  font-weight: 600;
 }
 
 .home-section-title {
@@ -529,14 +422,8 @@ onShow(loadAnnouncement)
 }
 
 .home-section-more {
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #DFF2ED;
-  background: #DFF2ED;
   font-size: 10px;
   font-weight: 700;
-  color: #11796F;
-  color: #11796F;
 }
 
 .home-shortcuts {

@@ -1,39 +1,41 @@
 <template>
-  <text class="pc-status-tag" :style="tagStyle">{{ label }}</text>
+  <wd-tag
+    class="pc-status-tag"
+    :type="wotType"
+    plain
+  >
+    {{ label }}
+  </wd-tag>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { TAG_STYLES } from '@/types/status'
 
+/**
+ * 全局状态标签，外层 API 保持不变（label/type），
+ * 内部实现替换为 wot-design-uni 的 wd-tag。
+ * 原 type 取自 @/types/status 的语义分类，这里映射到 wd-tag 支持的类型。
+ */
 const props = defineProps<{
   label: string
   type?: string
 }>()
 
-const tagStyle = computed(() => {
-  const typeMap: Record<string, string> = {
-    primary: 'pc-tag-primary',
-    success: 'pc-tag-success',
-    warning: 'pc-tag-warning',
-    danger: 'pc-tag-danger',
-    info: 'pc-tag-info',
+// 项目语义 type -> wot-tag type 映射
+const wotType = computed(() => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'default'> = {
+    primary: 'primary',
+    success: 'success',
+    warning: 'warning',
+    danger: 'danger',
+    info: 'default',
   }
-  const tagClass = typeMap[props.type ?? 'info'] ?? 'pc-tag-info'
-  const style = TAG_STYLES[tagClass] ?? TAG_STYLES['pc-tag-info']
-  return {
-    backgroundColor: style.bg,
-    color: style.color,
-  }
+  return map[props.type ?? 'info'] ?? 'default'
 })
 </script>
 
 <style scoped>
 .pc-status-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 8px;
   font-size: 11px;
   font-weight: 500;
 }

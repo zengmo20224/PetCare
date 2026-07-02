@@ -25,7 +25,8 @@
     "nutui-uniapp": "^1.11.2",
     "pinia": "^2.1.7",
     "pinia-plugin-unistorage": "^0.1.2",
-    "vue": "^3.4.21"
+    "vue": "^3.4.21",
+    "wot-design-uni": "^1.14.0"
   },
   "devDependencies": {
     "@dcloudio/types": "^3.4.8",
