@@ -123,8 +123,8 @@ describe('Booking page permission checks', () => {
     expect(source).toMatch(/hasPermission.*booking/)
   })
 
-  it('has permission checks on confirm action', () => {
-    expect(source).toMatch(/booking:booking:confirm/)
+  it('has permission checks on start action', () => {
+    expect(source).toMatch(/booking:booking:start/)
   })
 
   it('has permission checks on reject action', () => {

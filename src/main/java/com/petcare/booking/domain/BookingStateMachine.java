@@ -57,9 +57,12 @@ public final class BookingStateMachine {
      * @throws BusinessException if the transition is not allowed
      */
     public static void validateTransition(String currentStatus, String targetStatus) {
-        // Initial creation: null -> PENDING_CONFIRM
+        // Initial creation: null -> PENDING_CONFIRM 或 null -> CONFIRMED
+        // 业务规则：排班正常有位置时直接创建为 CONFIRMED（自动确认），
+        // 仍保留 PENDING_CONFIRM 作为合法初始状态以兼容历史/手动确认场景。
         if (currentStatus == null) {
-            if (BookingStatus.PENDING_CONFIRM.getCode().equals(targetStatus)) {
+            if (BookingStatus.PENDING_CONFIRM.getCode().equals(targetStatus)
+                    || BookingStatus.CONFIRMED.getCode().equals(targetStatus)) {
                 return;
             }
             throw new BusinessException(

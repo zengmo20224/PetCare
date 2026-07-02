@@ -31,6 +31,13 @@ class BookingStateMachineTest {
         }
 
         @Test
+        @DisplayName("null -> CONFIRMED is allowed (auto-confirm on creation)")
+        void nullToConfirmed() {
+            assertThatCode(() -> BookingStateMachine.validateTransition(null, BookingStatus.CONFIRMED.getCode()))
+                    .doesNotThrowAnyException();
+        }
+
+        @Test
         @DisplayName("PENDING_CONFIRM -> CONFIRMED is allowed")
         void pendingConfirmToConfirmed() {
             assertThatCode(() -> BookingStateMachine.validateTransition(
@@ -106,14 +113,6 @@ class BookingStateMachineTest {
         void inServiceToRejectedForbidden() {
             assertThatThrownBy(() -> BookingStateMachine.validateTransition(
                     BookingStatus.IN_SERVICE.getCode(), BookingStatus.REJECTED.getCode()))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting("code").isEqualTo(ErrorCode.BOOKING_STATUS_INVALID);
-        }
-
-        @Test
-        @DisplayName("null -> CONFIRMED is forbidden (must go through PENDING_CONFIRM)")
-        void nullToConfirmedForbidden() {
-            assertThatThrownBy(() -> BookingStateMachine.validateTransition(null, BookingStatus.CONFIRMED.getCode()))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.BOOKING_STATUS_INVALID);
         }

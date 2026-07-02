@@ -278,7 +278,9 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
         booking.setPrice(item.getPrice());
         booking.setPaymentMethod(request.paymentMethod());
         booking.setPaymentStatus("UNPAID");
-        booking.setStatus("PENDING_CONFIRM");
+        // 排班正常有位置即直接确认（去掉待确认环节，符合"预约即生效"的业务预期）
+        booking.setStatus("CONFIRMED");
+        booking.setConfirmTime(LocalDateTime.now());
         booking.setRemark(request.remark());
 
         // 8. Delegate to retry service (handles concurrency)

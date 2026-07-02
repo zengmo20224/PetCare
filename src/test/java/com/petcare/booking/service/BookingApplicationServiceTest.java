@@ -208,7 +208,7 @@ class BookingApplicationServiceTest {
 
             assertThat(response.id()).isNotNull();
             assertThat(response.bookingNo()).startsWith("BK");
-            assertThat(response.status()).isEqualTo("PENDING_CONFIRM");
+            assertThat(response.status()).isEqualTo("CONFIRMED");
             assertThat(response.paymentStatus()).isEqualTo("UNPAID");
             assertThat(response.staffId()).isEqualTo(staffId);
             assertThat(response.endTime()).isEqualTo(LocalTime.of(11, 0));
@@ -331,7 +331,7 @@ class BookingApplicationServiceTest {
                     "OFFLINE_HOME", null);
 
             BookingResponse response = bookingApplicationService.createBooking(1000L, request);
-            assertThat(response.status()).isEqualTo("PENDING_CONFIRM");
+            assertThat(response.status()).isEqualTo("CONFIRMED");
             assertThat(response.distanceKm()).isNotNull();
         }
     }

@@ -95,7 +95,8 @@ export type ScheduleStatus = keyof typeof SCHEDULE_STATUS
 
 // ─── Booking ───
 // Backend: BookingStateMachine transitions:
-//   PENDING_CONFIRM → CONFIRMED, REJECTED, CANCELLED
+//   null → PENDING_CONFIRM | CONFIRMED（新预约默认直接 CONFIRMED，自动确认）
+//   PENDING_CONFIRM → CONFIRMED, REJECTED, CANCELLED（历史/手动确认场景保留）
 //   CONFIRMED → IN_SERVICE, CANCELLED
 //   IN_SERVICE → COMPLETED
 //   COMPLETED / CANCELLED / REJECTED → terminal

@@ -88,8 +88,8 @@ public class BookingTransactionServiceImpl implements BookingTransactionService 
         // Step 4: Insert booking
         serviceBookingMapper.insert(booking);
 
-        // Step 5: Write status log
-        writeStatusLog(booking.getId(), null, "PENDING_CONFIRM", "USER", booking.getUserId(), "创建预约");
+        // Step 5: Write status log（初始状态由调用方决定，支持 PENDING_CONFIRM 或 CONFIRMED）
+        writeStatusLog(booking.getId(), null, booking.getStatus(), "USER", booking.getUserId(), "创建预约");
 
         return booking;
     }

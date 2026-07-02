@@ -55,9 +55,8 @@
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="viewDetail(row.id)">详情</el-button>
-          <el-button size="small" type="success" v-if="getBookingActions(row.status).includes('confirm')" @click="handleConfirm(row.id)" :disabled="!userStore.hasPermission('booking:booking:confirm')">确认</el-button>
           <el-button size="small" type="danger" v-if="getBookingActions(row.status).includes('reject')" @click="openRejectDialog(row.id)" :disabled="!userStore.hasPermission('booking:booking:reject')">拒绝</el-button>
-          <el-button size="small" type="primary" v-if="getBookingActions(row.status).includes('start')" @click="handleStart(row.id)" :disabled="!userStore.hasPermission('booking:booking:start')">开始</el-button>
+          <el-button size="small" type="primary" v-if="getBookingActions(row.status).includes('start')" @click="handleStart(row.id)" :disabled="!userStore.hasPermission('booking:booking:start')">开始服务</el-button>
           <el-button size="small" type="success" v-if="getBookingActions(row.status).includes('complete')" @click="handleComplete(row.id)" :disabled="!userStore.hasPermission('booking:booking:complete')">完成</el-button>
           <el-button size="small" v-if="getBookingActions(row.status).includes('cancel')" @click="handleCancel(row.id)" :disabled="!userStore.hasPermission('booking:booking:cancel')">取消</el-button>
         </template>
@@ -113,7 +112,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getBookingList, getBookingDetail, confirmBooking, rejectBooking, startBooking, completeBooking, cancelBooking } from '../../api/booking'
+import { getBookingList, getBookingDetail, rejectBooking, startBooking, completeBooking, cancelBooking } from '../../api/booking'
 import type { Booking } from '../../api/booking'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '../../store/user'
@@ -183,14 +182,6 @@ const executeConfirmedAction = async () => {
 }
 
 // ─── Actions ───
-
-const handleConfirm = (id: number) => {
-  openConfirmDialog('确认预约', '确定确认此预约吗？', false, async () => {
-    await confirmBooking(id)
-    showSuccess('预约已确认')
-    await fetchData()
-  })
-}
 
 const handleStart = (id: number) => {
   openConfirmDialog('开始服务', '确定开始服务吗？', false, async () => {

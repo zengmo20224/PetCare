@@ -177,7 +177,7 @@ class AdminBookingControllerTest {
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.id").value(bookingId))
-                    .andExpect(jsonPath("$.data.status").value("PENDING_CONFIRM"));
+                    .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
         }
     }
 
@@ -186,32 +186,27 @@ class AdminBookingControllerTest {
     class StateTransitions {
 
         @Test
-        @DisplayName("Confirm: PENDING_CONFIRM -> CONFIRMED")
+        @DisplayName("创建即 CONFIRMED，重复 confirm 返回 409")
         void confirmBooking() throws Exception {
+            // 新规则：创建预约即 CONFIRMED，再 confirm 应被拒（CONFIRMED -> CONFIRMED 非法）
             mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/confirm")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
-
-            // Verify status log
-            long logs = bookingStatusLogService.count(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BookingStatusLog>()
-                    .eq(BookingStatusLog::getBookingId, bookingId)
-                    .eq(BookingStatusLog::getNewStatus, "CONFIRMED")
-                    .eq(BookingStatusLog::getOperatorType, "ADMIN"));
-            assertThat(logs).isGreaterThanOrEqualTo(1);
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.error.code").value("booking_status_invalid"));
         }
 
         @Test
-        @DisplayName("Reject: PENDING_CONFIRM -> REJECTED")
+        @DisplayName("Reject on CONFIRMED booking returns 409（创建即确认，无法拒绝）")
         void rejectBooking() throws Exception {
+            // 新规则：创建即 CONFIRMED，REJECT 仅允许从 PENDING_CONFIRM，故返回 409
             mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/reject")
                             .header("Authorization", "Bearer " + adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"reason\":\"时间冲突\"}"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.status").value("REJECTED"));
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.error.code").value("booking_status_invalid"));
         }
 
         @Test
@@ -226,16 +221,9 @@ class AdminBookingControllerTest {
         }
 
         @Test
-        @DisplayName("Full lifecycle: confirm -> start -> complete")
+        @DisplayName("Full lifecycle: 创建即CONFIRMED -> start -> complete")
         void fullLifecycle() throws Exception {
-            // Confirm
-            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/confirm")
-                            .header("Authorization", "Bearer " + adminToken)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
-
+            // 创建即 CONFIRMED，无需单独 confirm
             // Start
             mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/start")
                             .header("Authorization", "Bearer " + adminToken))
@@ -250,20 +238,19 @@ class AdminBookingControllerTest {
         }
 
         @Test
-        @DisplayName("Invalid transition: CONFIRMED -> REJECTED returns 409")
+        @DisplayName("Invalid transition: COMPLETED -> start returns 409")
         void invalidTransition() throws Exception {
-            // Confirm first
-            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/confirm")
-                            .header("Authorization", "Bearer " + adminToken)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+            // 先走完完整流程到 COMPLETED
+            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/start")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk());
+            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/complete")
+                            .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk());
 
-            // Try to reject (CONFIRMED -> REJECTED is not allowed)
-            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/reject")
-                            .header("Authorization", "Bearer " + adminToken)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"reason\":\"test\"}"))
+            // COMPLETED 是终态，再 start 应返回 409
+            mockMvc.perform(post("/api/v1/admin/bookings/" + bookingId + "/start")
+                            .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.error.code").value("booking_status_invalid"));
         }

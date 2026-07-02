@@ -114,9 +114,9 @@ class BookingStatusTransitionTransactionTest {
     }
 
     @Test
-    @DisplayName("User cancel writes real old status PENDING_CONFIRM, not CANCELLED")
+    @DisplayName("User cancel writes real old status CONFIRMED (创建即已确认), not CANCELLED")
     void userCancel_writesActualOldStatus() {
-        // Create a booking
+        // Create a booking（新规则：创建即 CONFIRMED）
         BookingResponse booking = createTestBooking(90001L, "13800900001");
 
         // Cancel it
@@ -124,11 +124,6 @@ class BookingStatusTransitionTransactionTest {
                 new BookingCancelRequest("不想要了"));
 
         // Check the status log.
-        // Filter by newStatus=CANCELLED (deterministic) instead of relying on
-        // ORDER BY create_time DESC: H2 stores create_time at second precision,
-        // so the create log and cancel log within the same second sort
-        // non-deterministically and the LIMIT 1 may pick the create log
-        // (whose old_status is NULL). Same pattern as userCancelAfterConfirm.
         BookingStatusLog log = bookingStatusLogService.getOne(
                 new LambdaQueryWrapper<BookingStatusLog>()
                         .eq(BookingStatusLog::getBookingId, booking.id())
@@ -136,32 +131,9 @@ class BookingStatusTransitionTransactionTest {
 
         assertThat(log).as("A status log must exist for the cancel operation").isNotNull();
         assertThat(log.getOldStatus())
-                .as("Old status must be PENDING_CONFIRM (the real state before cancel), not CANCELLED")
-                .isEqualTo("PENDING_CONFIRM");
-        assertThat(log.getNewStatus()).isEqualTo("CANCELLED");
-    }
-
-    @Test
-    @DisplayName("User cancel after confirm writes real old status CONFIRMED")
-    void userCancelAfterConfirm_writesActualOldStatus() {
-        BookingResponse booking = createTestBooking(90002L, "13800900002");
-
-        // Admin confirms first
-        bookingApplicationService.confirmBooking(booking.id(), null, 9999L);
-
-        // User cancels
-        bookingApplicationService.cancelBooking(90002L, booking.id(),
-                new BookingCancelRequest("行程有变"));
-
-        BookingStatusLog cancelLog = bookingStatusLogService.getOne(
-                new LambdaQueryWrapper<BookingStatusLog>()
-                        .eq(BookingStatusLog::getBookingId, booking.id())
-                        .eq(BookingStatusLog::getNewStatus, "CANCELLED"));
-
-        assertThat(cancelLog).isNotNull();
-        assertThat(cancelLog.getOldStatus())
-                .as("Old status must be CONFIRMED (the real state before cancel)")
+                .as("Old status must be CONFIRMED (the real state before cancel), not CANCELLED")
                 .isEqualTo("CONFIRMED");
+        assertThat(log.getNewStatus()).isEqualTo("CANCELLED");
     }
 
     @Test
@@ -169,14 +141,11 @@ class BookingStatusTransitionTransactionTest {
     void repeatedSameTransition_isRejectedWithoutExtraLog() {
         BookingResponse booking = createTestBooking(90003L, "13800900003");
 
-        // First confirm — should succeed
-        bookingApplicationService.confirmBooking(booking.id(), null, 9999L);
-
         long logCountBefore = bookingStatusLogService.count(
                 new LambdaQueryWrapper<BookingStatusLog>()
                         .eq(BookingStatusLog::getBookingId, booking.id()));
 
-        // Second confirm — should fail (CONFIRMED -> CONFIRMED is not a valid transition)
+        // 创建即 CONFIRMED，再次 confirm 应失败（CONFIRMED -> CONFIRMED 非法流转）
         assertThatThrownBy(() ->
                 bookingApplicationService.confirmBooking(booking.id(), null, 9999L))
                 .isInstanceOf(BusinessException.class)
@@ -193,30 +162,29 @@ class BookingStatusTransitionTransactionTest {
     }
 
     @Test
-    @DisplayName("Confirm booking writes correct old and new status in log")
-    void confirmBooking_writesCorrectStatusLog() {
+    @DisplayName("Start booking writes correct old and new status in log")
+    void startBooking_writesCorrectStatusLog() {
         BookingResponse booking = createTestBooking(90004L, "13800900004");
 
-        bookingApplicationService.confirmBooking(booking.id(), "备注", 9999L);
+        // 创建即 CONFIRMED，直接 start
+        bookingApplicationService.startBooking(booking.id(), 9999L);
 
         BookingStatusLog log = bookingStatusLogService.getOne(
                 new LambdaQueryWrapper<BookingStatusLog>()
                         .eq(BookingStatusLog::getBookingId, booking.id())
-                        .eq(BookingStatusLog::getNewStatus, "CONFIRMED"));
+                        .eq(BookingStatusLog::getNewStatus, "IN_SERVICE"));
 
         assertThat(log).isNotNull();
-        assertThat(log.getOldStatus()).isEqualTo("PENDING_CONFIRM");
-        assertThat(log.getNewStatus()).isEqualTo("CONFIRMED");
-        assertThat(log.getOperatorType()).isEqualTo("ADMIN");
+        assertThat(log.getOldStatus()).isEqualTo("CONFIRMED");
+        assertThat(log.getNewStatus()).isEqualTo("IN_SERVICE");
     }
 
     @Test
-    @DisplayName("Complete full lifecycle: create -> confirm -> start -> complete")
+    @DisplayName("Complete full lifecycle: create(=CONFIRMED) -> start -> complete")
     void fullLifecycle_allLogsCorrect() {
         BookingResponse booking = createTestBooking(90005L, "13800900005");
 
-        // Confirm
-        bookingApplicationService.confirmBooking(booking.id(), null, 9999L);
+        // 创建即 CONFIRMED，无需单独 confirm
         // Start
         bookingApplicationService.startBooking(booking.id(), 9999L);
         // Complete
@@ -227,8 +195,8 @@ class BookingStatusTransitionTransactionTest {
                 new LambdaQueryWrapper<BookingStatusLog>()
                         .eq(BookingStatusLog::getBookingId, booking.id()));
 
-        // 4 logs: create + confirm + start + complete
-        assertThat(logCount).isGreaterThanOrEqualTo(4);
+        // 3 logs: create(CONFIRMED) + start + complete
+        assertThat(logCount).isGreaterThanOrEqualTo(3);
 
         // Verify final state
         ServiceBooking finalBooking = serviceBookingService.getById(booking.id());

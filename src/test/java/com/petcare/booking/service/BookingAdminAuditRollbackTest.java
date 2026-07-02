@@ -134,42 +134,42 @@ class BookingAdminAuditRollbackTest {
     @Test
     @DisplayName("SUCCESS audit save failure rolls back booking status and status log")
     void successAuditFailure_rollsBackBookingTransition() {
-        // Create a booking
+        // Create a booking（新规则：创建即 CONFIRMED）
         BookingResponse booking = createTestBooking();
         Long bookingId = booking.id();
 
         // Verify initial state
-        ServiceBooking beforeConfirm = serviceBookingService.getById(bookingId);
-        assertThat(beforeConfirm.getStatus()).isEqualTo("PENDING_CONFIRM");
+        ServiceBooking beforeStart = serviceBookingService.getById(bookingId);
+        assertThat(beforeStart.getStatus()).isEqualTo("CONFIRMED");
 
         long statusLogCountBefore = bookingStatusLogService.count(
                 new LambdaQueryWrapper<BookingStatusLog>()
                         .eq(BookingStatusLog::getBookingId, bookingId)
-                        .eq(BookingStatusLog::getNewStatus, "CONFIRMED"));
+                        .eq(BookingStatusLog::getNewStatus, "IN_SERVICE"));
 
         // Mock operationLogService.save() to return false (audit failure)
         when(operationLogService.save(any())).thenReturn(false);
 
-        // Confirm should fail due to audit save failure
+        // start 应因审计保存失败而回滚（CONFIRMED → IN_SERVICE 失败）
         assertThatThrownBy(() ->
-                bookingApplicationService.confirmBooking(bookingId, null, 9999L))
+                bookingApplicationService.startBooking(bookingId, 9999L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("admin operation log");
 
-        // Verify booking status was rolled back to PENDING_CONFIRM
-        ServiceBooking afterConfirm = serviceBookingService.getById(bookingId);
-        assertThat(afterConfirm.getStatus())
-                .as("Booking status must be rolled back to PENDING_CONFIRM after audit failure")
-                .isEqualTo("PENDING_CONFIRM");
+        // Verify booking status was rolled back to CONFIRMED
+        ServiceBooking afterStart = serviceBookingService.getById(bookingId);
+        assertThat(afterStart.getStatus())
+                .as("Booking status must be rolled back to CONFIRMED after audit failure")
+                .isEqualTo("CONFIRMED");
 
-        // Verify no new CONFIRMED status log was created
+        // Verify no new IN_SERVICE status log was created
         long statusLogCountAfter = bookingStatusLogService.count(
                 new LambdaQueryWrapper<BookingStatusLog>()
                         .eq(BookingStatusLog::getBookingId, bookingId)
-                        .eq(BookingStatusLog::getNewStatus, "CONFIRMED"));
+                        .eq(BookingStatusLog::getNewStatus, "IN_SERVICE"));
 
         assertThat(statusLogCountAfter)
-                .as("No CONFIRMED status log should exist after audit-triggered rollback")
+                .as("No IN_SERVICE status log should exist after audit-triggered rollback")
                 .isEqualTo(statusLogCountBefore);
     }
 
@@ -180,7 +180,7 @@ class BookingAdminAuditRollbackTest {
         BookingResponse booking = createTestBooking();
         Long bookingId = booking.id();
 
-        // Attempt to complete a PENDING_CONFIRM booking (invalid transition)
+        // 对 CONFIRMED 的预约调 complete 是非法流转（需先 start）
         assertThatThrownBy(() ->
                 bookingApplicationService.completeBooking(bookingId, 9999L))
                 .isInstanceOf(com.petcare.common.exception.BusinessException.class);
@@ -196,7 +196,7 @@ class BookingAdminAuditRollbackTest {
 
         // Verify booking status was not changed by the failed operation
         ServiceBooking unchanged = serviceBookingService.getById(bookingId);
-        assertThat(unchanged.getStatus()).isEqualTo("PENDING_CONFIRM");
+        assertThat(unchanged.getStatus()).isEqualTo("CONFIRMED");
     }
 
     private BookingResponse createTestBooking() {
