@@ -144,6 +144,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { getStaffList, createStaff, updateStaff, disableStaff, getStaffSchedules, createStaffSchedule } from '../../api/staff'
 import type { StaffMember, StaffCreateParams, StaffSchedule, StaffScheduleCreateParams } from '../../api/staff'
+import { STORE_ID } from '../../api/store'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '../../store/user'
 import { showSuccess, showError } from '../../utils/feedback'
@@ -154,7 +155,6 @@ import DataTableShell from '../../components/DataTableShell.vue'
 import ActionConfirmDialog from '../../components/ActionConfirmDialog.vue'
 
 const userStore = useUserStore()
-const STORE_ID = 1
 
 const loading = ref(false)
 const tableData = ref<StaffMember[]>([])
