@@ -261,8 +261,9 @@ class BookingConcurrencyMySqlIT extends AbstractTcMySqlIT {
         BookingResponse r1 = bookingApplicationService.createBooking(20001L, req1);
         BookingResponse r2 = bookingApplicationService.createBooking(20002L, req2);
 
-        assertThat(r1.status()).isEqualTo("PENDING_CONFIRM");
-        assertThat(r2.status()).isEqualTo("PENDING_CONFIRM");
+        // 自 a5a8810 起，预约创建即自动确认（CONFIRMED），不再有 PENDING_CONFIRM 中间态
+        assertThat(r1.status()).isEqualTo("CONFIRMED");
+        assertThat(r2.status()).isEqualTo("CONFIRMED");
     }
 
     // --- Helper methods ---

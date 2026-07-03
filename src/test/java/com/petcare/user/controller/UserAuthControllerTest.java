@@ -184,6 +184,31 @@ class UserAuthControllerTest {
                 .andExpect(jsonPath("$.error.code").value("business_rule_violation"));
     }
 
+    /**
+     * D3 regression: a null questionIndex inside a securityQuestions item must be
+     * rejected as 400 validation_error (bean validation cascade), not leak as a
+     * 500 internal_error via NPE in the service layer.
+     */
+    @Test
+    @DisplayName("register with null questionIndex returns 400 (validation cascade)")
+    void registerWithNullQuestionIndexReturns400() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900008888",
+                                    "password": "test123456",
+                                    "nickname": "空索引",
+                                    "securityQuestions": [
+                                        {"questionIndex": null, "answer": "答案1"},
+                                        {"questionIndex": 1, "answer": "答案2"}
+                                    ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("validation_error"));
+    }
+
     // === Login ===
 
     @Test

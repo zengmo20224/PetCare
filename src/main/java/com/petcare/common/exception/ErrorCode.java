@@ -17,6 +17,7 @@ public final class ErrorCode {
     public static final String UNAUTHORIZED = "unauthorized";
     public static final String FORBIDDEN = "forbidden";
     public static final String WECHAT_LOGIN_NOT_ENABLED = "wechat_login_not_enabled";
+    public static final String METHOD_NOT_ALLOWED = "method_not_allowed";
 
     // Auth error codes
     public static final String PHONE_ALREADY_REGISTERED = "phone_already_registered";

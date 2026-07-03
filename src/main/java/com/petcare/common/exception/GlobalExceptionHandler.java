@@ -15,6 +15,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -109,6 +110,21 @@ public class GlobalExceptionHandler {
                 "请求的资源不存在"
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    /**
+     * Handles 405 Method Not Allowed when a request uses an HTTP verb not supported
+     * by the matched handler. Without this, Spring's default falls through to the
+     * generic 500 handler, which is incorrect and misleading.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        log.debug("Method not supported: {} for {}", ex.getMethod(), ex.getMessage());
+        ApiResponse<Void> body = ApiResponse.error(
+                ErrorCode.METHOD_NOT_ALLOWED,
+                "请求方法不被支持"
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(body);
     }
 
     /**

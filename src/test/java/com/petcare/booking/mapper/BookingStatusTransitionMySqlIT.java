@@ -120,8 +120,11 @@ class BookingStatusTransitionMySqlIT extends AbstractTcMySqlIT {
     }
 
     @Test
-    @DisplayName("Concurrent confirm and reject: only one transition wins")
-    void concurrentConfirmAndReject_onlyOneTransitionWins() throws Exception {
+    @DisplayName("Concurrent start and complete: only one transition wins")
+    void concurrentStartAndComplete_onlyOneTransitionWins() throws Exception {
+        // 自 a5a8810 起，createBooking 即 CONFIRMED。
+        // 从 CONFIRMED 出发，并发两个相同合法转移（两次 start）：
+        // 第一个 CONFIRMED→IN_SERVICE 成功，第二个 IN_SERVICE→IN_SERVICE 非法被拒。
         BookingResponse booking = createTestBooking(30001L, "13800300001");
 
         AtomicInteger successCount = new AtomicInteger(0);
@@ -132,12 +135,12 @@ class BookingStatusTransitionMySqlIT extends AbstractTcMySqlIT {
         CountDownLatch done = new CountDownLatch(2);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        // Thread 1: confirm
+        // Thread 1: start
         executor.submit(() -> {
             ready.countDown();
             try { gate.await(); } catch (InterruptedException e) { return; }
             try {
-                bookingApplicationService.confirmBooking(booking.id(), null, 9001L);
+                bookingApplicationService.startBooking(booking.id(), 9001L);
                 successCount.incrementAndGet();
             } catch (BusinessException e) {
                 failCount.incrementAndGet();
@@ -147,12 +150,12 @@ class BookingStatusTransitionMySqlIT extends AbstractTcMySqlIT {
             }
         });
 
-        // Thread 2: reject
+        // Thread 2: start again (must lose — IN_SERVICE→IN_SERVICE illegal)
         executor.submit(() -> {
             ready.countDown();
             try { gate.await(); } catch (InterruptedException e) { return; }
             try {
-                bookingApplicationService.rejectBooking(booking.id(), "不合适", 9002L);
+                bookingApplicationService.startBooking(booking.id(), 9002L);
                 successCount.incrementAndGet();
             } catch (BusinessException e) {
                 failCount.incrementAndGet();
@@ -169,17 +172,17 @@ class BookingStatusTransitionMySqlIT extends AbstractTcMySqlIT {
 
         // Exactly 1 success
         assertThat(successCount.get())
-                .as("Exactly 1 of confirm/reject should succeed")
+                .as("Exactly 1 of concurrent start should succeed")
                 .isEqualTo(1);
         assertThat(failCount.get())
-                .as("Exactly 1 of confirm/reject should fail with status error")
+                .as("Exactly 1 of concurrent start should fail with status error")
                 .isEqualTo(1);
 
-        // Final status is either CONFIRMED or REJECTED (both are valid)
+        // Final status must be IN_SERVICE
         ServiceBooking finalBooking = serviceBookingService.getById(booking.id());
         assertThat(finalBooking.getStatus())
-                .as("Final status must be CONFIRMED or REJECTED")
-                .isIn("CONFIRMED", "REJECTED");
+                .as("Final status must be IN_SERVICE")
+                .isEqualTo("IN_SERVICE");
 
         // Status logs must be consistent with final state
         List<BookingStatusLog> logs = bookingStatusLogService.list(
@@ -193,16 +196,15 @@ class BookingStatusTransitionMySqlIT extends AbstractTcMySqlIT {
                 .isEqualTo(1);
 
         BookingStatusLog transitionLog = logs.get(0);
-        assertThat(transitionLog.getOldStatus()).isEqualTo("PENDING_CONFIRM");
-        assertThat(transitionLog.getNewStatus()).isEqualTo(finalBooking.getStatus());
+        assertThat(transitionLog.getOldStatus()).isEqualTo("CONFIRMED");
+        assertThat(transitionLog.getNewStatus()).isEqualTo("IN_SERVICE");
     }
 
     @Test
     @DisplayName("Concurrent start and cancel: final state is valid per state machine")
     void concurrentStartAndCancel_neverProducesInvalidFinalState() throws Exception {
-        // First create and confirm a booking
+        // 自 a5a8810 起，createBooking 即自动确认（CONFIRMED），无需再手动 confirm
         BookingResponse booking = createTestBooking(30002L, "13800300002");
-        bookingApplicationService.confirmBooking(booking.id(), null, 9999L);
 
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger failCount = new AtomicInteger(0);

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -103,5 +104,20 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("internal_error"))
                 .andExpect(jsonPath("$.error.message").value("服务内部错误，请稍后重试"));
+    }
+
+    /**
+     * D2 regression: wrong HTTP method on an existing path must return 405,
+     * not leak as a 500 internal_error.
+     * /api/v1/test/business only accepts POST; GET must yield Method Not Allowed.
+     */
+    @Test
+    @WithMockUser
+    @DisplayName("Unsupported HTTP method returns 405, not 500")
+    void handleMethodNotSupported_shouldReturn405Not500() throws Exception {
+        mockMvc.perform(get("/api/v1/test/business"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("method_not_allowed"));
     }
 }

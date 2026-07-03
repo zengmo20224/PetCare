@@ -1,5 +1,6 @@
 package com.petcare.user.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +27,7 @@ public record RegisterRequest(
         @Size(max = 64, message = "昵称最长 64 字符")
         String nickname,
 
+        @Valid
         List<SecurityQuestionItem> securityQuestions
 ) {
     public record SecurityQuestionItem(
