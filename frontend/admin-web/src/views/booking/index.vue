@@ -85,17 +85,6 @@
       </el-descriptions>
     </DetailDrawer>
 
-    <!-- Confirm Action Dialog -->
-    <ActionConfirmDialog
-      :visible="confirmDialogVisible"
-      :title="confirmDialogTitle"
-      :message="confirmDialogMessage"
-      :danger="confirmDialogDanger"
-      :loading="confirmDialogLoading"
-      @confirm="executeConfirmedAction"
-      @cancel="confirmDialogVisible = false"
-    />
-
     <!-- Reject Dialog (needs form input) -->
     <el-dialog title="拒绝预约" v-model="rejectVisible" width="400px">
       <el-form ref="rejectFormRef" :model="rejectForm" :rules="rejectRules" label-width="80px">
@@ -121,6 +110,24 @@
         <el-button type="danger" @click="submitCancel" :loading="cancelLoading">确认取消</el-button>
       </template>
     </el-dialog>
+
+    <!-- Start Dialog -->
+    <el-dialog title="开始服务" v-model="startVisible" width="400px">
+      <p style="margin:0;color:#606266;line-height:1.6;">确定开始此预约的服务吗？开始后状态将变为"进行中"。</p>
+      <template #footer>
+        <el-button @click="startVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitStart" :loading="startLoading">确认开始</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Complete Dialog -->
+    <el-dialog title="完成预约" v-model="completeVisible" width="400px">
+      <p style="margin:0;color:#606266;line-height:1.6;">确定完成此预约吗？完成后状态将变为"已完成"，不可再更改。</p>
+      <template #footer>
+        <el-button @click="completeVisible = false">取消</el-button>
+        <el-button type="success" @click="submitComplete" :loading="completeLoading">确认完成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -136,7 +143,7 @@ import type { BookingStatus as BookingStatusType, PaymentStatus } from '../../ty
 import FilterBar from '../../components/FilterBar.vue'
 import DataTableShell from '../../components/DataTableShell.vue'
 import DetailDrawer from '../../components/DetailDrawer.vue'
-import ActionConfirmDialog from '../../components/ActionConfirmDialog.vue'
+// ActionConfirmDialog 已不再用于预约页（改用独立 el-dialog 避免 emit 时序问题）
 
 const userStore = useUserStore()
 const loading = ref(false)
@@ -161,65 +168,74 @@ const handleDetailClose = () => {
   detailData.value = null
 }
 
-// ─── Confirm Action Dialog ───
+// ─── Actions ───
 
-const confirmDialogVisible = ref(false)
-const confirmDialogTitle = ref('')
-const confirmDialogMessage = ref('')
-const confirmDialogDanger = ref(false)
-const confirmDialogLoading = ref(false)
-const pendingAction = ref<(() => Promise<void>) | null>(null)
-
-const openConfirmDialog = (title: string, message: string, danger: boolean, action: () => Promise<void>) => {
-  confirmDialogTitle.value = title
-  confirmDialogMessage.value = message
-  confirmDialogDanger.value = danger
-  pendingAction.value = action
-  confirmDialogVisible.value = true
+const handleStart = (id: number) => {
+  startTargetId.value = id
+  startVisible.value = true
 }
 
-const executeConfirmedAction = async () => {
-  if (!pendingAction.value) return
-  // 进入 loading：弹窗保持打开、确认按钮转圈，防止重复点击
-  confirmDialogLoading.value = true
+// ─── Start (独立弹窗，不走 ActionConfirmDialog) ───
+
+const startVisible = ref(false)
+const startLoading = ref(false)
+const startTargetId = ref(0)
+
+const submitStart = async () => {
+  startLoading.value = true
   try {
-    await pendingAction.value
-    // 成功后才关闭弹窗（此时 fetchData 已刷新列表，按钮状态已更新）
-    confirmDialogVisible.value = false
+    await startBooking(startTargetId.value)
+    showSuccess('服务已开始')
+    startVisible.value = false
+    await fetchData()
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'response' in error) {
       const resp = (error as { response?: { status?: number } }).response
       if (resp?.status === 409) {
         showConflict()
         await fetchData()
-        confirmDialogVisible.value = false
+        startVisible.value = false
         return
       }
     }
     showError(error instanceof Error ? error.message : '操作失败')
-    // 失败时关闭弹窗，让用户能看到错误后重试
-    confirmDialogVisible.value = false
   } finally {
-    confirmDialogLoading.value = false
+    startLoading.value = false
   }
 }
 
-// ─── Actions ───
-
-const handleStart = (id: number) => {
-  openConfirmDialog('开始服务', '确定开始服务吗？', false, async () => {
-    await startBooking(id)
-    showSuccess('服务已开始')
-    await fetchData()
-  })
+const handleComplete = (id: number) => {
+  completeTargetId.value = id
+  completeVisible.value = true
 }
 
-const handleComplete = (id: number) => {
-  openConfirmDialog('完成预约', '确定完成此预约吗？', false, async () => {
-    await completeBooking(id)
+// ─── Complete (独立弹窗) ───
+
+const completeVisible = ref(false)
+const completeLoading = ref(false)
+const completeTargetId = ref(0)
+
+const submitComplete = async () => {
+  completeLoading.value = true
+  try {
+    await completeBooking(completeTargetId.value)
     showSuccess('预约已完成')
+    completeVisible.value = false
     await fetchData()
-  })
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const resp = (error as { response?: { status?: number } }).response
+      if (resp?.status === 409) {
+        showConflict()
+        await fetchData()
+        completeVisible.value = false
+        return
+      }
+    }
+    showError(error instanceof Error ? error.message : '操作失败')
+  } finally {
+    completeLoading.value = false
+  }
 }
 
 const handleCancel = (id: number) => {
