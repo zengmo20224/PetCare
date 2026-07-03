@@ -1,7 +1,9 @@
 # PetCare O2O 全量回归测试报告
 
-> 本报告由 QA 全量回归任务生成。**仅诊断，未修改任何业务代码、配置或 schema。**
+> 本报告由 QA 全量回归任务生成。
 > 任务分支：`qa/full-regression-2026-07`（基于 `wot-h5-integration`）
+
+> **✅ 修复状态（2026-07-04，commit `d802a5b`）**：D1/D2/D3 三个缺陷已按 TDD（先写失败测试→修复→转绿）修复并提交。L1 经探查为更大的基础设施缺口，转单独任务。最新全量验证：H2 单测 859/859、tc-mysql 集成 18/18、admin-web 617/617 + build、miniapp 83/83 + typecheck + build，**全绿**。下文 §3/§5 保留诊断时的原始记录，每个缺陷末尾附"修复"小节说明实际改动。
 
 ---
 
@@ -202,12 +204,14 @@ npm run lint          → ❌ 见 L1
 - **优先级**：中（输入校验缺失 + 错误处理泄漏内部错误）
 - **位置**：`src/main/java/com/petcare/user/dto/RegisterRequest.java:29`、`src/main/java/com/petcare/user/auth/UserAuthService.java:73`
 
-### L1【低】miniapp `npm run lint` 调用全局 eslint 失败
+### L1【低】miniapp `npm run lint` 无法运行（缺 eslint 依赖与配置）
 - **现象**：`npm run lint`（`eslint src/`）报 `'eslint' is not recognized as an internal or external command`。
-- **根因**：`package.json` 的 `lint` 脚本直接调用 `eslint`，依赖 PATH 中的全局安装；但 `eslint` 在 `devDependencies` 中（本地已装）。应改为 `eslint src/` → `npx eslint src/` 或 `vue-cli-service lint`。
-- **影响**：CI 的 h5 job 未跑 lint（`.github/workflows/ci.yml` h5 步骤无 lint），故未被发现；本地开发者需全局装 eslint 才能跑。
-- **优先级**：低
-- **位置**：`frontend/miniapp/package.json`（`scripts.lint`）
+- **根因（探查修正）**：首轮报告推测"eslint 在 devDependencies 本地已装，只是脚本调用方式错"。**实测推翻**：`frontend/miniapp` 的 `node_modules/.bin/eslint` 不存在，`devDependencies` 中**根本没有 eslint**，项目里也**没有任何 eslint 配置文件**（无 `.eslintrc.*`、无 `eslint.config.js`）。`lint` 脚本从一开始就不是可用脚本——它依赖系统全局装 eslint 且有全局配置，这在 CI 和大多数开发机上都成立不了。
+- **尝试过的修复（已回退）**：把脚本改为 `npx eslint src/`，结果 npx 拉取了最新 eslint 10.6.0，但无 flat config 文件而失败（`ESLint couldn't find an eslint.config.(js|mjs|cjs) file`）。
+- **结论**：L1 实际是**基础设施缺口**（缺依赖 + 缺配置），非一行脚本能修。需新增 `eslint` + Vue/TS/UniApp 插件依赖、编写 flat config、并对 `src/` 全量适配规则，工作量与本任务（修缺陷）偏离。
+- **影响**：CI 的 h5 job 从不跑 lint（`.github/workflows/ci.yml` h5 步骤无 lint），故一直未暴露。
+- **优先级**：低（转单独任务处理，不在本次范围）
+- **位置**：`frontend/miniapp/package.json`（`scripts.lint`、`devDependencies` 缺 eslint）、无 eslint 配置文件
 
 ---
 
@@ -227,18 +231,23 @@ npm run lint          → ❌ 见 L1
 
 **已完成**：在 `qa/full-regression-2026-07` 分支完成全量回归（自动化测试 + 构建 + 78 项 API 运行时验证），产出本报告，未改任何业务代码。
 
-**发现的真实缺陷（按优先级）**：
-1. **D1（高，测试缺陷）**：Booking 的 tc-mysql 集成测试（3 个 IT 类）断言仍停留在旧的 `PENDING_CONFIRM`，与 commit `a5a8810`"预约创建即 CONFIRMED"不同步；因 `mvn test` 默认排除 tc-mysql 组而漏改。生产代码无缺陷，但高风险规则（预约并发/状态转移）实际未被有效测试。
-2. **D2（中）**：全局异常处理对 `HttpRequestMethodNotSupportedException` 返回 500（应 405）。
-3. **D3（中）**：注册 `securityQuestions` 未级联 `@Valid`，`questionIndex=null` 触发 NPE 500（应 400）。
-4. **L1（低）**：miniapp `lint` 脚本调用全局 eslint。
+**发现的真实缺陷（按优先级）与修复状态**：
+1. **D1（高，测试缺陷）→ ✅ 已修复**：Booking tc-mysql 集成测试断言与 commit `a5a8810`（创建即 CONFIRMED）不同步。已修正三处：`adjacentTime` 断言改 `CONFIRMED`；删除多余 `confirmBooking`；`concurrentConfirmAndReject` 重构为 `concurrentStartAndComplete`（PENDING_CONFIRM 前提消失后，改为 CONFIRMED 出发的并发互斥）。tc-mysql 18/18 全绿。
+2. **D2（中）→ ✅ 已修复**：`GlobalExceptionHandler` 增补 `HttpRequestMethodNotSupportedException` → 405 + `METHOD_NOT_ALLOWED` 码；新增回归测试（500→405）。
+3. **D3（中）→ ✅ 已修复**：`RegisterRequest.securityQuestions` 加 `@Valid` 级联；新增回归测试（null questionIndex 500→400）。
+4. **L1（低）→ 转单独任务**：探查发现是缺 eslint 依赖+配置的基础设施缺口，非一行脚本可修。
 
-**下一步建议**（需用户授权后另起任务修复，本任务不动代码）：
-- D1：①把 3 个 IT 的 `PENDING_CONFIRM` 断言改为 `CONFIRMED`，并修正依赖该前提的并发测试逻辑；②把 `mvn -P tc-mysql test` 纳入 CI（当前 CI/Jenkins 只跑 `mvn test`，是根因潜伏的流程缺口）。
-- D2：`GlobalExceptionHandler` 增补 `HttpRequestMethodNotSupportedException` → 405 处理（同时建议覆盖 `HttpMediaTypeNotSupportedException` 等）。
-- D3：`RegisterRequest.securityQuestions` 加 `@Valid` + 集合级 `@NotEmpty/@Size`，先写失败测试再改。
-- L1：`frontend/miniapp/package.json` 的 `lint` 改为 `npx eslint src/`，并把 lint 纳入 CI h5 job。
+**修复后全量验证**（commit `d802a5b`，串行执行避免并发污染 `target`）：
+- `mvn test`：859/859（修复前 857，+2 新回归测试）
+- `mvn -P tc-mysql test`：18/18（修复前 8 失败）
+- admin-web：617/617 + build
+- miniapp：83/83 + typecheck + build:h5
+
+**遗留建议**（未阻塞，供后续任务参考）：
+- D1 的流程缺口仍在：`mvn -P tc-mysql test` 未纳入 CI（`.github/workflows/ci.yml`、`Jenkinsfile` 只跑 `mvn test`），建议补上，避免类似漏改再次潜伏。
+- L1：为 `frontend/miniapp` 引入 eslint + flat config + Vue/TS 规则，并把 lint 纳入 CI h5 job。
+- 调试注意：`mvn test`（含 clean）与 `mvn -P tc-mysql test` **不可并发**——clean 删 `target` 会破坏 tc-mysql 的类加载/mapper 解析，产生 flaky "statement not found"。本任务两次全量失败均源于此，串行执行即恢复。
 
 **验证证据**：本报告所有结论均有对应日志/HTTP 响应佐证（`/tmp/mvn-test.log`、`/tmp/mvn-tcmysql.log`、`/tmp/qa-api-verify.log`、`docker logs petcare-api`）。
 
-**未完成/风险**：① 未做前端 UI 人工点击走查（本次方案不含）；② 运行中的 API 为历史镜像，但 D1 经诊断确定为**测试缺陷而非生产缺陷**（当前代码 `mvn test` 与运行时 API 验证均正常）；③ 首次全量 tc-mysql 跑出的 "statement not found" 属 flaky（重跑消失），未深挖，建议后续观察 Testcontainers 并发启动行为。
+**未完成/风险**：① L1（miniapp lint 基础设施缺口）转单独任务；② D1 流程缺口（tc-mysql 未纳入 CI）建议后续补上；③ 未做前端 UI 人工点击走查（本次方案不含）；④ 调试发现 `mvn test` 与 `mvn -P tc-mysql test` 不可并发（clean 删 target 致 flaky），已在本任务规避，建议团队知悉。
