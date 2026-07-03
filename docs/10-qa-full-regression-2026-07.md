@@ -26,7 +26,7 @@
 | 功能域 | 自动化测试 | 构建 | API 运行时 | 结论 |
 |---|:---:|:---:|:---:|---|
 | 后端单元（H2） | ✅ 857/857 | — | — | 健康 |
-| 后端集成（MySQL/Testcontainers） | ❌ 8 失败 | — | — | **缺陷 D1**（仅 MySQL 暴露） |
+| 后端集成（MySQL/Testcontainers） | ❌ 3 IT 类失败 | — | — | **缺陷 D1**（测试与状态机变更不同步；非生产缺陷） |
 | 后端打包 | — | ✅ jar 生成 | — | 健康 |
 | Admin Web（Vue3） | ✅ 617/617 | ✅ | （未做 UI 走查） | 健康 |
 | H5 / miniapp（UniApp） | ✅ 83/83 | ✅ | （未做 UI 走查） | ⚠️ `lint` 脚本失效（L1） |
@@ -40,7 +40,7 @@
 | 错误处理（全局） | — | — | ❌ | **缺陷 D2**（不支持的 HTTP 方法返回 500） |
 | 输入校验（注册） | — | — | ❌ | **缺陷 D3**（嵌套校验不级联 → NPE 500） |
 
-**总体结论**：核心业务功能链路在运行时**可用**（78 项 API 验证，甄别后真实失败仅 3 类缺陷，均非阻断主流程）。后端单元测试全绿；前端构建与测试全绿。主要问题集中在 ① MySQL 集成测试的并发锁 mapper 不可用、② 全局异常处理对部分异常返回 500 而非语义码、③ 注册嵌套校验未级联。
+**总体结论**：核心业务功能链路在运行时**可用**（78 项 API 验证，甄别后真实失败仅 3 类缺陷，均非阻断主流程）。后端 H2 单元测试全绿（857）；前端构建与测试全绿。主要问题：① Booking 的 tc-mysql 集成测试与"创建即已确认"状态机变更不同步（测试缺陷，非生产缺陷，但高风险规则未被有效测试）；② 全局异常处理对部分异常返回 500 而非语义码；③ 注册嵌套校验未级联。
 
 ---
 
@@ -58,15 +58,15 @@ JaCoCo: 310 classes analyzed
 ### 3.2 后端集成测试（Testcontainers MySQL 8.0.46） — ❌ 8 失败
 ```
 mvn -B -ntp -P tc-mysql test
-Tests run: 18, Failures: 2, Errors: 6, Skipped: 0   ← 本 profile 仅跑 tc-mysql 标记用例
-BUILD FAILURE  (58.4 s)
+首次：Tests run: 18, Failures: 2, Errors: 6（8 失败，含 flaky "statement not found"）
+重跑：Tests run: 18, Failures: 2, Errors: 2（4 失败，"statement not found" 消失，转为状态机断言失败）
 ```
-失败用例（**全部同一根因**，见缺陷 D1）：
+失败用例（**确定性根因**：状态机断言过时，见缺陷 D1）：
 | 测试类 | 结果 |
 |---|---|
-| `BookingConcurrencyMySqlIT` | 4 跑：2 failures + 2 errors |
-| `BookingReassignMySqlIT` | 2 跑：2 errors |
-| `BookingStatusTransitionMySqlIT` | 2 跑：2 errors |
+| `BookingConcurrencyMySqlIT` | `sameStaffAdjacentTime` 断言 `PENDING_CONFIRM` 但实际 `CONFIRMED` |
+| `BookingStatusTransitionMySqlIT` | 1 failure + 1 error（状态转移前提崩塌，`CONFIRMED→CONFIRMED` 非法） |
+| `BookingReassignMySqlIT` | 重跑后通过（首次报 "statement not found" 属 flaky） |
 
 日志：`/tmp/mvn-tcmysql.log`
 
@@ -148,20 +148,37 @@ npm run lint          → ❌ 见 L1
 
 ## 5. 缺陷清单（未修改代码，仅诊断）
 
-### D1【高】Booking 并发锁 mapper 在 MySQL 集成测试中 "statement not found"
-- **现象**：`mvn -P tc-mysql test` 中 3 个 IT 类共 8 个用例失败/错误，全部抛
-  `org.apache.ibatis.binding.BindingException: Invalid bound statement (not found): com.petcare.booking.mapper.StaffBookingLockMapper.upsertStaffBookingLock`
-- **影响范围**：预约并发安全（同员工同时段重叠锁）、改派事务一致性、状态转移并发——这些是 `docs/05-testing-and-verification.md` 明确要求"必须有直接测试"的高风险项。运行时单次 createBooking 不触发，但**并发预约的排他性可能失效**。
-- **复现**：`mvn -B -ntp -P tc-mysql test`
-- **定位分析**（已排查，均正常）：
-  - Mapper 接口：`src/main/java/com/petcare/booking/mapper/StaffBookingLockMapper.java` ✅ 存在
-  - XML 映射：`src/main/resources/mapper/StaffBookingLockMapper.xml` ✅ 存在，`namespace` 与接口全限定名一致
-  - XML 内 `upsertStaffBookingLock` 用 `databaseId="mysql"` / `databaseId="H2"` 区分方言
-  - `mapper-locations: classpath*:mapper/**/*.xml` ✅ 配置正确
-  - `MyBatisPlusConfig.databaseIdProvider()` ✅ 配置了 `MySQL→mysql`、`H2→H2`
-- **推测根因**（待调试确认）：tc-mysql profile（`AbstractTcMySqlIT` + `application-tc-mysql.yml`）下，`DatabaseIdProvider` Bean 虽存在，但 MyBatis `Configuration.databaseId` 未被正确赋值，导致**带 `databaseId` 限定的语句全部不加载**（H2 单测因走 mock/不同路径未暴露）。建议下次：在 `tc-mysql` 跑一个最小用例打印 `sqlSessionFactory.getConfiguration().getDatabaseId()` 验证。
-- **优先级**：高（影响并发安全验证；当前运行时单线程不阻塞）
-- **位置**：`src/main/resources/mapper/StaffBookingLockMapper.xml`、`src/main/java/com/petcare/common/config/MyBatisPlusConfig.java:34-42`、`src/test/java/com/petcare/common/persistence/AbstractTcMySqlIT.java`
+### D1【高】Booking MySQL 集成测试与"创建即已确认"状态机变更不同步
+
+> **根因修正说明**：首轮报告曾推测为"`databaseId` 未注入导致 mapper 语句未注册"。经深入诊断（临时探针实测 `Configuration.databaseId="mysql"`、`hasStatement(upsertStaffBookingLock)=true`），**该推测被推翻**。真实根因如下，确凿无疑。
+
+- **现象**：`mvn -P tc-mysql test` 中 3 个 IT 类失败（首次全量跑 8 个、重跑 4 个；含 flaky 成分，见末尾）：
+  ```
+  BookingConcurrencyMySqlIT.sameStaffAdjacentTime_bothBookingsSucceed       → AssertionError
+  BookingStatusTransitionMySqlIT.concurrentConfirmAndReject_onlyOneTransitionWins  → AssertionError
+  BookingStatusTransitionMySqlIT.concurrentStartAndCancel_neverProducesInvalidFinalState → ERROR BusinessException
+  ```
+- **确定性根因**（断言失败信息直接印证）：
+  ```
+  expected: "PENDING_CONFIRM"
+   but was: "CONFIRMED"
+  BusinessException: 预约状态不允许从 CONFIRMED 变更为 CONFIRMED
+  ```
+  业务代码 commit `a5a8810`（"预约创建即已确认"）将 `createBooking` 的初始状态由 `PENDING_CONFIRM` 改为 `CONFIRMED`（`BookingTransactionServiceImpl`、`BookingStateMachine` 允许 `null→CONFIRMED`）。该 commit 的提交说明明确写道"后端 855 全量测试通过 / 更新状态机/创建/审计/状态流转测试适配新规则"——**但只更新了 H2 单测**（`BookingStateMachineTest`、`BookingAdminAuditTest` 等），**漏改了 tc-mysql profile 的 3 个 IT**。
+- **为何漏改未被察觉**：`pom.xml` 的 surefire 配置 `<excludedGroups>tc-mysql</excludedGroups>` 使 `mvn test` **默认排除所有 `@Tag("tc-mysql")` 的 IT**。提交时的"全量测试"仅指 `mvn test`（855 个 H2 单测），从不跑这 3 个 IT，故状态机变更未触发它们的失败、漏网合入。
+- **影响**：
+  - IT 断言失效本身是测试缺陷（非生产代码缺陷）；`mvn test`（855）与运行时 API 验证均正常，业务功能可用。
+  - 但这意味着**预约并发安全/状态转移一致性这些高风险规则（`docs/05-testing-and-verification.md` §2 强制要求"必须有直接测试"）当前实际未被有效测试覆盖**——这是测试有效性问题，属高风险。
+- **复现**：`mvn -B -ntp -P tc-mysql test`（或单独 `-Dtest=BookingConcurrencyMySqlIT`）
+- **诊断证据**（临时探针，已删除）：
+  - `Configuration.databaseId = "mysql"`、`Provider.getDatabaseId(dataSource) = "mysql"`、`hasStatement(upsertStaffBookingLock) = true` → 证明 mapper 语句与 databaseId 均正常，**首轮"statement not found"非确定性根因**。
+- **flaky 成分**：首次全量 `mvn -P tc-mysql test` 报 8 个 "Invalid bound statement (not found)"；单独跑 `BookingConcurrencyMySqlIT` 或重跑全量时，"not found" 消失，转为状态机断言失败。推测是 Testcontainers 容器在全量 IT 套件并发启动时的类加载/上下文竞争（非确定性，不作为根因，建议后续观察）。
+- **修复方向（不改代码，仅建议）**：把这 3 个 IT 里 `PENDING_CONFIRM` 断言改为 `CONFIRMED`，并修正依赖 `PENDING_CONFIRM→CONFIRMED` 转移的并发测试前提（如 `concurrentConfirmAndReject` 需改为对已 `CONFIRMED` 的预约做并发 `start`/`complete`）。建议同时把 `mvn -P tc-mysql test` 纳入 CI（当前 `.github/workflows/ci.yml` 与 `Jenkinsfile` 均只跑 `mvn test`，从不跑 tc-mysql，这是根因能潜伏的流程缺口）。
+- **位置**：
+  - `src/test/java/com/petcare/booking/mapper/BookingConcurrencyMySqlIT.java:264`（`PENDING_CONFIRM` 断言）
+  - `src/test/java/com/petcare/booking/mapper/BookingStatusTransitionMySqlIT.java`（状态转移前提）
+  - `pom.xml:124-129`（`excludedGroups=tc-mysql`）
+  - 业务变更源头：commit `a5a8810`
 
 ### D2【中】GlobalExceptionHandler 把 "Method Not Supported" 当成 500
 - **现象**：对只注册了特定 HTTP 方法的路径发其他方法请求，返回 `500 internal_error`，而非标准 `405 Method Not Allowed`。
@@ -211,17 +228,17 @@ npm run lint          → ❌ 见 L1
 **已完成**：在 `qa/full-regression-2026-07` 分支完成全量回归（自动化测试 + 构建 + 78 项 API 运行时验证），产出本报告，未改任何业务代码。
 
 **发现的真实缺陷（按优先级）**：
-1. **D1（高）**：MySQL 集成测试 `StaffBookingLockMapper` 语句未加载 → 预约并发锁未被有效验证。
+1. **D1（高，测试缺陷）**：Booking 的 tc-mysql 集成测试（3 个 IT 类）断言仍停留在旧的 `PENDING_CONFIRM`，与 commit `a5a8810`"预约创建即 CONFIRMED"不同步；因 `mvn test` 默认排除 tc-mysql 组而漏改。生产代码无缺陷，但高风险规则（预约并发/状态转移）实际未被有效测试。
 2. **D2（中）**：全局异常处理对 `HttpRequestMethodNotSupportedException` 返回 500（应 405）。
 3. **D3（中）**：注册 `securityQuestions` 未级联 `@Valid`，`questionIndex=null` 触发 NPE 500（应 400）。
 4. **L1（低）**：miniapp `lint` 脚本调用全局 eslint。
 
 **下一步建议**（需用户授权后另起任务修复，本任务不动代码）：
-- D1：在 `tc-mysql` 下打印 `Configuration.databaseId` 定位；若确为 provider 未生效，调整 `MyBatisPlusConfig` 或确保 `SqlSessionFactoryBean` 注入 provider。
+- D1：①把 3 个 IT 的 `PENDING_CONFIRM` 断言改为 `CONFIRMED`，并修正依赖该前提的并发测试逻辑；②把 `mvn -P tc-mysql test` 纳入 CI（当前 CI/Jenkins 只跑 `mvn test`，是根因潜伏的流程缺口）。
 - D2：`GlobalExceptionHandler` 增补 `HttpRequestMethodNotSupportedException` → 405 处理（同时建议覆盖 `HttpMediaTypeNotSupportedException` 等）。
 - D3：`RegisterRequest.securityQuestions` 加 `@Valid` + 集合级 `@NotEmpty/@Size`，先写失败测试再改。
 - L1：`frontend/miniapp/package.json` 的 `lint` 改为 `npx eslint src/`，并把 lint 纳入 CI h5 job。
 
 **验证证据**：本报告所有结论均有对应日志/HTTP 响应佐证（`/tmp/mvn-test.log`、`/tmp/mvn-tcmysql.log`、`/tmp/qa-api-verify.log`、`docker logs petcare-api`）。
 
-**未完成/风险**：① 未做前端 UI 人工点击走查（本次方案不含）；② 运行中的 API 为历史镜像，D1 的运行时表现需在当前代码重建镜像后复测；③ D1 根因为推测，需后续调试最终确认。
+**未完成/风险**：① 未做前端 UI 人工点击走查（本次方案不含）；② 运行中的 API 为历史镜像，但 D1 经诊断确定为**测试缺陷而非生产缺陷**（当前代码 `mvn test` 与运行时 API 验证均正常）；③ 首次全量 tc-mysql 跑出的 "statement not found" 属 flaky（重跑消失），未深挖，建议后续观察 Testcontainers 并发启动行为。
