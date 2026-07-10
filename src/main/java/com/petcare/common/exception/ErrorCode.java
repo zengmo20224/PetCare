@@ -19,6 +19,9 @@ public final class ErrorCode {
     public static final String WECHAT_LOGIN_NOT_ENABLED = "wechat_login_not_enabled";
     public static final String METHOD_NOT_ALLOWED = "method_not_allowed";
 
+    // Rate limit (H2: 登录/注册/找回密码端点防暴力破解)
+    public static final String RATE_LIMIT_EXCEEDED = "rate_limit_exceeded";
+
     // Auth error codes
     public static final String PHONE_ALREADY_REGISTERED = "phone_already_registered";
     public static final String INVALID_CREDENTIALS = "invalid_credentials";

@@ -4,6 +4,7 @@ import com.petcare.common.api.ApiResponse;
 import com.petcare.common.config.FileUploadConfig;
 import com.petcare.common.exception.BusinessException;
 import com.petcare.common.exception.ErrorCode;
+import com.petcare.common.upload.ImageMagicBytesValidator;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,6 +49,12 @@ public class FileUploadController {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "只支持 JPG/PNG/GIF/WebP 格式");
         }
 
+        // M1 安全修复：用魔数校验替代纯 Content-Type 信任。
+        // 攻击者可伪造 Content-Type 头上传 SVG/HTML，靠魔数字节判断真实格式。
+        if (!verifyMagicBytes(file, contentType)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "文件内容与声明的类型不匹配");
+        }
+
         String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
         String subDir = "images";
 
@@ -64,5 +72,28 @@ public class FileUploadController {
 
         String url = "/uploads/" + subDir + "/" + fileName;
         return ApiResponse.ok(Map.of("url", url));
+    }
+
+    /**
+     * 读取文件头前 N 字节，用 {@link ImageMagicBytesValidator} 校验真实类型是否匹配声明的 MIME。
+     * 防止伪造 Content-Type 上传可执行脚本（M1）。
+     */
+    private boolean verifyMagicBytes(MultipartFile file, String contentType) {
+        int needed = ImageMagicBytesValidator.MAX_BYTES_NEEDED;
+        byte[] head = new byte[needed];
+        int read;
+        try (InputStream in = file.getInputStream()) {
+            read = in.read(head);
+        } catch (IOException e) {
+            return false;
+        }
+        if (read <= 0) {
+            return false;
+        }
+        byte[] actual = read == needed ? head : new byte[read];
+        if (read < needed) {
+            System.arraycopy(head, 0, actual, 0, read);
+        }
+        return ImageMagicBytesValidator.matches(contentType, actual);
     }
 }
