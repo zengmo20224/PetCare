@@ -1,10 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-// Global styles + design tokens (--pc-* variables). Must come AFTER element-plus
-// css so our tokens can override defaults. Without this import the whole backoffice
-// UI collapses (no sidebar color, no spacing/shadow variables).
+// Element Plus 组件、指令与样式由 vite 插件按需自动引入（见 vite.config.ts），
+// 不再全量 import ElementPlus + app.use(ElementPlus)。
+// Global styles + design tokens (--pc-* variables)。保持在该处以覆盖 EP 默认 token。
 import './style.css'
 import router from './router'
 import App from './App.vue'
@@ -14,6 +12,5 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
-app.use(ElementPlus)
 
 app.mount('#app')
