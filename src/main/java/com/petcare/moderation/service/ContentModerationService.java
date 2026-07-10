@@ -13,6 +13,8 @@ import com.petcare.moderation.mapper.SensitiveWordMapper;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -110,13 +112,25 @@ public class ContentModerationService {
 
     /**
      * Loads all active, non-deleted sensitive words from the database.
+     * Cached because the word list is near-static and read on every community write.
+     * Cache is evicted by {@link #evictSensitiveWordCache()} on any admin mutation.
      */
+    @Cacheable(value = "sensitiveWords")
     public List<SensitiveWord> loadActiveSensitiveWords() {
         return sensitiveWordMapper.selectList(
                 new LambdaQueryWrapper<SensitiveWord>()
                         .eq(SensitiveWord::getStatus, "ACTIVE")
                         .eq(SensitiveWord::getDeleted, 0)
         );
+    }
+
+    /**
+     * Evicts the sensitive-word cache. Called by admin mutation endpoints
+     * (create / update / disable) so moderation picks up changes promptly.
+     */
+    @CacheEvict(value = "sensitiveWords", allEntries = true)
+    public void evictSensitiveWordCache() {
+        // no-op body: annotation-driven eviction
     }
 
     private ContentReviewRecord findLatestRecord(String contentType, Long contentId) {

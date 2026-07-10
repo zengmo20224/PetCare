@@ -9,6 +9,7 @@ import com.petcare.moderation.dto.SensitiveWordCreateRequest;
 import com.petcare.moderation.dto.SensitiveWordResponse;
 import com.petcare.moderation.entity.SensitiveWord;
 import com.petcare.moderation.mapper.SensitiveWordMapper;
+import com.petcare.moderation.service.ContentModerationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminSensitiveWordController {
 
     private final SensitiveWordMapper sensitiveWordMapper;
+    private final ContentModerationService contentModerationService;
 
-    public AdminSensitiveWordController(SensitiveWordMapper sensitiveWordMapper) {
+    public AdminSensitiveWordController(SensitiveWordMapper sensitiveWordMapper,
+                                        ContentModerationService contentModerationService) {
         this.sensitiveWordMapper = sensitiveWordMapper;
+        this.contentModerationService = contentModerationService;
     }
 
     /**
@@ -91,6 +95,7 @@ public class AdminSensitiveWordController {
         word.setLevel(request.level());
         word.setStatus("ACTIVE");
         sensitiveWordMapper.insert(word);
+        contentModerationService.evictSensitiveWordCache();
 
         SensitiveWordResponse response = new SensitiveWordResponse(
                 word.getId(), word.getWord(), word.getCategory(), word.getLevel(),
@@ -125,6 +130,7 @@ public class AdminSensitiveWordController {
             word.setLevel(request.level());
         }
         sensitiveWordMapper.updateById(word);
+        contentModerationService.evictSensitiveWordCache();
 
         SensitiveWordResponse response = new SensitiveWordResponse(
                 word.getId(), word.getWord(), word.getCategory(), word.getLevel(),
@@ -154,6 +160,7 @@ public class AdminSensitiveWordController {
 
         word.setStatus("DISABLED");
         sensitiveWordMapper.updateById(word);
+        contentModerationService.evictSensitiveWordCache();
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

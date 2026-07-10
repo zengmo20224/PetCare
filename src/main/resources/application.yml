@@ -3,6 +3,15 @@ spring:
     name: petcare-o2o-api
   profiles:
     active: dev
+  servlet:
+    multipart:
+      # 与 FileUploadController.MAX_FILE_SIZE 保持一致（M1/L7：消除默认 1MB 与代码 10MB 的不一致）
+      max-file-size: 10MB
+      max-request-size: 12MB
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
