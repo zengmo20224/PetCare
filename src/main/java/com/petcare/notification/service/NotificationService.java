@@ -1,8 +1,10 @@
 package com.petcare.notification.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.petcare.common.content.ContentSanitizer;
 import com.petcare.common.pagination.PageResponse;
 import com.petcare.notification.dto.AdminAnnouncementResponse;
 import com.petcare.notification.dto.PublicAnnouncementResponse;
@@ -146,18 +148,16 @@ public class NotificationService {
 
     /**
      * Marks all notifications as read for current user.
+     * Single UPDATE statement instead of per-row updates to avoid N round-trips.
      */
     public void markAllAsRead(Long userId) {
-        List<UserNotification> unread = notificationMapper.selectList(
-                new LambdaQueryWrapper<UserNotification>()
+        notificationMapper.update(null,
+                new LambdaUpdateWrapper<UserNotification>()
                         .eq(UserNotification::getUserId, userId)
                         .eq(UserNotification::getIsRead, 0)
                         .eq(UserNotification::getDeleted, 0)
+                        .set(UserNotification::getIsRead, 1)
         );
-        for (UserNotification n : unread) {
-            n.setIsRead(1);
-            notificationMapper.updateById(n);
-        }
     }
 
     // ==================== Internal: notification creation ====================
@@ -214,8 +214,9 @@ public class NotificationService {
     public AdminAnnouncementResponse createAnnouncement(String title, String content, String status, Integer sort) {
         Announcement ann = new Announcement();
         ann.setId(IdWorker.getId());
-        ann.setTitle(title);
-        ann.setContent(content);
+        // M3 防存储型 XSS：写入前对自由文本做 HTML 转义
+        ann.setTitle(ContentSanitizer.escapePlainText(title));
+        ann.setContent(ContentSanitizer.escapePlainText(content));
         ann.setStatus(status != null ? status : "PUBLISHED");
         ann.setSort(sort != null ? sort : 0);
         announcementMapper.insert(ann);
@@ -240,8 +241,8 @@ public class NotificationService {
             return null;
         }
 
-        if (title != null) ann.setTitle(title);
-        if (content != null) ann.setContent(content);
+        if (title != null) ann.setTitle(ContentSanitizer.escapePlainText(title));
+        if (content != null) ann.setContent(ContentSanitizer.escapePlainText(content));
         if (status != null) ann.setStatus(status);
         if (sort != null) ann.setSort(sort);
         announcementMapper.updateById(ann);

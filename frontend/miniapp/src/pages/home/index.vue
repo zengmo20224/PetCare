@@ -111,7 +111,7 @@
             @click="goActivityDetail(act.id)"
           >
             <view class="home-activity-item">
-              <image v-if="act.coverUrl" class="home-activity-cover" :src="fullImageUrl(act.coverUrl)" mode="aspectFill" />
+              <image v-if="act.coverUrl" class="home-activity-cover" :src="fullImageUrl(act.coverUrl)" mode="aspectFill" lazy-load />
               <view v-else class="home-activity-cover home-activity-cover--placeholder">
                 <text>活动</text>
               </view>

@@ -19,7 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Public-facing service catalog endpoints.
@@ -71,8 +74,14 @@ public class ServiceCatalogController {
         IPage<ServiceItem> result = serviceItemService.listOnSaleItems(
                 categoryId, serviceMode, petType, petSize, pageParam);
 
-        List<ServiceItemResponse> items = result.getRecords().stream()
-                .map(this::toItemResponse)
+        // Batch-load images for the whole page in one query to avoid N+1.
+        List<ServiceItem> pageItems = result.getRecords();
+        Map<Long, List<String>> imagesByItemId = loadImageUrls(
+                pageItems.stream().map(ServiceItem::getId).toList()
+        );
+
+        List<ServiceItemResponse> items = pageItems.stream()
+                .map(i -> toItemResponse(i, imagesByItemId.getOrDefault(i.getId(), Collections.emptyList())))
                 .toList();
 
         return ApiResponse.ok(PageResponse.of(items, result.getTotal(), page, effectiveSize));
@@ -92,11 +101,15 @@ public class ServiceCatalogController {
     }
 
     private ServiceItemResponse toItemResponse(ServiceItem i) {
+        return toItemResponse(i, imageUrls(i.getId()));
+    }
+
+    private ServiceItemResponse toItemResponse(ServiceItem i, List<String> imageUrls) {
         return new ServiceItemResponse(
                 i.getId(), i.getCategoryId(), i.getName(), i.getServiceMode(),
                 i.getPrice(), i.getDurationMinutes(), i.getPetType(), i.getPetSize(),
                 i.getNeedAddress(), i.getNeedPet(), i.getDescription(), i.getCoverUrl(),
-                imageUrls(i.getId()));
+                imageUrls);
     }
 
     private List<String> imageUrls(Long serviceItemId) {
@@ -106,5 +119,25 @@ public class ServiceCatalogController {
                 .stream()
                 .map(ServiceItemImage::getImageUrl)
                 .toList();
+    }
+
+    /**
+     * Batch-loads image URLs for a set of service items in a single query,
+     * grouped by service item id, ordered by sort. Avoids N+1 on list endpoints.
+     */
+    private Map<Long, List<String>> loadImageUrls(List<Long> serviceItemIds) {
+        if (serviceItemIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<ServiceItemImage> images = serviceItemImageService.list(
+                new LambdaQueryWrapper<ServiceItemImage>()
+                        .in(ServiceItemImage::getServiceItemId, serviceItemIds)
+                        .orderByAsc(ServiceItemImage::getSort)
+        );
+        return images.stream()
+                .collect(Collectors.groupingBy(
+                        ServiceItemImage::getServiceItemId,
+                        Collectors.mapping(ServiceItemImage::getImageUrl, Collectors.toList())
+                ));
     }
 }

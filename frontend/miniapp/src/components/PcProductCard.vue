@@ -1,7 +1,7 @@
 <template>
   <view class="pc-product-card" @tap="$emit('tap')">
     <view class="pc-product-card__image-wrap">
-      <image v-if="displayCover" class="pc-product-card__image" :src="displayCover" mode="aspectFill" />
+      <image v-if="displayCover" class="pc-product-card__image" :src="displayCover" mode="aspectFill" lazy-load />
       <view v-else class="pc-product-card__placeholder">
         <text class="pc-product-card__placeholder-text">好物</text>
       </view>

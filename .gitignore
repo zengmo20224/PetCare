@@ -72,3 +72,11 @@ project.config.json
 
 # 误产物（Windows nul 是保留设备名，不应作为文件存在）
 nul
+
+# 一次性交付/课程文档（二进制，体积大，不纳入版本库；本地保留）
+*.docx
+*.pptx
+*.zip
+
+# 本地临时截图目录
+tmp-ui-shots/

@@ -94,7 +94,7 @@
               class="feed-card__image-wrap"
               :class="{ 'feed-card__image-wrap--more': idx === 5 && post.imageUrls.length > 6 }"
             >
-              <image class="feed-card__image" :src="fullUrl(img)" mode="aspectFill" />
+              <image class="feed-card__image" :src="fullUrl(img)" mode="aspectFill" lazy-load />
               <text v-if="idx === 5 && post.imageUrls.length > 6" class="feed-card__image-more">+{{ post.imageUrls.length - 6 }}</text>
             </view>
           </view>

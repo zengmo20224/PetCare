@@ -1,7 +1,7 @@
 <template>
   <view class="pc-service-card" @tap="$emit('tap')">
     <view class="pc-service-card__image-wrap">
-      <image v-if="imageUrl" class="pc-service-card__image" :src="imageUrl" mode="aspectFill" />
+      <image v-if="imageUrl" class="pc-service-card__image" :src="imageUrl" mode="aspectFill" lazy-load />
       <view v-else class="pc-service-card__placeholder">
         <text class="pc-service-card__placeholder-text">{{ placeholderText }}</text>
       </view>

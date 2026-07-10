@@ -2,6 +2,11 @@ package com.petcare.common.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.petcare.ai.entity.AiAnalysisReport;
+import com.petcare.ai.entity.AiConversation;
+import com.petcare.ai.entity.AiMessage;
+import com.petcare.ai.entity.AiUsageLog;
+import com.petcare.ai.entity.FaqKnowledge;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ActiveProfiles("test")
 class MapperAndServiceCoverageTest {
 
+    /**
+     * AI 模块（AGENTS.md §2：禁用占位）的 5 个实体的应用服务直接注入 Mapper，
+     * 不经过 IService。其空 IService 实现已作为冗余脚手架删除（见 docs/test-archive/），
+     * 因此不参与 "每个实体必须有 IService Bean" 的断言。
+     */
+    private static final Set<Class<?>> ENTITIES_WITHOUT_ISERVICE = Set.of(
+            AiConversation.class, AiMessage.class, AiUsageLog.class,
+            AiAnalysisReport.class, FaqKnowledge.class
+    );
+
     @Autowired
     private ApplicationContext applicationContext;
 
@@ -36,7 +51,9 @@ class MapperAndServiceCoverageTest {
 
     @Test
     void everyEntityHasLoadedCrudServiceBean() {
-        Set<Class<?>> expectedEntityTypes = PersistenceContractSupport.entityTypes();
+        Set<Class<?>> expectedEntityTypes = PersistenceContractSupport.entityTypes().stream()
+                .filter(t -> !ENTITIES_WITHOUT_ISERVICE.contains(t))
+                .collect(Collectors.toSet());
         Set<Class<?>> serviceEntityTypes = Arrays.stream(applicationContext.getBeanNamesForType(IService.class))
                 .map(name -> applicationContext.getBean(name))
                 .map(bean -> resolveEntityType(AopUtils.getTargetClass(bean), IService.class))

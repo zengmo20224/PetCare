@@ -9,18 +9,15 @@ spring:
       mode: always
       schema-locations: classpath:schema-h2.sql
 
-mybatis-plus:
-  global-config:
-    db-config:
-      id-type: assign_id
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-
 petcare:
   security:
     jwt-secret: test-secret-key-for-unit-tests-at-least-32-chars
     jwt-issuer: petcare-o2o-api-test
     jwt-expiration-minutes: 120
+    # 测试环境放宽限流阈值，避免单 IP 密集登录/注册用例误触发 429。
+    # 限流逻辑本身由 RateLimitFilterTest（单元）覆盖，不依赖此处的低阈值。
+    rate-limit:
+      window-seconds: 60
+      max-requests: 10000
   test-login:
     allowed-phones: "13800138001,13800138002,13800138003,13800138010,13800138011,13800138050"

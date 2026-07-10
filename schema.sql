@@ -376,7 +376,9 @@ CREATE TABLE `post` (
   KEY `idx_status` (`status`),
   KEY `idx_risk_level` (`risk_level`),
   KEY `idx_publish_time` (`publish_time`),
-  KEY `idx_create_time` (`create_time`)
+  KEY `idx_create_time` (`create_time`),
+  KEY `idx_feed` (`status`, `deleted`, `publish_time`),
+  KEY `idx_topic_feed` (`topic_id`, `status`, `deleted`, `publish_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='帖子表';
 
 -- 帖子图片表
@@ -603,11 +605,13 @@ CREATE TABLE `product_order` (
   `confirm_time`    DATETIME      DEFAULT NULL COMMENT '商家确认时间',
   `complete_time`   DATETIME      DEFAULT NULL COMMENT '订单完成时间',
   `cancel_time`     DATETIME      DEFAULT NULL COMMENT '取消时间',
+  `idempotency_key` VARCHAR(64)   DEFAULT NULL COMMENT '客户端幂等键，与 user_id 共同唯一；NULL 表示不启用幂等',
   `create_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`         TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-正常 1-已删除',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_no` (`order_no`),
+  UNIQUE KEY `uk_user_idempotency` (`user_id`, `idempotency_key`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_store_id` (`store_id`),
   KEY `idx_status` (`status`),
