@@ -23,6 +23,7 @@ import com.petcare.user.mapper.UserAddressMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -48,18 +49,21 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
     private final ProductOrderMapper orderMapper;
     private final ProductOrderItemMapper orderItemMapper;
     private final UserAddressMapper userAddressMapper;
+    private final ProductOrderIdempotencyHelper idempotencyHelper;
 
     public ProductOrderTransactionServiceImpl(
             CartItemMapper cartItemMapper,
             ProductMapper productMapper,
             ProductOrderMapper orderMapper,
             ProductOrderItemMapper orderItemMapper,
-            UserAddressMapper userAddressMapper) {
+            UserAddressMapper userAddressMapper,
+            ProductOrderIdempotencyHelper idempotencyHelper) {
         this.cartItemMapper = cartItemMapper;
         this.productMapper = productMapper;
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.userAddressMapper = userAddressMapper;
+        this.idempotencyHelper = idempotencyHelper;
     }
 
     /**
@@ -80,8 +84,27 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ProductOrder createOrder(Long currentUserId, ProductOrderCreateRequest request) {
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
+    public ProductOrder createOrder(Long currentUserId, ProductOrderCreateRequest request, String idempotencyKey) {
+        // H1 幂等：幂等键非空时先查现存订单（应用层已用 REQUIRES_NEW 预检，这里是事务内二次确认）。
+        // 并发竞态下若两线程都通过预检，DB 的 UNIQUE(user_id, idempotency_key) 会拦截第二次插入，
+        // 抛出 DuplicateKeyException —— 该异常向上传播，触发本事务回滚（库存恢复），
+        // 由应用层（ProductOrderApplicationServiceImpl）在新事务回查首次订单返回。
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            ProductOrder existing = idempotencyHelper.findByIdempotencyKey(currentUserId, idempotencyKey);
+            if (existing != null) {
+                log.info("Idempotent order hit: userId={}, idempotencyKey={}, orderId={}",
+                        currentUserId, idempotencyKey, existing.getId());
+                return existing;
+            }
+        }
+        return doCreateOrder(currentUserId, request, idempotencyKey);
+    }
+
+    /**
+     * 实际下单逻辑：扣库存 + 插单 + 插订单项 + 删购物车。
+     */
+    private ProductOrder doCreateOrder(Long currentUserId, ProductOrderCreateRequest request, String idempotencyKey) {
         String deliveryMethod = request.deliveryMethod();
         boolean isPickup = "PICKUP".equals(deliveryMethod);
         Long storeId = request.storeId();
@@ -109,6 +132,16 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
                    .eq(CartItem::getChecked, 1);
         List<CartItem> checkedItems = cartItemMapper.selectList(cartWrapper);
         if (checkedItems.isEmpty()) {
+            // H1 并发兜底：幂等键非空时，购物车空可能是首次成功的并发下单已删除购物车。
+            // 用 helper（REQUIRES_NEW）回查，确保能看到已提交的首次订单。
+            if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+                ProductOrder existing = idempotencyHelper.findByIdempotencyKey(currentUserId, idempotencyKey);
+                if (existing != null) {
+                    log.info("Idempotent order hit (cart empty race): userId={}, idempotencyKey={}, orderId={}",
+                            currentUserId, idempotencyKey, existing.getId());
+                    return existing;
+                }
+            }
             throw new BusinessException(ErrorCode.CART_NO_CHECKED_ITEMS, "没有已选中的购物车项");
         }
 
@@ -180,6 +213,7 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
         order.setContactName(request.contactName());
         order.setContactPhone(request.contactPhone());
         order.setRemark(request.remark());
+        order.setIdempotencyKey(idempotencyKey);
         orderMapper.insert(order);
 
         // 8. Create order items (price snapshots)

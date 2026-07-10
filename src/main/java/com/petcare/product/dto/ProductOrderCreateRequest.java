@@ -25,8 +25,18 @@ public record ProductOrderCreateRequest(
         String contactName,
         @NotBlank(message = "联系电话不能为空")
         String contactPhone,
-        String remark
+        String remark,
+        /** 客户端幂等键，由请求头 Idempotency-Key 注入；null 表示不启用幂等。 */
+        @Pattern(regexp = "^.{1,64}$", message = "幂等键长度需在 1-64 之间") String idempotencyKey
 ) {
+    /**
+     * 向后兼容的 6 参数构造器：不启用幂等（idempotencyKey = null）。
+     * 保留给未升级的调用方与既有测试使用。
+     */
+    public ProductOrderCreateRequest(Long storeId, String deliveryMethod, Long addressId,
+                                     String contactName, String contactPhone, String remark) {
+        this(storeId, deliveryMethod, addressId, contactName, contactPhone, remark, null);
+    }
     /**
      * Cross-field validation: pickup requires storeId, express requires addressId.
      * Bean Validation invokes methods named {@code is...} annotated with

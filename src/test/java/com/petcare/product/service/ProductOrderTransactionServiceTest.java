@@ -22,6 +22,7 @@ import com.petcare.product.mapper.CartItemMapper;
 import com.petcare.product.mapper.ProductMapper;
 import com.petcare.product.mapper.ProductOrderItemMapper;
 import com.petcare.product.mapper.ProductOrderMapper;
+import com.petcare.product.service.impl.ProductOrderIdempotencyHelper;
 import com.petcare.product.service.impl.ProductOrderTransactionServiceImpl;
 import com.petcare.user.mapper.UserAddressMapper;
 import java.math.BigDecimal;
@@ -61,6 +62,9 @@ class ProductOrderTransactionServiceTest {
 
     @Mock
     private UserAddressMapper userAddressMapper;
+
+    @Mock
+    private ProductOrderIdempotencyHelper idempotencyHelper;
 
     @InjectMocks
     private ProductOrderTransactionServiceImpl orderService;
@@ -138,7 +142,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.CART_NO_CHECKED_ITEMS);
 
@@ -156,7 +160,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.PRODUCT_NOT_ON_SALE);
 
@@ -174,7 +178,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.PRODUCT_NOT_PICKUP_ONLY);
 
@@ -192,7 +196,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.PRODUCT_NOT_ON_SALE);
 
@@ -208,7 +212,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.PRODUCT_NOT_ON_SALE);
         }
@@ -223,7 +227,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.PRODUCT_STOCK_INSUFFICIENT);
 
@@ -243,7 +247,7 @@ class ProductOrderTransactionServiceTest {
 
             // Act
             ProductOrder result = orderService.createOrder(
-                    USER_ID, pickupOrderRequest("请小心轻放"));
+                    USER_ID, pickupOrderRequest("请小心轻放"), null);
 
             // Assert — order fields
             assertThat(result).isNotNull();
@@ -278,15 +282,117 @@ class ProductOrderTransactionServiceTest {
 
             // Act & Assert
             assertThatThrownBy(() -> orderService.createOrder(
-                    USER_ID, pickupOrderRequest(null)))
+                    USER_ID, pickupOrderRequest(null), null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.PRODUCT_NOT_PICKUP_ONLY);
+        }
+
+        // ==================== 幂等（H1） ====================
+
+        @Test
+        @DisplayName("Idempotent create: 同一 userId + idempotencyKey 命中现存订单时，直接返回且不再扣库存/插单")
+        void createOrder_idempotentHit_returnsExistingAndSkipsSideEffects() {
+            // Arrange — helper 回查返回 defaultOrder
+            doReturn(defaultOrder).when(idempotencyHelper).findByIdempotencyKey(USER_ID, "idem-key-abc");
+
+            // Act
+            ProductOrder result = orderService.createOrder(
+                    USER_ID, pickupOrderRequest("重复请求"), "idem-key-abc");
+
+            // Assert — 返回的是首次订单，未触发任何副作用
+            assertThat(result).isSameAs(defaultOrder);
+            verify(cartItemMapper, never()).selectList(any());
+            verify(productMapper, never()).deductStock(anyLong(), anyInt());
+            verify(orderMapper, never()).insert((ProductOrder) any());
+            verify(orderItemMapper, never()).insert((ProductOrderItem) any());
+            verify(cartItemMapper, never()).deleteByIds(any());
+        }
+
+        @Test
+        @DisplayName("Idempotent create: 未命中时正常下单，并把 idempotencyKey 写入订单实体")
+        void createOrder_idempotentMiss_createsNewOrderWithKey() {
+            // Arrange — helper 未命中
+            doReturn(null).when(idempotencyHelper).findByIdempotencyKey(USER_ID, "idem-key-new");
+            doReturn(List.of(defaultCheckedCartItem)).when(cartItemMapper).selectList(any());
+            doReturn(defaultProduct).when(productMapper).selectById(PRODUCT_ID);
+            doReturn(1).when(productMapper).deductStock(PRODUCT_ID, 2);
+            doReturn(1).when(orderMapper).insert((ProductOrder) any());
+            doReturn(1).when(orderItemMapper).insert((ProductOrderItem) any());
+            doReturn(1).when(cartItemMapper).deleteByIds(any());
+
+            // Act
+            ProductOrder result = orderService.createOrder(
+                    USER_ID, pickupOrderRequest(null), "idem-key-new");
+
+            // Assert — 正常下单 + key 写入实体
+            assertThat(result).isNotNull();
+            assertThat(result.getIdempotencyKey()).isEqualTo("idem-key-new");
+
+            ArgumentCaptor<ProductOrder> captor = ArgumentCaptor.forClass(ProductOrder.class);
+            verify(orderMapper).insert(captor.capture());
+            assertThat(captor.getValue().getIdempotencyKey()).isEqualTo("idem-key-new");
+            verify(productMapper).deductStock(PRODUCT_ID, 2);
+        }
+
+        @Test
+        @DisplayName("Idempotent create: 并发下 insert 触发 DuplicateKeyException 直接向上抛（由 app 层兜底回查）")
+        void createOrder_idempotentRace_duplicateKeyPropagates() {
+            // Arrange — helper 预检未命中，但 insert 时唯一约束冲突
+            doReturn(null).when(idempotencyHelper).findByIdempotencyKey(USER_ID, "idem-key-race");
+            doReturn(List.of(defaultCheckedCartItem)).when(cartItemMapper).selectList(any());
+            doReturn(defaultProduct).when(productMapper).selectById(PRODUCT_ID);
+            doReturn(1).when(productMapper).deductStock(PRODUCT_ID, 2);
+            org.mockito.Mockito.doThrow(new org.springframework.dao.DuplicateKeyException("uk_user_idempotency"))
+                    .when(orderMapper).insert((ProductOrder) any());
+
+            // Act & Assert — 异常向上传播（app 层负责在新事务回查首次订单）
+            assertThatThrownBy(() -> orderService.createOrder(
+                    USER_ID, pickupOrderRequest(null), "idem-key-race"))
+                    .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        }
+
+        @Test
+        @DisplayName("Idempotent create: idempotencyKey 为 null 时不查现存订单（向后兼容）")
+        void createOrder_nullKey_skipsIdempotencyCheck() {
+            // Arrange — 不传 key，正常下单路径
+            doReturn(List.of(defaultCheckedCartItem)).when(cartItemMapper).selectList(any());
+            doReturn(defaultProduct).when(productMapper).selectById(PRODUCT_ID);
+            doReturn(1).when(productMapper).deductStock(PRODUCT_ID, 2);
+            doReturn(1).when(orderMapper).insert((ProductOrder) any());
+            doReturn(1).when(orderItemMapper).insert((ProductOrderItem) any());
+            doReturn(1).when(cartItemMapper).deleteByIds(any());
+
+            // Act
+            ProductOrder result = orderService.createOrder(
+                    USER_ID, pickupOrderRequest(null), null);
+
+            // Assert — 不查现存订单
+            assertThat(result).isNotNull();
+            verify(idempotencyHelper, never()).findByIdempotencyKey(anyLong(), any());
+        }
+
+        @Test
+        @DisplayName("Idempotent create: 购物车空 + 幂等键命中首次订单时，返回首次订单（并发兜底）")
+        void createOrder_emptyCartWithIdempotencyHit_returnsExisting() {
+            // Arrange — helper 预检未命中，但购物车空（被并发首次下单删除），再次回查命中
+            // 用 lenient 链式：第一次返回 null（预检），第二次返回 defaultOrder（购物车空回查）
+            org.mockito.Mockito.when(idempotencyHelper.findByIdempotencyKey(USER_ID, "idem-cart"))
+                    .thenReturn(null).thenReturn(defaultOrder);
+            doReturn(Collections.emptyList()).when(cartItemMapper).selectList(any());
+
+            // Act
+            ProductOrder result = orderService.createOrder(
+                    USER_ID, pickupOrderRequest(null), "idem-cart");
+
+            // Assert — 返回首次订单
+            assertThat(result).isSameAs(defaultOrder);
+            verify(orderMapper, never()).insert((ProductOrder) any());
         }
     }
 
     private ProductOrderCreateRequest pickupOrderRequest(String remark) {
         return new ProductOrderCreateRequest(
-                STORE_ID, "PICKUP", null, "张三", "13800000000", remark);
+                STORE_ID, "PICKUP", null, "张三", "13800000000", remark, null);
     }
 
     // ==================== cancelOrder ====================

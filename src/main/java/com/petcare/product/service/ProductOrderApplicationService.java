@@ -13,8 +13,10 @@ public interface ProductOrderApplicationService {
     /**
      * Creates a pickup order from the current user's checked cart items.
      * currentUserId comes from the security context, not the request body.
+     *
+     * @param idempotencyKey 来自请求头 Idempotency-Key，null 表示不启用幂等
      */
-    ProductOrderResponse createOrder(Long currentUserId, ProductOrderCreateRequest request);
+    ProductOrderResponse createOrder(Long currentUserId, ProductOrderCreateRequest request, String idempotencyKey);
 
     /**
      * Lists the current user's orders, paginated.

@@ -72,4 +72,11 @@ public class ProductOrder extends BaseEntity {
 
     @TableField("cancel_time")
     private LocalDateTime cancelTime;
+
+    /**
+     * 客户端幂等键。与 user_id 共同构成唯一约束，防止双击/重放下重复下单。
+     * NULL 表示该订单未启用幂等（历史数据/非幂等调用方）。
+     */
+    @TableField("idempotency_key")
+    private String idempotencyKey;
 }

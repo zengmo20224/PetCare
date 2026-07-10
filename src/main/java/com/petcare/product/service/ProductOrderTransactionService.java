@@ -12,21 +12,26 @@ public interface ProductOrderTransactionService {
 
     /**
      * Creates an order within a single transaction:
-     * 1. Load checked cart items
-     * 2. Load products by ID ascending (deadlock prevention)
-     * 3. Atomically deduct stock for each product
-     * 4. Insert order + order items with price snapshots
-     * 5. Delete settled cart items
+     * 1. (可选) 若 idempotencyKey 非空，先按 (userId, key) 查现存订单，命中则直接返回
+     * 2. Load checked cart items
+     * 3. Load products by ID ascending (deadlock prevention)
+     * 4. Atomically deduct stock for each product
+     * 5. Insert order + order items with price snapshots
+     * 6. Delete settled cart items
      *
      * <p>Supports two fulfillment modes per {@link ProductOrderCreateRequest#deliveryMethod()}:
      * PICKUP requires a storeId; EXPRESS requires an addressId (the address is
      * snapshotted so later edits/deletes do not affect historical orders).
      *
-     * @param currentUserId the authenticated user ID
-     * @param request       validated order request (deliveryMethod, storeId/addressId, contact, remark)
-     * @return the created order
+     * <p>幂等：当 {@code idempotencyKey} 非空时，(user_id, idempotency_key) 唯一约束
+     * 保证同一用户同一 key 只创建一次订单；竞态下捕获 DuplicateKeyException 兜底返回首次订单。
+     *
+     * @param currentUserId   the authenticated user ID
+     * @param request         validated order request (deliveryMethod, storeId/addressId, contact, remark)
+     * @param idempotencyKey  客户端幂等键，null 表示不启用幂等
+     * @return the created order (首次创建或命中现存订单)
      */
-    ProductOrder createOrder(Long currentUserId, ProductOrderCreateRequest request);
+    ProductOrder createOrder(Long currentUserId, ProductOrderCreateRequest request, String idempotencyKey);
 
     /**
      * Cancels an order and restores stock within a transaction.

@@ -463,10 +463,12 @@ CREATE TABLE IF NOT EXISTS `product_order` (
   `confirm_time`    TIMESTAMP     DEFAULT NULL,
   `complete_time`   TIMESTAMP     DEFAULT NULL,
   `cancel_time`     TIMESTAMP     DEFAULT NULL,
+  `idempotency_key` VARCHAR(64)   DEFAULT NULL,
   `create_time`     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time`     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted`         TINYINT       NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE (`user_id`, `idempotency_key`)
 );
 
 CREATE TABLE IF NOT EXISTS `product_order_item` (

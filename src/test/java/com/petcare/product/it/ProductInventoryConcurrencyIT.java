@@ -158,7 +158,7 @@ class ProductInventoryConcurrencyIT extends AbstractTcMySqlIT {
         try {
             startLatch.await();
             orderService.createOrder(userId, new ProductOrderCreateRequest(
-                    STORE_ID, "PICKUP", null, "测试联系人", "13800000000", "并发测试"));
+                    STORE_ID, "PICKUP", null, "测试联系人", "13800000000", "并发测试"), null);
             successCount.incrementAndGet();
         } catch (Throwable t) {
             errors.add(t);
