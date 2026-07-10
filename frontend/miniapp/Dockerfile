@@ -10,7 +10,10 @@ WORKDIR /workspace
 
 # 利用层缓存：先复制 package 元数据
 COPY frontend/miniapp/package.json frontend/miniapp/package-lock.json ./
-RUN npm ci
+# 用 npm install 而非 npm ci：node:24-alpine 镜像内的 npm 版本可能与本地不同，
+# 对 lock 文件中 @emnapi 等可选依赖的解析有差异，npm install 能自适应 reconcile，
+# 而 npm ci 要求严格一致否则失败。
+RUN npm install
 
 # 复制源码并构建 H5
 # uni-app build:h5 产物位于 /workspace/dist/build/h5/

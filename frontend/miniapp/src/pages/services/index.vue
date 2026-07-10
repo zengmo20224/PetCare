@@ -307,7 +307,8 @@ onShow(loadCatalog)
 
 <style scoped>
 .services-page {
-  padding: 20px;
+  /* 底部留白避开 fixed PcBottomNav（64px 高 + 安全余量），与 community/products/profile 一致 */
+  padding: 20px 20px 96px;
 }
 
 .services-intro {

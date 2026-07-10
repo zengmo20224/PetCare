@@ -328,7 +328,8 @@ onShow(loadAnnouncement)
 
 <style scoped>
 .home-page {
-  padding: 20px;
+  /* 底部留白避开 fixed PcBottomNav（64px 高 + 安全余量），与其他 tab 页一致 */
+  padding: 20px 20px 96px;
 }
 
 /* ─── 顶部品牌头 ─── */

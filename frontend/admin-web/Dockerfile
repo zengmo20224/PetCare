@@ -10,7 +10,8 @@ WORKDIR /workspace
 
 # 利用层缓存：先复制 package 元数据
 COPY frontend/admin-web/package.json frontend/admin-web/package-lock.json ./
-RUN npm ci
+# 用 npm install 适应容器内 npm 版本差异（同 miniapp Dockerfile 说明）
+RUN npm install
 
 # 复制源码并构建（产物在 /workspace/dist）
 COPY frontend/admin-web/ .

@@ -17,7 +17,13 @@
         >
           <text class="announcement-detail__title">{{ item.title }}</text>
           <text class="announcement-detail__time">{{ formatTime(item.createTime) }}</text>
-          <view class="announcement-detail__content" v-html="item.content" />
+          <!--
+            M3 防存储型 XSS：改用文本插值（{{ }}）渲染公告内容。
+            服务端 ContentSanitizer 已对内容做 HTML 转义，前端文本节点再叠加一层防护，
+            彻底杜绝 <script>/onerror 等注入执行。
+            历史公告若含字面量 < > 会显示为转义后的实体，符合安全预期。
+          -->
+          <view class="announcement-detail__content">{{ item.content }}</view>
         </view>
       </view>
     </PcStatePanel>
