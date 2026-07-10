@@ -406,14 +406,36 @@ class UserAuthControllerTest {
     }
 
     @Test
-    @DisplayName("forgot-password questions for non-existent phone returns 401")
-    void forgotPasswordForNonExistentPhoneReturns401() throws Exception {
+    @DisplayName("M2 防用户枚举：未注册手机号查询安全问题返回 200 + 占位问题，不暴露账号存在性")
+    void forgotPasswordQuestionsForNonExistentPhoneReturnsPlaceholderNot401() throws Exception {
         mockMvc.perform(post("/api/v1/auth/forgot-password/questions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone": "19999999999"}
                                 """))
-                .andExpect(status().isUnauthorized());
+                // M2 修复：不再返回 401（暴露未注册），改为 200 + 占位问题列表
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].question").exists())
+                .andExpect(jsonPath("$.data[1].question").exists());
+    }
+
+    @Test
+    @DisplayName("M2：未注册手机号 resetPassword 返回 422（SECURITY_ANSWER_INCORRECT），不暴露未注册")
+    void forgotPasswordResetForNonExistentPhoneReturnsGenericError() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "19999999999",
+                                    "newPassword": "newPass123456",
+                                    "answers": [
+                                        {"questionId": "-1", "answer": "任意答案"}
+                                    ]
+                                }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("security_answer_incorrect"));
     }
 
     // === Helper ===

@@ -21,6 +21,18 @@ public final class PresetSecurityQuestions {
             "你的宠物是什么品种？"
     );
 
+    /**
+     * M2 防用户枚举：未注册手机号查询安全问题时返回的占位响应。
+     * 取前 2 个预设问题，id 用负数占位（不可能命中真实记录，
+     * 后续 resetPassword 时 getById 返回 null → SECURITY_ANSWER_INCORRECT）。
+     * 结构与注册用户返回的 {@code List<SecurityQuestionView>} 完全一致，
+     * 攻击者无法通过响应差异判断账号是否存在。
+     */
+    public static final List<SecurityQuestionView> PLACEHOLDER_VIEWS = List.of(
+            new SecurityQuestionView(-1L, QUESTIONS.get(0)),
+            new SecurityQuestionView(-2L, QUESTIONS.get(1))
+    );
+
     public static boolean isValid(String question) {
         return QUESTIONS.contains(question);
     }

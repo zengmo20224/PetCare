@@ -151,6 +151,10 @@ public class UserAuthService {
     /**
      * Get security questions for a phone number (step 1 of password recovery).
      * Returns question text and IDs — never returns answers.
+     *
+     * <p>M2 安全修复（防用户枚举）：未注册手机号不再抛"该手机号未注册"，
+     * 改为返回与注册用户结构一致的预设问题列表（id 用负数占位），
+     * 让攻击者无法通过响应差异枚举有效账号。真正的失败发生在 resetPassword。
      */
     public List<SecurityQuestionView> getSecurityQuestions(ForgotPasswordQuestionsRequest request) {
         User user = userService.getOne(
@@ -158,7 +162,8 @@ public class UserAuthService {
         );
 
         if (user == null) {
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "该手机号未注册");
+            // 未注册：返回预设问题占位，避免暴露账号存在性
+            return PresetSecurityQuestions.PLACEHOLDER_VIEWS;
         }
 
         List<UserSecurityQuestion> questions = securityQuestionService.list(
@@ -168,7 +173,8 @@ public class UserAuthService {
         );
 
         if (questions.isEmpty()) {
-            throw new BusinessException(ErrorCode.SECURITY_QUESTION_NOT_SET, "该账号未设置安全问题");
+            // 已注册但未设安全问题：同样返回占位，保持响应一致
+            return PresetSecurityQuestions.PLACEHOLDER_VIEWS;
         }
 
         return questions.stream()
@@ -186,7 +192,8 @@ public class UserAuthService {
         );
 
         if (user == null) {
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "该手机号未注册");
+            // M2：未注册也返回通用错误，避免枚举
+            throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "手机号或安全问题验证失败");
         }
 
         // Verify all answers
