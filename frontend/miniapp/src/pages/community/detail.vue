@@ -80,78 +80,29 @@
 
           <PcStatePanel :status="commentsStatus" empty-text="暂无评论，快来抢沙发~">
             <view class="community-detail__comment-list">
-              <!-- Top-level comment = "楼层" -->
-              <view v-for="(comment, index) in comments" :key="comment.id" class="comment-thread">
-                <!-- Floor header -->
-                <view class="comment-thread__floor">
-                  <view class="comment-thread__author">
-                    <view class="comment-thread__author-avatar">
-                      <image v-if="comment.authorAvatar" class="comment-thread__author-img" :src="fullUrl(comment.authorAvatar)" mode="aspectFill" />
-                      <text v-else class="comment-thread__author-initial">{{ (comment.authorName || '?').charAt(0) }}</text>
-                    </view>
-                    <text class="comment-thread__author-name">{{ comment.authorName || '匿名用户' }}</text>
-                  </view>
-                  <text class="comment-thread__floor-time">{{ formatTime(comment.createTime) }}</text>
+              <!-- Flat comment list (Douyin-style): author @ replyTo + content -->
+              <view v-for="comment in comments" :key="comment.id" class="comment-item">
+                <view class="comment-item__avatar">
+                  <image v-if="comment.authorAvatar" class="comment-item__avatar-img" :src="fullUrl(comment.authorAvatar)" mode="aspectFill" />
+                  <text v-else class="comment-item__avatar-initial">{{ (comment.authorName || '?').charAt(0) }}</text>
                 </view>
-
-                <!-- Main comment content -->
-                <view class="comment-thread__body">
-                  <text class="comment-thread__content">{{ comment.content }}</text>
-                </view>
-
-                <!-- Comment actions -->
-                <view class="comment-thread__actions">
-                  <view class="comment-thread__action" @tap="handleLikeComment(comment)">
-                    <text>{{ likedCommentIds.has(comment.id) ? '❤️' : '🤍' }} {{ comment.likeCount }}</text>
+                <view class="comment-item__body">
+                  <view class="comment-item__header">
+                    <text class="comment-item__author">{{ comment.authorName || '匿名用户' }}</text>
+                    <text v-if="comment.replyToName" class="comment-item__reply-to">回复 @{{ comment.replyToName }}</text>
                   </view>
-                  <view v-if="isLoggedIn" class="comment-thread__action" @tap="startReply(comment, index)">
-                    <text>回复</text>
-                  </view>
-                  <view v-if="isLoggedIn" class="comment-thread__action comment-thread__action--danger" @tap="handleDeleteComment(comment.id)">
-                    <text>删除</text>
-                  </view>
-                </view>
-
-                <!-- Expand/collapse replies toggle -->
-                <view
-                  v-if="comment.replies && comment.replies.length > 0"
-                  class="comment-thread__toggle"
-                  @tap="toggleThread(comment.id)"
-                >
-                  <text class="comment-thread__toggle-text">
-                    {{ expandedThreads.has(comment.id) ? '收起回复' : `展开 ${comment.replies.length} 条回复` }}
-                  </text>
-                  <text class="comment-thread__toggle-arrow">{{ expandedThreads.has(comment.id) ? '▲' : '▼' }}</text>
-                </view>
-
-                <!-- Replies collection (expand/collapse) -->
-                <view
-                  v-if="comment.replies && comment.replies.length > 0 && expandedThreads.has(comment.id)"
-                  class="comment-thread__replies"
-                >
-                  <view v-for="reply in comment.replies" :key="reply.id" class="reply-item">
-                    <view class="reply-item__header">
-                      <view class="reply-item__author">
-                        <view class="reply-item__author-avatar">
-                          <image v-if="reply.authorAvatar" class="reply-item__author-img" :src="fullUrl(reply.authorAvatar)" mode="aspectFill" />
-                          <text v-else class="reply-item__author-initial">{{ (reply.authorName || '?').charAt(0) }}</text>
-                        </view>
-                        <text class="reply-item__author-name">{{ reply.authorName || '匿名用户' }}</text>
+                  <text class="comment-item__content">{{ comment.content }}</text>
+                  <view class="comment-item__footer">
+                    <text class="comment-item__time">{{ formatTime(comment.createTime) }}</text>
+                    <view class="comment-item__actions">
+                      <view class="comment-item__action" @tap="handleLikeComment(comment)">
+                        <text>{{ likedCommentIds.has(comment.id) ? '❤️' : '🤍' }} {{ comment.likeCount }}</text>
                       </view>
-                      <text class="reply-item__content">{{ reply.content }}</text>
-                    </view>
-                    <view class="reply-item__footer">
-                      <text class="reply-item__time">{{ formatTime(reply.createTime) }}</text>
-                      <view class="reply-item__actions">
-                        <view class="reply-item__action" @tap="handleLikeComment(reply)">
-                          <text>{{ likedCommentIds.has(reply.id) ? '❤️' : '🤍' }} {{ reply.likeCount }}</text>
-                        </view>
-                        <view v-if="isLoggedIn" class="reply-item__action" @tap="startReply(reply, index)">
-                          <text>回复</text>
-                        </view>
-                        <view v-if="isLoggedIn" class="reply-item__action reply-item__action--danger" @tap="handleDeleteComment(reply.id)">
-                          <text>删除</text>
-                        </view>
+                      <view v-if="isLoggedIn" class="comment-item__action" @tap="startReply(comment)">
+                        <text>回复</text>
+                      </view>
+                      <view v-if="isLoggedIn && comment.authorUserId === currentUserId" class="comment-item__action comment-item__action--danger" @tap="handleDeleteComment(comment.id)">
+                        <text>删除</text>
                       </view>
                     </view>
                   </view>
@@ -170,30 +121,30 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import {
-  getPostDetail, getPostComments,
+  getPostDetail, getPostCommentsFlat,
   createComment, deleteComment, likeComment, unlikeComment,
   likePost, unlikePost, favoritePost, unfavoritePost,
 } from '@/api/community'
 import { useUserStore } from '@/store/user'
-import type { PostDetail, CommentTreeNode } from '@/types/community'
+import type { PostDetail, CommentFlatItem } from '@/types/community'
 import { normalizeRouteParam } from '@/utils/route-query'
 import { openCommunityTag } from '@/utils/community-navigation'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
+const currentUserId = computed(() => userStore.profile?.id)
 
 const post = ref<PostDetail | null>(null)
 const pageStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
-const comments = ref<CommentTreeNode[]>([])
+const comments = ref<CommentFlatItem[]>([])
 const commentsStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 
 const hasLiked = ref(false)
 const hasFavorited = ref(false)
 const commentInput = ref('')
 const commenting = ref(false)
-const replyTo = ref<CommentTreeNode | null>(null)
+const replyTo = ref<CommentFlatItem | null>(null)
 const likedCommentIds = ref<Set<string>>(new Set())
-const expandedThreads = ref<Set<string>>(new Set())
 const currentPostId = ref('')
 
 /** Placeholder reflects whom the user is replying to, by name (not floor number). */
@@ -238,7 +189,7 @@ async function loadDetail(routeId?: unknown) {
 
   const [postRes, commentRes] = await Promise.all([
     getPostDetail(id),
-    getPostComments(id),
+    getPostCommentsFlat(id),
   ])
 
   if (!postRes.success || !postRes.data) {
@@ -296,24 +247,14 @@ async function handleFavorite() {
   }
 }
 
-function startReply(comment: CommentTreeNode, index: number) {
+function startReply(comment: CommentFlatItem) {
   replyTo.value = comment
   commentInput.value = ''
-  // Auto-expand the thread so the user sees context
-  expandedThreads.value.add(comment.id)
 }
 
 function cancelReply() {
   replyTo.value = null
   commentInput.value = ''
-}
-
-function toggleThread(commentId: string) {
-  if (expandedThreads.value.has(commentId)) {
-    expandedThreads.value.delete(commentId)
-  } else {
-    expandedThreads.value.add(commentId)
-  }
 }
 
 async function handleComment() {
@@ -329,18 +270,13 @@ async function handleComment() {
 
   if (res.success) {
     commentInput.value = ''
-    const repliedId = replyTo.value?.id
     replyTo.value = null
     uni.showToast({ title: '评论成功', icon: 'success' })
     await loadDetail()
-    // Auto-expand the thread after replying
-    if (repliedId) {
-      expandedThreads.value.add(repliedId)
-    }
   }
 }
 
-async function handleLikeComment(comment: CommentTreeNode) {
+async function handleLikeComment(comment: CommentFlatItem) {
   if (!isLoggedIn.value || !post.value) {
     uni.showToast({ title: '请先登录', icon: 'none' }); return
   }
@@ -364,10 +300,16 @@ async function handleDeleteComment(commentId: string) {
     content: '确定删除这条评论吗？',
     success: async (res) => {
       if (!res.confirm || !post.value) return
-      const deleteRes = await deleteComment(post.value.id, commentId)
-      if (deleteRes.success) {
-        uni.showToast({ title: '已删除', icon: 'success' })
-        await loadDetail()
+      try {
+        const deleteRes = await deleteComment(post.value.id, commentId)
+        if (deleteRes.success) {
+          uni.showToast({ title: '已删除', icon: 'success' })
+          await loadDetail()
+        } else {
+          uni.showToast({ title: deleteRes.error?.message || '删除失败', icon: 'none' })
+        }
+      } catch {
+        uni.showToast({ title: '删除失败，请稍后重试', icon: 'none' })
       }
     },
   })
@@ -586,143 +528,15 @@ function goTag(tag: string) {
   gap: 16px;
 }
 
-/* Thread = one top-level comment as a "floor" */
-.comment-thread {
-  background: #FAF8F3;
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.comment-thread__floor {
+/* Flat comment item (Douyin-style) */
+.comment-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.comment-thread__author {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-
-.comment-thread__author-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #DFF2ED;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.comment-thread__author-img {
-  width: 100%;
-  height: 100%;
-}
-
-.comment-thread__author-initial {
-  font-size: 11px;
-  color: #11796F;
-  font-weight: 600;
-}
-
-.comment-thread__author-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #19322E;
-}
-
-.comment-thread__floor-time {
-  font-size: 11px;
-  color: #71817D;
-}
-
-.comment-thread__body {
-  margin-bottom: 8px;
-}
-
-.comment-thread__content {
-  font-size: 14px;
-  color: #19322E;
-  line-height: 1.6;
-}
-
-.comment-thread__actions {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 4px;
-}
-
-.comment-thread__action text {
-  font-size: 11px;
-  color: #71817D;
-}
-
-.comment-thread__action--danger text {
-  color: #e65555;
-}
-
-/* Expand/collapse toggle */
-.comment-thread__toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 4px 0;
-}
-
-.comment-thread__toggle-text {
-  font-size: 11px;
-  color: #11796F;
-  font-weight: 600;
-}
-
-.comment-thread__toggle-arrow {
-  font-size: 10px;
-  color: #11796F;
-}
-
-/* Replies collection */
-.comment-thread__replies {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #fff;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
   gap: 10px;
 }
 
-.reply-item {
-  padding: 6px 0;
-  border-bottom: 1px solid #E2E9E6;
-}
-
-.reply-item:last-child {
-  border-bottom: none;
-}
-
-.reply-item__header {
-  margin-bottom: 4px;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.reply-item__author {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.reply-item__author-avatar {
-  width: 18px;
-  height: 18px;
+.comment-item__avatar {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #DFF2ED;
   overflow: hidden;
@@ -732,53 +546,79 @@ function goTag(tag: string) {
   flex-shrink: 0;
 }
 
-.reply-item__author-img {
+.comment-item__avatar-img {
   width: 100%;
   height: 100%;
 }
 
-.reply-item__author-initial {
-  font-size: 9px;
+.comment-item__avatar-initial {
+  font-size: 13px;
   color: #11796F;
   font-weight: 600;
 }
 
-.reply-item__author-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #19322E;
-  white-space: nowrap;
+.comment-item__body {
+  flex: 1;
+  min-width: 0;
 }
 
-.reply-item__content {
-  font-size: 11px;
-  color: #19322E;
-  line-height: 1.5;
+.comment-item__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
 }
 
-.reply-item__footer {
+.comment-item__author {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0C4D48;
+}
+
+.comment-item__reply-to {
+  font-size: 12px;
+  color: #11796F;
+  background: rgba(17, 121, 111, 0.08);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.comment-item__content {
+  display: block;
+  width: 100%;
+  font-size: 14px;
+  color: #19322E;
+  line-height: 1.6;
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-item__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.reply-item__time {
+.comment-item__time {
   font-size: 11px;
   color: #71817D;
 }
 
-.reply-item__actions {
+.comment-item__actions {
   display: flex;
-  gap: 12px;
+  gap: 14px;
 }
 
-.reply-item__action text {
+.comment-item__action text {
   font-size: 11px;
   color: #71817D;
 }
 
-.reply-item__action--danger text {
+.comment-item__action--danger text {
   color: #e65555;
 }
+
 </style>

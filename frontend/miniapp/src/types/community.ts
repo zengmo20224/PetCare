@@ -68,6 +68,20 @@ export interface CommentTreeNode {
   replies: CommentTreeNode[]
 }
 
+/** Flat comment item (Douyin-style): author @ replyTo, no nesting */
+export interface CommentFlatItem {
+  id: string
+  parentId: string | null
+  content: string
+  likeCount: number
+  createTime: string
+  authorName: string | null
+  authorAvatar: string | null
+  authorUserId: string | null
+  replyToUserId: string | null
+  replyToName: string | null
+}
+
 /** Tag as returned by tag search API */
 export interface TagItem {
   id: string

@@ -12,6 +12,7 @@ import com.petcare.community.dto.CommentResponse;
 import com.petcare.community.dto.PostCreateRequest;
 import com.petcare.community.dto.PostDetailResponse;
 import com.petcare.community.dto.PostResponse;
+import com.petcare.community.dto.PublicCommentFlatResponse;
 import com.petcare.community.dto.PublicCommentResponse;
 import com.petcare.community.dto.PublicCommentTreeResponse;
 import com.petcare.community.dto.PublicPostDetailResponse;
@@ -46,6 +47,7 @@ import com.petcare.user.service.UserService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -544,6 +546,83 @@ public class CommunityPostApplicationService {
 
         return topLevel.stream()
                 .map(c -> toCommentTree(c, repliesByParent, authorByUserId))
+                .toList();
+    }
+
+    /**
+     * Lists published comments under a published post as a flat list
+     * (Douyin-style). Each comment carries author info plus an optional
+     * {@code replyToName} (the author of the parent comment), so the UI can
+     * render "{@code authorName @ replyToName}" without a nested tree.
+     * <p>
+     * Unlike {@link #listPublicCommentsTree(Long)}, this has no depth cap: a
+     * reply to a reply is a first-class list item with its parent's author as
+     * {@code replyToName}.
+     */
+    public List<PublicCommentFlatResponse> listPublicCommentsFlat(Long postId) {
+        Long postCount = postMapper.selectCount(
+                new LambdaQueryWrapper<Post>()
+                        .eq(Post::getId, postId)
+                        .eq(Post::getStatus, "PUBLISHED")
+                        .eq(Post::getDeleted, 0)
+        );
+        if (postCount == 0) {
+            throw new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND, "帖子不存在");
+        }
+
+        List<PostComment> allComments = commentMapper.selectList(
+                new LambdaQueryWrapper<PostComment>()
+                        .eq(PostComment::getPostId, postId)
+                        .eq(PostComment::getStatus, "PUBLISHED")
+                        .eq(PostComment::getDeleted, 0)
+                        .orderByAsc(PostComment::getCreateTime)
+        );
+
+        if (allComments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Index comments by id so we can resolve parent author info
+        Map<Long, PostComment> commentById = new HashMap<>();
+        for (PostComment c : allComments) {
+            commentById.put(c.getId(), c);
+        }
+
+        // Batch load author info for all commenters + all parent-comment authors
+        List<Long> userIds = new ArrayList<>();
+        for (PostComment c : allComments) {
+            userIds.add(c.getUserId());
+            if (c.getParentId() != null) {
+                PostComment parent = commentById.get(c.getParentId());
+                if (parent != null) {
+                    userIds.add(parent.getUserId());
+                }
+            }
+        }
+        Map<Long, AuthorInfo> authorByUserId = loadAuthorInfo(userIds);
+
+        return allComments.stream()
+                .map(c -> {
+                    AuthorInfo author = authorByUserId.get(c.getUserId());
+                    Long replyToUserId = null;
+                    String replyToName = null;
+                    if (c.getParentId() != null) {
+                        PostComment parent = commentById.get(c.getParentId());
+                        if (parent != null) {
+                            replyToUserId = parent.getUserId();
+                            AuthorInfo parentAuthor = authorByUserId.get(parent.getUserId());
+                            replyToName = parentAuthor != null ? parentAuthor.name() : null;
+                        }
+                    }
+                    return new PublicCommentFlatResponse(
+                            c.getId(), c.getParentId(), c.getContent(),
+                            c.getLikeCount(), c.getCreateTime(),
+                            author != null ? author.name() : null,
+                            author != null ? author.avatar() : null,
+                            c.getUserId(),
+                            replyToUserId, replyToName
+                    );
+                })
                 .toList();
     }
 
