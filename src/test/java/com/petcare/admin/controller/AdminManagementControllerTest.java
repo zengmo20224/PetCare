@@ -54,6 +54,7 @@ class AdminManagementControllerTest {
             "store:info:read", "store:info:update", "store:config:read", "store:config:update",
             "service:item:read", "service:item:create", "service:item:update", "service:item:disable",
             "staff:profile:read", "staff:profile:create", "staff:profile:update", "staff:profile:disable",
+            "staff:profile:enable",
             "staff:skill:manage", "staff:schedule:read", "staff:schedule:manage",
             "product:item:read", "product:item:create", "product:item:update", "product:item:disable",
             "product:stock:update", "admin:operation-log:read"
@@ -605,5 +606,28 @@ class AdminManagementControllerTest {
                          "linkType":"NONE","status":"ACTIVE","sort":%d}
                         """.formatted(i, i, i))
                 .collect(java.util.stream.Collectors.joining(",", "[", "]"));
+    }
+
+    @Test
+    void staffCanBeReEnabledAfterDisable() throws Exception {
+        // 先禁用
+        mockMvc.perform(post("/api/v1/admin/staff/" + staffId + "/disable")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("INACTIVE"));
+
+        // 禁用后可重新启用
+        mockMvc.perform(post("/api/v1/admin/staff/" + staffId + "/enable")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+    }
+
+    @Test
+    void enableActiveStaffReturnsStateConflict() throws Exception {
+        // setUp 中 staff 初始为 ACTIVE，直接启用应返回冲突
+        mockMvc.perform(post("/api/v1/admin/staff/" + staffId + "/enable")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isConflict());
     }
 }

@@ -134,11 +134,23 @@ public class AdminManagementController {
         return ok(service.disableStaff(id, operatorId()));
     }
 
+    @PostMapping("/staff/{id}/enable")
+    @PreAuthorize("hasAuthority('staff:profile:enable')")
+    public ResponseEntity<ApiResponse<StaffView>> enableStaff(@PathVariable Long id) {
+        return ok(service.enableStaff(id, operatorId()));
+    }
+
     @PutMapping("/staff/{id}/skills")
     @PreAuthorize("hasAuthority('staff:skill:manage')")
     public ResponseEntity<ApiResponse<StaffSkillView>> replaceStaffSkills(
             @PathVariable Long id, @Valid @RequestBody StaffSkillUpdateRequest request) {
         return ok(service.replaceStaffSkills(id, request.serviceCategoryIds(), operatorId()));
+    }
+
+    @GetMapping("/staff/{id}/skills")
+    @PreAuthorize("hasAuthority('staff:skill:manage')")
+    public ResponseEntity<ApiResponse<StaffSkillView>> getStaffSkills(@PathVariable Long id) {
+        return ok(service.getStaffSkills(id));
     }
 
     @GetMapping("/staff/{id}/schedules")

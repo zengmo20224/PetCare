@@ -21,6 +21,7 @@ export interface StaffCreateParams {
   avatarUrl?: string
   role: string
   description?: string
+  skillCategoryIds?: number[]
 }
 
 export interface StaffSkillView {
@@ -74,6 +75,10 @@ export const disableStaff = (id: number) => {
   return request.post<StaffMember>(`/v1/admin/staff/${id}/disable`)
 }
 
+export const enableStaff = (id: number) => {
+  return request.post<StaffMember>(`/v1/admin/staff/${id}/enable`)
+}
+
 // ─── Staff Skills ───
 // NOTE: Backend only has PUT /staff/{id}/skills (replace). No GET endpoint exists.
 // The full skill editing flow is blocked until a read endpoint is added to the backend.
@@ -81,6 +86,11 @@ export const disableStaff = (id: number) => {
 /** PUT /api/v1/admin/staff/{id}/skills — @PreAuthorize('staff:skill:manage') */
 export const updateStaffSkills = (staffId: number, data: StaffSkillUpdateParams) => {
   return request.put<StaffSkillView>(`/v1/admin/staff/${staffId}/skills`, data)
+}
+
+/** GET /api/v1/admin/staff/{id}/skills — @PreAuthorize('staff:skill:manage') */
+export const getStaffSkills = (staffId: number) => {
+  return request.get<StaffSkillView>(`/v1/admin/staff/${staffId}/skills`)
 }
 
 // ─── Staff Schedules ───

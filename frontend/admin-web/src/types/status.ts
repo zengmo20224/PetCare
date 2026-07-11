@@ -282,6 +282,14 @@ export function canDisableStaff(status: string): boolean {
 }
 
 /**
+ * Returns true if the staff member can be enabled (currently INACTIVE).
+ * Backend: StaffStatus.INACTIVE → ACTIVE
+ */
+export function canEnableStaff(status: string): boolean {
+  return status === 'INACTIVE'
+}
+
+/**
  * Returns true if the user can be banned (currently ACTIVE).
  * Backend: User status ACTIVE → BANNED
  */

@@ -89,8 +89,9 @@ public final class AdminManagementDtos {
             @NotBlank @Size(max = 64) String name,
             @Size(max = 20) String phone,
             @Size(max = 255) String avatarUrl,
-            @NotBlank @Pattern(regexp = "GROOMER|WALKER|FEEDER|MANAGER") String role,
-            @Size(max = 500) String description) {
+            @NotBlank @Size(max = 32) String role,
+            @Size(max = 500) String description,
+            List<Long> skillCategoryIds) {
     }
 
     public record StaffView(

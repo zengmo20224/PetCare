@@ -40,7 +40,9 @@ public interface AdminManagementService {
     StaffView createStaff(StaffRequest request, Long operatorId);
     StaffView updateStaff(Long id, StaffRequest request, Long operatorId);
     StaffView disableStaff(Long id, Long operatorId);
+    StaffView enableStaff(Long id, Long operatorId);
     StaffSkillView replaceStaffSkills(Long staffId, List<Long> categoryIds, Long operatorId);
+    StaffSkillView getStaffSkills(Long staffId);
     PageResponse<StaffScheduleView> listSchedules(Long staffId, int page, int size);
     StaffScheduleView createSchedule(Long staffId, StaffScheduleRequest request, Long operatorId);
     StaffScheduleView updateSchedule(Long staffId, Long scheduleId, StaffScheduleRequest request, Long operatorId);

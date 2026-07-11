@@ -266,6 +266,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             apply(staff, request);
             staff.setStatus("ACTIVE");
             staffService.save(staff);
+            // 创建时一并分配技能（若有），避免新员工因 0 技能而不出现在预约可选列表
+            if (request.skillCategoryIds() != null && !request.skillCategoryIds().isEmpty()) {
+                replaceStaffSkills(staff.getId(), request.skillCategoryIds(), operatorId);
+            }
             audit(operatorId, "staff", "create-profile", "POST", url, "SUCCESS", null);
             return staffView(staff);
         } catch (RuntimeException e) {
@@ -283,6 +287,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             Staff staff = requireStaff(id);
             apply(staff, request);
             staffService.updateById(staff);
+            // 编辑时若提供了技能列表，一并更新
+            if (request.skillCategoryIds() != null) {
+                replaceStaffSkills(id, request.skillCategoryIds(), operatorId);
+            }
             audit(operatorId, "staff", "update-profile", "PUT", url, "SUCCESS", null);
             return staffView(staff);
         } catch (RuntimeException e) {
@@ -309,6 +317,25 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    public StaffView enableStaff(Long id, Long operatorId) {
+        String url = "/api/v1/admin/staff/" + id + "/enable";
+        try {
+            Staff staff = requireStaff(id);
+            if (!"INACTIVE".equals(staff.getStatus())) {
+                throw new BusinessException(ErrorCode.STATE_CONFLICT, "该员工未处于停用状态");
+            }
+            staff.setStatus("ACTIVE");
+            staffService.updateById(staff);
+            audit(operatorId, "staff", "enable-profile", "POST", url, "SUCCESS", null);
+            return staffView(staff);
+        } catch (RuntimeException e) {
+            audit(operatorId, "staff", "enable-profile", "POST", url, "FAIL", auditFailureMessage(e));
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
     public StaffSkillView replaceStaffSkills(Long staffId, List<Long> categoryIds, Long operatorId) {
         String url = "/api/v1/admin/staff/" + staffId + "/skills";
         try {
@@ -328,6 +355,15 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             audit(operatorId, "staff", "replace-skills", "PUT", url, "FAIL", auditFailureMessage(e));
             throw e;
         }
+    }
+
+    @Override
+    public StaffSkillView getStaffSkills(Long staffId) {
+        requireStaff(staffId);
+        List<Long> categoryIds = staffSkillService.list(
+                new LambdaQueryWrapper<StaffSkill>().eq(StaffSkill::getStaffId, staffId)
+        ).stream().map(StaffSkill::getServiceCategoryId).toList();
+        return new StaffSkillView(staffId, categoryIds);
     }
 
     @Override

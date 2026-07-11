@@ -23,7 +23,7 @@
     >
       <el-table-column prop="name" label="姓名" width="120" />
       <el-table-column prop="phone" label="电话" width="130" />
-      <el-table-column prop="role" label="角色" width="120">
+      <el-table-column prop="role" label="岗位" width="120">
         <template #default="{ row }">
           <el-tag :type="STAFF_ROLE[row.role as StaffRole]?.color || 'info'">
             {{ STAFF_ROLE[row.role as StaffRole]?.label || row.role }}
@@ -48,6 +48,12 @@
             @click="handleDisable(row.id)"
             :disabled="!userStore.hasPermission('staff:profile:disable')"
           >禁用</el-button>
+          <el-button
+            size="small" type="success"
+            v-if="canEnableStaff(row.status)"
+            @click="handleEnable(row.id)"
+            :disabled="!userStore.hasPermission('staff:profile:enable')"
+          >启用</el-button>
         </template>
       </el-table-column>
     </DataTableShell>
@@ -61,9 +67,22 @@
         <el-form-item label="电话" prop="phone">
           <el-input v-model="form.phone" placeholder="联系电话" />
         </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-select v-model="form.role" style="width: 100%">
-            <el-option v-for="(v, k) in STAFF_ROLE" :key="k" :label="v.label" :value="k" />
+        <el-form-item label="岗位" prop="role">
+          <el-input v-model="form.role" placeholder="如：店长、前台收银、实习美容师" />
+        </el-form-item>
+        <el-form-item label="服务技能" prop="skillCategoryIds">
+          <el-select
+            v-model="form.skillCategoryIds"
+            multiple
+            placeholder="选择该员工能提供的服务类别（可多选）"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cat in serviceCategories"
+              :key="cat.id"
+              :label="cat.name"
+              :value="Number(cat.id)"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="描述" prop="description">
@@ -99,17 +118,35 @@
         <el-row :gutter="16">
           <el-col :span="8">
             <el-form-item label="日期" prop="workDate">
-              <el-input v-model="scheduleForm.workDate" placeholder="YYYY-MM-DD" />
+              <el-date-picker
+                v-model="scheduleForm.workDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="开始" prop="startTime">
-              <el-input v-model="scheduleForm.startTime" placeholder="HH:mm" />
+              <el-time-picker
+                v-model="scheduleForm.startTime"
+                value-format="HH:mm"
+                format="HH:mm"
+                placeholder="选择时间"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="结束" prop="endTime">
-              <el-input v-model="scheduleForm.endTime" placeholder="HH:mm" />
+              <el-time-picker
+                v-model="scheduleForm.endTime"
+                value-format="HH:mm"
+                format="HH:mm"
+                placeholder="选择时间"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -137,19 +174,30 @@
       @confirm="executeDisable"
       @cancel="disableDialogVisible = false"
     />
+
+    <!-- Enable Confirm Dialog -->
+    <ActionConfirmDialog
+      :visible="enableDialogVisible"
+      title="启用员工"
+      message="确定要启用此员工吗？启用后该员工可重新被分配新预约。"
+      :danger="false"
+      @confirm="executeEnable"
+      @cancel="enableDialogVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getStaffList, createStaff, updateStaff, disableStaff, getStaffSchedules, createStaffSchedule } from '../../api/staff'
+import { getStaffList, createStaff, updateStaff, disableStaff, enableStaff, getStaffSchedules, createStaffSchedule, getStaffSkills } from '../../api/staff'
 import type { StaffMember, StaffCreateParams, StaffSchedule, StaffScheduleCreateParams } from '../../api/staff'
 import { STORE_ID } from '../../api/store'
+import { getServiceCategories } from '../../api/service'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '../../store/user'
 import { showSuccess, showError } from '../../utils/feedback'
-import { STAFF_ROLE, STAFF_STATUS, SCHEDULE_STATUS, canDisableStaff } from '../../types/status'
-import type { StaffRole, StaffStatus as StaffStatusType, ScheduleStatus } from '../../types/status'
+import { STAFF_STATUS, STAFF_ROLE, SCHEDULE_STATUS, canDisableStaff, canEnableStaff } from '../../types/status'
+import type { StaffStatus as StaffStatusType, StaffRole, ScheduleStatus } from '../../types/status'
 import FilterBar from '../../components/FilterBar.vue'
 import DataTableShell from '../../components/DataTableShell.vue'
 import ActionConfirmDialog from '../../components/ActionConfirmDialog.vue'
@@ -173,14 +221,18 @@ const defaultStaffForm: StaffCreateParams = {
   storeId: STORE_ID,
   name: '',
   phone: '',
-  role: 'GROOMER',
+  role: '',
   description: '',
+  skillCategoryIds: [],
 }
 const form = ref<StaffCreateParams>({ ...defaultStaffForm })
 
+// 服务分类（技能多选的数据源）
+const serviceCategories = ref<{ id: string; name: string }[]>([])
+
 const rules: FormRules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  role: [{ required: true, message: '请选择角色', trigger: 'change' }],
+  role: [{ required: true, message: '请输入岗位', trigger: 'blur' }],
   storeId: [{ required: true, message: '门店ID必填', trigger: 'blur' }],
 }
 
@@ -198,6 +250,26 @@ const executeDisable = async () => {
   try {
     await disableStaff(disableTargetId.value)
     showSuccess('员工已禁用')
+    await fetchData()
+  } catch (error) {
+    showError(error instanceof Error ? error.message : '操作失败')
+  }
+}
+
+// ─── Enable Confirm Dialog ───
+const enableDialogVisible = ref(false)
+const enableTargetId = ref(0)
+
+const handleEnable = (id: number) => {
+  enableTargetId.value = id
+  enableDialogVisible.value = true
+}
+
+const executeEnable = async () => {
+  enableDialogVisible.value = false
+  try {
+    await enableStaff(enableTargetId.value)
+    showSuccess('员工已启用')
     await fetchData()
   } catch (error) {
     showError(error instanceof Error ? error.message : '操作失败')
@@ -223,9 +295,9 @@ const scheduleForm = ref<StaffScheduleCreateParams>({
 })
 
 const scheduleRules: FormRules = {
-  workDate: [{ required: true, message: '请输入日期', trigger: 'blur' }],
-  startTime: [{ required: true, message: '请输入开始时间', trigger: 'blur' }],
-  endTime: [{ required: true, message: '请输入结束时间', trigger: 'blur' }],
+  workDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
+  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
   storeId: [{ required: true, message: '门店ID必填', trigger: 'blur' }],
 }
@@ -264,11 +336,20 @@ const openCreateDialog = () => {
   dialogVisible.value = true
 }
 
-const openEditDialog = (row: StaffMember) => {
+const openEditDialog = async (row: StaffMember) => {
   isEdit.value = true
   currentId.value = row.id
   dialogTitle.value = '编辑员工'
-  form.value = { storeId: row.storeId, name: row.name, phone: row.phone ?? undefined, role: row.role, description: row.description ?? undefined }
+  form.value = { storeId: row.storeId, name: row.name, phone: row.phone ?? undefined, role: row.role, description: row.description ?? undefined, skillCategoryIds: [] }
+  // 回填已有技能
+  try {
+    const res = await getStaffSkills(row.id)
+    if (res.data?.serviceCategoryIds) {
+      form.value.skillCategoryIds = res.data.serviceCategoryIds.map(Number)
+    }
+  } catch {
+    // 读取失败不阻塞编辑
+  }
   dialogVisible.value = true
 }
 
@@ -337,7 +418,21 @@ const submitSchedule = async () => {
   })
 }
 
-onMounted(() => { fetchData() })
+const loadServiceCategories = async () => {
+  try {
+    const res = await getServiceCategories()
+    if (res.data) {
+      serviceCategories.value = res.data.map(c => ({ id: String(c.id), name: c.name }))
+    }
+  } catch {
+    // 加载失败不阻塞页面
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  loadServiceCategories()
+})
 </script>
 
 <style scoped>
