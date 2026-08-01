@@ -1,6 +1,5 @@
 package com.petcare.common.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 /**
@@ -8,7 +7,6 @@ import java.util.List;
  *
  * @param <T> type of the data payload
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
 
     private final boolean success;

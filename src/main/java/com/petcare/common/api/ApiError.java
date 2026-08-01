@@ -1,12 +1,10 @@
 package com.petcare.common.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 /**
  * Structured error details returned in error responses.
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiError {
 
     private final String code;
@@ -16,7 +14,7 @@ public class ApiError {
     public ApiError(String code, String message, List<FieldError> details) {
         this.code = code;
         this.message = message;
-        this.details = details;
+        this.details = details == null ? List.of() : List.copyOf(details);
     }
 
     public String getCode() {
