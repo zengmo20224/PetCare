@@ -18,17 +18,21 @@
                        │   petcare-api (Spring Boot)            │
                        │     │  JDBC                            │
                        │     ▼                                  │
-                       │   mysql:8 (数据卷持久化)                │
+                       │   mysql:8 (业务数据，数据卷持久化)       │
                        │                                       │
    浏览器 ──── :8081 ──┼──►  nginx (miniapp H5)  ── 静态资源   │
                        │     │  /api/*  反向代理                │
                        │     └─────► petcare-api                │
+                       │                                       │
+                       │   postgres+pgvector (V2 向量库，可选)   │
+                       │     仅 AI_AGENT_ENABLED=true 时依赖     │
                        └─────────────────────────────────────┘
 ```
 
 | 容器 | 镜像 | 端口映射 | 作用 |
 |---|---|---|---|
-| `mysql` | `mysql:8.0` | 127.0.0.1:3306 | 数据库 |
+| `mysql` | `mysql:8.0` | 127.0.0.1:3306 | 业务数据库（唯一真源） |
+| `postgres` | `pgvector/pgvector:pg16` | 127.0.0.1:5432 | V2 AI 向量库（独立 PG，派生知识副本；`AI_AGENT_ENABLED=false` 时可不启） |
 | `api` | `petcare-api:1.0.0` | 127.0.0.1:8082 → 8080 | 后端 Spring Boot |
 | `admin-web` | `petcare-admin-web:1.0.0` | 0.0.0.0:8080 → 80 | 管理端 nginx |
 | `h5` | `petcare-h5:1.0.0` | 0.0.0.0:8081 → 80 | 用户端 H5 nginx |
@@ -84,8 +88,13 @@ cp .env.example .env
 | `DB_PASSWORD` | 业务库密码 | changeme |
 | `JWT_SECRET` | JWT 签名密钥（生产必须改） | 必填，≥32 字符 |
 | `JWT_EXPIRATION_MINUTES` | JWT 过期分钟 | 120 |
-| `AI_PROVIDER_ENABLED` | AI 开关（V1 应为 false） | false |
+| `AI_PROVIDER_ENABLED` | AI Provider 开关（V1 客服/分析） | false |
+| `AI_AGENT_ENABLED` | V2 AI Agent 开关（RAG/工具调用，D-013） | false |
+| `AI_RAG_ENABLED` | V2 向量检索开关（依赖 `AI_AGENT_ENABLED`） | false |
+| `PGVECTOR_HOST/PORT/DB/USER/PASSWORD` | PgVector 连接（独立 PG 实例，V2 才用） | postgres/5432/petcare_ai/... |
 | `IMAGE_TAG` | 镜像 tag | 1.0.0 |
+
+> V2 AI Agent 默认关闭。仅当 `AI_AGENT_ENABLED=true` 时才依赖 `postgres` 容器；未启用 Agent 的演示部署可不启 PG（`docker compose up mysql api admin-web h5`）。详见 `docs/09-ai-agent-design.md`。
 
 > **安全提醒**：`.env` 已在 `.gitignore` 中，不会被提交。生产部署请通过密钥管理工具（Vault、云 KMS）注入，不要明文落盘。
 

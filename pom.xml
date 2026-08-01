@@ -23,6 +23,10 @@
         <jjwt.version>0.12.6</jjwt.version>
         <!-- Override with -Ddocker.api.version when the Docker daemon requires another compatible API. -->
         <docker.api.version>1.44</docker.api.version>
+        <!-- V2 AI Agent 依赖版本（D-013，M8.0 引入；本轮仅声明版本，dependency 由 M8.0 切片落地） -->
+        <langchain4j.version>1.18.1</langchain4j.version>
+        <onnxruntime.version>1.28.0</onnxruntime.version>
+        <djl.version>0.36.0</djl.version>
     </properties>
 
     <dependencies>
@@ -126,6 +130,13 @@
             <artifactId>mysql</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- V2 AI Agent：PgVector Testcontainers（对标 tc-mysql 模式，@Tag("tc-pgvector")） -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -134,7 +145,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <excludedGroups>tc-mysql</excludedGroups>
+                    <excludedGroups>tc-mysql,tc-pgvector</excludedGroups>
                 </configuration>
             </plugin>
 
@@ -191,6 +202,31 @@
                         <configuration>
                             <excludedGroups combine.self="override"/>
                             <groups>tc-mysql</groups>
+                            <includes>
+                                <include>**/*IT.java</include>
+                                <include>**/*Test.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <api.version>${docker.api.version}</api.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- V2 AI Agent：PgVector 集成测试 profile（克隆 tc-mysql 范式，docs/09 §10.4） -->
+        <!-- 激活：mvn test -Ptc-pgvector；默认构建不跑此组（见默认 surefire excludedGroups） -->
+        <profile>
+            <id>tc-pgvector</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludedGroups combine.self="override"/>
+                            <groups>tc-pgvector</groups>
                             <includes>
                                 <include>**/*IT.java</include>
                                 <include>**/*Test.java</include>

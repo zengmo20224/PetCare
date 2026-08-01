@@ -172,6 +172,7 @@ cd frontend/miniapp && npm install && npm run dev:h5
 | [`docs/03-configuration-management-plan.md`](docs/03-configuration-management-plan.md) | **配置管理计划（CMP v1.0）** |
 | [`docs/04-code-standards.md`](docs/04-code-standards.md) | 代码与安全规则 |
 | [`docs/05-testing-and-verification.md`](docs/05-testing-and-verification.md) | 风险驱动验证方式 |
+| [`docs/09-ai-agent-design.md`](docs/09-ai-agent-design.md) | **V2 AI Agent 增量设计**（PgVector RAG + Agent 工具调用 + 社区/审核，D-013/C-R20260801-004） |
 | [`docs/requirements-source.md`](docs/requirements-source.md) | 产品需求基线 |
 
 ---

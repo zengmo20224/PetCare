@@ -73,8 +73,8 @@ import { useUserStore } from '@/store/user'
 import type { ServiceItem } from '@/types/service'
 import { formatDuration, formatYuan } from '@/utils/format'
 import { normalizeRouteParam } from '@/utils/route-query'
+import { assetFullUrl } from '@/utils/asset-url'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const userStore = useUserStore()
 
 const service = ref<ServiceItem | null>(null)
@@ -99,7 +99,7 @@ const petTypeText = computed(() => {
  */
 const coverImage = computed(() => {
   if (!service.value?.coverUrl) return ''
-  return fullUrl(service.value.coverUrl)
+  return assetFullUrl(service.value.coverUrl)
 })
 
 /**
@@ -108,13 +108,8 @@ const coverImage = computed(() => {
  */
 const detailImages = computed(() => {
   if (!service.value?.imageUrls?.length) return []
-  return service.value.imageUrls.map(fullUrl)
+  return service.value.imageUrls.map(assetFullUrl)
 })
-
-function fullUrl(url: string): string {
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 function previewCover() {
   if (!coverImage.value) return

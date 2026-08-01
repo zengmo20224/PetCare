@@ -21,7 +21,10 @@ const forbiddenMpReferences = [
   /env\(/i,
   /backdrop-filter/i,
   /aspect-ratio/i,
-  /&gt;/i,
+  // `&gt;` HTML entity is only meaningful in UI declaration files (.wxml/.wxss/.json).
+  // In bundled .js it appears legitimately as string literals inside third-party deps
+  // (e.g. markdown-it's HTML-entity escape table), so we do NOT scan .js for this rule.
+  { pattern: /&gt;/i, skipExtensions: new Set(['.js']) },
 ]
 
 if (!existsSync(outputDir)) {
@@ -74,9 +77,17 @@ function assertNoForbiddenMpReferences(scanRoot) {
 
   for (const filePath of listScannableFiles(scanRoot)) {
     const content = readFileSync(filePath, 'utf8')
-    const matchedPattern = forbiddenMpReferences.find(pattern => pattern.test(content))
-    if (matchedPattern) {
-      violations.push(`${relative(scanRoot, filePath)} (${matchedPattern.source})`)
+    const extension = filePath.slice(filePath.lastIndexOf('.'))
+    for (const entry of forbiddenMpReferences) {
+      // Entries are either a RegExp (applies to all file types) or
+      // { pattern, skipExtensions } for rules that must skip certain file types.
+      const pattern = entry instanceof RegExp ? entry : entry.pattern
+      const skipExtensions = entry instanceof RegExp ? null : entry.skipExtensions
+      if (skipExtensions && skipExtensions.has(extension)) continue
+      if (pattern.test(content)) {
+        violations.push(`${relative(scanRoot, filePath)} (${pattern.source})`)
+        break
+      }
     }
   }
 

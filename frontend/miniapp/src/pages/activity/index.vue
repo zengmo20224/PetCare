@@ -14,7 +14,7 @@
           class="activity-card"
           @tap="goDetail(item.id)"
         >
-          <image v-if="item.coverUrl" class="activity-card__cover" :src="fullImageUrl(item.coverUrl)" mode="aspectFill" />
+          <image v-if="item.coverUrl" class="activity-card__cover" :src="assetFullUrl(item.coverUrl)" mode="aspectFill" />
           <view v-else class="activity-card__cover activity-card__cover--placeholder">
             <text>活动</text>
           </view>
@@ -43,10 +43,10 @@ import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import { getActivities } from '@/api/activity'
 import type { ActivityItem } from '@/types/activity'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const listStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 const activities = ref<ActivityItem[]>([])
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
 async function loadActivities() {
   listStatus.value = 'loading'
@@ -72,12 +72,6 @@ function productCount(item: ActivityItem): number {
 
 function serviceCount(item: ActivityItem): number {
   return item.services?.length ?? item.serviceNames?.length ?? 0
-}
-
-function fullImageUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
 }
 
 function formatActivityTime(item: ActivityItem): string {

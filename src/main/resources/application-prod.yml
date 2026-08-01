@@ -42,6 +42,10 @@ petcare:
     # D-004 修订（2026-07-21）：生产默认启用 AI 客服 + 分析报告（接入 DeepSeek）。
     # API Key / Model 必须由环境变量提供；缺失时构造抛 AiProviderUnavailableException → 503。
     provider-enabled: ${AI_PROVIDER_ENABLED:true}
+    # V2 AI Agent（D-013）：生产默认关闭；启用需 AI_AGENT_ENABLED=true 且配 PGVECTOR_*。
+    # docker-compose 已透传 PGVECTOR_* 变量；未启用时不依赖 postgres 容器（可单独停用）。
+    agent-enabled: ${AI_AGENT_ENABLED:false}
+    rag-enabled: ${AI_RAG_ENABLED:false}
     deepseek:
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       api-key: ${DEEPSEEK_API_KEY:}

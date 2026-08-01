@@ -26,7 +26,7 @@
         >
           <!-- Avatar -->
           <view class="notif-item__avatar">
-            <image v-if="notif.actorAvatar" class="notif-item__avatar-img" :src="fullUrl(notif.actorAvatar)" mode="aspectFill" />
+            <image v-if="notif.actorAvatar" class="notif-item__avatar-img" :src="assetFullUrl(notif.actorAvatar)" mode="aspectFill" />
             <text v-else class="notif-item__avatar-text">{{ (notif.actorName || '?').charAt(0) }}</text>
           </view>
 
@@ -55,6 +55,7 @@ import PcStatePanel from '@/components/PcStatePanel.vue'
 import { getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '@/api/notification'
 import { useUserStore } from '@/store/user'
 import type { NotificationItem } from '@/types/notification'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -62,14 +63,6 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const listStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 const notifications = ref<NotificationItem[]>([])
 const unreadCount = ref(0)
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 function typeLabel(type: string): string {
   if (type === 'LIKE') return '赞了你的帖子'

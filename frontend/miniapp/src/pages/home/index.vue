@@ -123,7 +123,7 @@
             @click="goActivityDetail(act.id)"
           >
             <view class="home-activity-item">
-              <image v-if="act.coverUrl" class="home-activity-cover" :src="fullImageUrl(act.coverUrl)" mode="aspectFill" lazy-load />
+              <image v-if="act.coverUrl" class="home-activity-cover" :src="assetFullUrl(act.coverUrl)" mode="aspectFill" lazy-load />
               <view v-else class="home-activity-cover home-activity-cover--placeholder">
                 <text>活动</text>
               </view>
@@ -207,12 +207,12 @@ import type { AnnouncementItem } from '@/types/notification'
 import type { ProductItem } from '@/types/product'
 import { openAllServices, openServiceCategory } from '@/utils/service-navigation'
 import { hasUnreadAnnouncements } from '@/utils/announcement-read'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const latestAnnouncement = ref<AnnouncementItem | null>(null)
 const announcements = ref<AnnouncementItem[]>([])
 const hasUnreadAnnouncement = ref(false)
 const storeStatus = ref<string>('OPEN')
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
 const serviceShortcuts = [
   { label: '洗护', categoryName: '洗护', hint: '清爽洁净', icon: 'bath', color: '#11796F', background: '#DFF2ED' },
@@ -306,12 +306,6 @@ function activityProductCount(activity: ActivityItem): number {
 
 function activityServiceCount(activity: ActivityItem): number {
   return activity.services?.length ?? activity.serviceNames?.length ?? 0
-}
-
-function fullImageUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
 }
 
 function formatActivityTime(activity: ActivityItem): string {

@@ -42,7 +42,7 @@
 
 ## 5. 当前范围限制
 
-- 不新增 AI 业务依赖。
+- AI 依赖按阶段管理：V1（D-004）不新增 AI 业务依赖（保留已实现的 `AiProviderClient` 端口 + DeepSeek/Disabled 双实现）；V2（D-013，`docs/09`）按 M8 切片引入 langchain4j + PgVector，但必须作为 `AiProviderClient` 端口的实现层接入，不得破坏 `AiProviderArchitectureTest` 边界守卫。
 - 不新增在线支付、优惠券、积分、多门店或独立员工端。
 - 营销活动不得直接绕过订单服务修改价格。
 - 不为微信专属能力破坏 H5 核心流程。

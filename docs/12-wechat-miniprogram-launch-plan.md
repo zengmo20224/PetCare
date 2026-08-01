@@ -208,3 +208,4 @@
 | 版本 | 日期 | 作者 | 说明 |
 |---|---|---|---|
 | v1.0 | 2026-07-04 | Agent | 首次 gap 分析与路线图草案 |
+| v1.1 | 2026-08-01 | Agent | demo 形态推进（P-002 转为"已决定推进，非上架"）。落地：微信登录三态 Provider（disabled/mock/real）+ 端点返回 token、前端登录页加微信一键登录、小程序兼容回归修复（AI chat v-html→rich-text、document/window 条件编译、15 文件图片 base 统一）、manifest.json 分包优化、构建守卫脚本放宽 `&gt;` 误报（markdown-it 转义表合法）。主包 ≈332KB。商品零售复用钱包余额模拟支付，未接微信支付。**上架形态仍需 §2 资质办理。** |

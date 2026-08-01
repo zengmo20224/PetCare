@@ -2,14 +2,16 @@ package com.petcare.user.auth;
 
 import com.petcare.common.exception.BusinessException;
 import com.petcare.common.exception.ErrorCode;
-import org.springframework.stereotype.Service;
 
 /**
- * Disabled WeChat login provider for V1.
+ * Disabled WeChat login provider.
  * Always throws an exception indicating WeChat login is not enabled.
  * Does NOT create users, generate openid, or issue tokens.
+ *
+ * <p>Instantiated by {@code WechatLoginConfig} as the {@code @ConditionalOnMissingBean}
+ * fallback when {@code petcare.wechat.mode} is {@code disabled} or absent — no longer
+ * a component-scanned {@code @Service}.
  */
-@Service
 public class DisabledWechatLoginProvider implements WechatLoginProvider {
 
     @Override

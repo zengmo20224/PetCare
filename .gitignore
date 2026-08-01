@@ -84,3 +84,9 @@ tmp-ui-shots/
 
 # Playwright MCP 工具产物（本地调试用，不入库）
 .playwright-mcp/
+
+# V2 AI Agent 模型文件（>50MB，走 release 附件/对象存储，CI 下载并校验 sha256）
+# docs/09-ai-agent-design.md §7.2/§8；models/README.md 记录获取方式与校验值
+models/**/*.onnx
+models/**/*.bin
+models/**/*.safetensors

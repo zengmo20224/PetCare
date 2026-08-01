@@ -8,11 +8,18 @@ spring:
 petcare:
   security:
     jwt-secret: ${JWT_SECRET:dev-secret-key-for-local-testing-only-32chars}
+  wechat:
+    # dev：用 mock provider 派生确定性 openid，前端无需真实微信即可联调登录链路。
+    mode: ${WECHAT_LOGIN_MODE:mock}
   ai:
     # D-004 修订（2026-07-21）：dev 默认启用 AI 客服 + 分析报告。
     # 未配置 DEEPSEEK_API_KEY 时 DeepSeekAiProviderClient 构造抛 AiProviderUnavailableException，
     # 由全局处理器返回 503，不影响应用启动。
     provider-enabled: ${AI_PROVIDER_ENABLED:true}
+    # V2 AI Agent（D-013）：dev 默认关闭（启用需本地起 PgVector 容器）。
+    # 显式 AI_AGENT_ENABLED=true 时才启用 Agent/RAG 能力。
+    agent-enabled: ${AI_AGENT_ENABLED:false}
+    rag-enabled: ${AI_RAG_ENABLED:false}
     deepseek:
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       api-key: ${DEEPSEEK_API_KEY:}
@@ -21,3 +28,6 @@ petcare:
       read-timeout: ${DEEPSEEK_READ_TIMEOUT:60000}
       max-tokens: ${DEEPSEEK_MAX_TOKENS:1024}
       max-retries: ${DEEPSEEK_MAX_RETRIES:1}
+    # V2 PgVector：dev 本地开发默认 localhost（不走 compose 网络）
+    pgvector:
+      host: ${PGVECTOR_HOST:localhost}

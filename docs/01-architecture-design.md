@@ -66,7 +66,12 @@ Controller 负责协议和输入校验，Service 负责业务规则和事务，M
 
 营销活动是当前业务模块，只实现活动展示、后台维护和商品/服务关联，不进入复杂价格计算链路。
 
-AI 模块代码已实现（对话、发帖助手、分析报告、客服上下文、安全策略等），但当前处于关闭状态，由三重机制保证不可达：① provider 实现恒为 `DisabledAiProviderClient`，任何调用抛异常；② 用户端 AI 接口硬编码返回 401；③ 管理端 AI 接口所需权限码未在 RBAC 中授权，恒返回 403。V1 期间不新增真实 LLM Provider 接入，不开放面向用户的 AI 入口。未来激活时必须通过受限工具调用业务服务，不能直接访问数据库。
+AI 分两个阶段，边界由 `docs/08-pending-decisions.md` D-004（V1）与 D-013（V2）共同约束：
+
+- **V1（D-004 修订，2026-07-21，已激活）**：用户端智能客服对话 + 管理端经营分析报告接入真实 DeepSeek；`AiProviderClient` 端口 + DeepSeek/Disabled 双实现 + 三层医疗护栏（`HighRiskSymptomDetector`/`PetMedicalSafetyPolicy`/`AiOutputSafetyPolicy`）+ `AiProviderArchitectureTest` 边界守卫（强制 provider 包不依赖 Mapper/DataSource）。发帖助手与 AI 用量查看页仍关闭。
+- **V2（D-013，2026-08-01，设计基线，待实施）**：AI Agent 增量设计——引入 PgVector 向量库做 RAG、对话升级为 Agent（具备受限工具调用能力）、激活社区助手与内容审核。设计详见 `docs/09-ai-agent-design.md`，按 M8 切片落地。
+
+两个阶段共用的不可逾越约束：① AI 不得直接访问数据库（V1 由 `AiProviderArchitectureTest` 强制，V2 Agent 访问数据只通过受限 Tool → 业务 Service）；② AI 不得做疾病诊断/药物处方/治疗承诺（三层护栏保留）；③ AI 建议只能作参考，不能自动改业务数据。
 
 ## 7. 交付架构原则
 

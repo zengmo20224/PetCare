@@ -6,7 +6,7 @@
       <!-- Avatar -->
       <view class="profile-edit__avatar-section">
         <view class="profile-edit__avatar" @tap="chooseAvatar">
-          <image v-if="avatarUrl" class="profile-edit__avatar-img" :src="fullUrl(avatarUrl)" mode="aspectFill" />
+          <image v-if="avatarUrl" class="profile-edit__avatar-img" :src="assetFullUrl(avatarUrl)" mode="aspectFill" />
           <text v-else class="profile-edit__avatar-placeholder">{{ profile.nickname?.charAt(0) || '?' }}</text>
         </view>
         <text class="profile-edit__avatar-hint">点击更换头像</text>
@@ -36,7 +36,7 @@
       <PcFormField label="身份证照片">
         <view class="profile-edit__id-card">
           <view class="profile-edit__id-card-preview" @tap="chooseIdCardImage">
-            <image v-if="idCardImageUrl" class="profile-edit__id-card-img" :src="fullUrl(idCardImageUrl)" mode="aspectFill" />
+            <image v-if="idCardImageUrl" class="profile-edit__id-card-img" :src="assetFullUrl(idCardImageUrl)" mode="aspectFill" />
             <text v-else class="profile-edit__id-card-placeholder">+ 上传身份证</text>
           </view>
           <text v-if="idCardImageUrl" class="profile-edit__id-card-change" @tap="chooseIdCardImage">更换照片</text>
@@ -58,6 +58,7 @@ import PcFormField from '@/components/PcFormField.vue'
 import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
 import { useUserStore } from '@/store/user'
 import { updateUserProfile, uploadFile } from '@/api/user'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const userStore = useUserStore()
 
@@ -68,14 +69,6 @@ const idCardNo = ref('')
 const avatarUrl = ref<string | null>(null)
 const idCardImageUrl = ref<string | null>(null)
 const saving = ref(false)
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 onMounted(async () => {
   if (!userStore.profile) {

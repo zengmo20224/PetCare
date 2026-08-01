@@ -71,7 +71,16 @@
             <!-- User input stays plain text (never parsed as Markdown, prevents injection).
                  AI output is rendered as sanitized Markdown HTML for proper formatting. -->
             <text v-if="msg.role === 'user'" class="ai-chat__bubble-text">{{ msg.content }}</text>
+            <!-- H5 renders Markdown via v-html (sanitized HTML string). -->
+            <!-- #ifdef H5 -->
             <view v-else class="ai-chat__bubble-md" v-html="renderMarkdown(msg.content)" />
+            <!-- #endif -->
+            <!-- MP-WEIXIN: v-html is unsupported; rich-text accepts an HTML string as nodes.
+                 We reuse the same sanitized Markdown output. rich-text has limited tag
+                 support, so non-listed tags are dropped gracefully (acceptable for chat). -->
+            <!-- #ifdef MP-WEIXIN -->
+            <rich-text v-else class="ai-chat__bubble-md" :nodes="renderMarkdown(msg.content)" />
+            <!-- #endif -->
           </view>
         </view>
 
@@ -135,6 +144,9 @@ const lastMessageAnchor = ref('')
  * container and slides under the input bar. We compute a fixed height from window.innerHeight
  * minus the tab bar and input bar heights, and recompute on resize.
  * Fallback constants cover the case where the DOM measurements aren't ready yet.
+ *
+ * MP-WEIXIN note: the mini-program has no `document`/`window`, and its scroll-view does not
+ * suffer the H5 overflow bug, so a pure constant-based calculation is sufficient there.
  */
 const TABS_HEIGHT_PX = 48
 const INPUT_BAR_HEIGHT_PX = 76
@@ -143,12 +155,21 @@ const scrollHeight = ref(0)
 function recomputeScrollHeight() {
   try {
     const winH = uni.getSystemInfoSync().windowHeight
-    // Prefer measuring real element heights if available, fall back to constants.
+
+    // #ifdef H5
+    // On H5, prefer measuring real element heights if available, fall back to constants.
     const tabs = document.querySelector('.ai-chat__tabs') as HTMLElement | null
     const input = document.querySelector('.ai-chat__input-bar') as HTMLElement | null
     const tabsH = tabs ? tabs.offsetHeight : TABS_HEIGHT_PX
     const inputH = input ? input.offsetHeight : INPUT_BAR_HEIGHT_PX
     scrollHeight.value = Math.max(120, winH - tabsH - inputH)
+    // #endif
+
+    // #ifdef MP-WEIXIN
+    // No DOM in the mini-program; use the preset constants. The input bar padding
+    // (safe-area bottom inset) is already reflected in INPUT_BAR_HEIGHT_PX.
+    scrollHeight.value = Math.max(120, winH - TABS_HEIGHT_PX - INPUT_BAR_HEIGHT_PX)
+    // #endif
   } catch {
     scrollHeight.value = 0
   }
@@ -322,9 +343,13 @@ onLoad(async (query) => {
 })
 
 // Recompute on resize (orientation change, browser chrome show/hide on mobile).
+// H5-only: the mini-program has no resize event for this page, and its window size
+// is queried fresh on each recomputeScrollHeight() call.
+// #ifdef H5
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', recomputeScrollHeight)
 }
+// #endif
 </script>
 
 <style lang="scss" scoped>

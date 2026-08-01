@@ -6,14 +6,18 @@
   "versionCode": "100",
   "transformPx": false,
   "mp-weixin": {
-    "appid": "",
+    "appid": "wx02d230f66581701a",
     "setting": {
       "urlCheck": false,
       "es6": true,
       "postcss": true,
       "minified": true
     },
-    "usingComponents": true
+    "usingComponents": true,
+    "optimization": {
+      "subPackages": true
+    },
+    "lazyCodeLoading": "requiredComponents"
   },
   "uniStatistics": {
     "enable": false

@@ -23,14 +23,7 @@
 import { computed } from 'vue'
 import { formatYuan } from '@/utils/format'
 import { getProductVisual } from '@/utils/product-visual'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
+import { assetFullUrl } from '@/utils/asset-url'
 
 const props = defineProps<{
   productId?: string
@@ -46,7 +39,7 @@ defineEmits<{
 }>()
 
 const priceText = computed(() => formatYuan(props.price))
-const displayCover = computed(() => props.coverUrl ? fullUrl(props.coverUrl) : getProductVisual(props.productId))
+const displayCover = computed(() => props.coverUrl ? assetFullUrl(props.coverUrl) : getProductVisual(props.productId))
 </script>
 
 <style scoped>

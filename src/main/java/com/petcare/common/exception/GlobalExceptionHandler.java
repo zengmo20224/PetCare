@@ -173,7 +173,8 @@ public class GlobalExceptionHandler {
 
     private HttpStatus resolveHttpStatus(String code) {
         return switch (code) {
-            case ErrorCode.VALIDATION_ERROR -> HttpStatus.BAD_REQUEST;
+            case ErrorCode.VALIDATION_ERROR,
+                 ErrorCode.WECHAT_JS_CODE_INVALID -> HttpStatus.BAD_REQUEST;
             case ErrorCode.RESOURCE_NOT_FOUND,
                  ErrorCode.BOOKING_ADDRESS_NOT_FOUND,
                  ErrorCode.COMMUNITY_POST_NOT_FOUND,
@@ -220,6 +221,7 @@ public class GlobalExceptionHandler {
                  ErrorCode.PRODUCT_ORDER_PAYMENT_REQUIRED,
                  ErrorCode.PRODUCT_ORDER_PICKUP_REQUIRED,
                  ErrorCode.PRODUCT_ORDER_AMOUNT_INVALID -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case ErrorCode.WECHAT_UNAVAILABLE -> HttpStatus.BAD_GATEWAY;
             default -> HttpStatus.UNPROCESSABLE_ENTITY;
         };
     }

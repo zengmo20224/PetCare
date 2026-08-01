@@ -171,8 +171,15 @@ JWT_SECRET=<生成的JWT密钥>
 JWT_ISSUER=petcare-o2o-api
 JWT_EXPIRATION_MINUTES=120
 
-# AI 保持关闭
+# AI Provider：VPS 演示场景默认关闭（未配 DEEPSEEK_API_KEY）；如需启用客服/分析，设 true 并配 key
 AI_PROVIDER_ENABLED=false
+
+# V2 AI Agent：演示场景默认关闭；启用需同时起 postgres 容器并配 PgVector 密码
+AI_AGENT_ENABLED=false
+AI_RAG_ENABLED=false
+PGVECTOR_DB=petcare_ai
+PGVECTOR_USER=petcare
+PGVECTOR_PASSWORD=<生成的强密码3>
 
 # 关键：所有容器端口绑到 127.0.0.1，不暴露公网，由 Caddy 反代
 ADMIN_WEB_PORT=8080

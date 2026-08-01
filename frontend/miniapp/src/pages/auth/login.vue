@@ -34,6 +34,23 @@
       </view>
 
       <PcPrimaryButton text="登录" :loading="loginLoading" @tap="handleLogin" />
+
+      <!-- WeChat one-tap login. Mini-program only — H5 has no WeChat provider. -->
+      <!-- #ifdef MP-WEIXIN -->
+      <view class="auth-divider">
+        <view class="auth-divider__line"></view>
+        <text class="auth-divider__text">或</text>
+        <view class="auth-divider__line"></view>
+      </view>
+      <button
+        class="auth-wx-btn"
+        :disabled="wxLoginLoading"
+        open-type="getUserInfo"
+        @tap="handleWxLogin"
+      >
+        <text class="auth-wx-btn__text">{{ wxLoginLoading ? '登录中...' : '微信一键登录' }}</text>
+      </button>
+      <!-- #endif -->
     </view>
   </view>
 </template>
@@ -48,6 +65,7 @@ const userStore = useUserStore()
 const phoneInput = ref('')
 const passwordInput = ref('')
 const loginLoading = ref(false)
+const wxLoginLoading = ref(false)
 
 async function handleLogin() {
   if (!phoneInput.value || !passwordInput.value) {
@@ -63,6 +81,39 @@ async function handleLogin() {
     uni.showToast({ title: '登录成功', icon: 'success' })
     await userStore.fetchProfile()
     uni.switchTab({ url: '/pages/profile/index' })
+  }
+}
+
+/**
+ * WeChat one-tap login (mini-program only, gated by #ifdef MP-WEIXIN in template).
+ * Flow: uni.login → temporary code → backend exchanges for openid → JWT issued.
+ * The code is a single-use credential; mock backend mode derives a stable openid from it.
+ */
+async function handleWxLogin() {
+  if (wxLoginLoading.value) return
+  wxLoginLoading.value = true
+  try {
+    const loginRes = await new Promise<UniApp.LoginRes>((resolve, reject) => {
+      uni.login({
+        provider: 'weixin',
+        success: resolve,
+        fail: reject,
+      })
+    })
+    if (!loginRes.code) {
+      uni.showToast({ title: '获取微信授权失败', icon: 'none' })
+      return
+    }
+    const ok = await userStore.doWechatLogin(loginRes.code)
+    if (ok) {
+      uni.showToast({ title: '登录成功', icon: 'success' })
+      await userStore.fetchProfile()
+      uni.switchTab({ url: '/pages/profile/index' })
+    }
+  } catch {
+    uni.showToast({ title: '微信登录失败，请重试', icon: 'none' })
+  } finally {
+    wxLoginLoading.value = false
   }
 }
 
@@ -117,5 +168,50 @@ function goForgotPassword() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 4px 0;
+}
+
+.auth-divider__line {
+  flex: 1;
+  height: 1px;
+  background: #e2e9e6;
+}
+
+.auth-divider__text {
+  font-size: 12px;
+  color: #71817d;
+}
+
+.auth-wx-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  background: #07c160;
+  border-radius: 24px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.auth-wx-btn::after {
+  border: none;
+}
+
+.auth-wx-btn[disabled] {
+  background: #9ad8b6;
+  color: #ffffff;
+}
+
+.auth-wx-btn__text {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
 }
 </style>

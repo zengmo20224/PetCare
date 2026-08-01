@@ -766,6 +766,40 @@ CREATE TABLE `faq_knowledge` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='FAQ 知识库表';
 
+-- AI Agent Tool 调用审计日志表（V2，D-013；CI-DB-019；与 ai_usage_log 同库 MySQL，不在 PgVector）
+CREATE TABLE `ai_tool_call_log` (
+  `id`              BIGINT       NOT NULL COMMENT '主键，雪花 ID',
+  `usage_log_id`    BIGINT       DEFAULT NULL COMMENT '关联 ai_usage_log.id',
+  `agent_type`      VARCHAR(32)  NOT NULL COMMENT 'Agent 类型：CUSTOMER_SERVICE/ANALYSIS/POST_ASSISTANT/MODERATION',
+  `tool_name`       VARCHAR(64)  NOT NULL COMMENT 'Tool 唯一名（白名单注册名）',
+  `user_id`         BIGINT       DEFAULT NULL COMMENT '调用方用户 ID',
+  `admin_id`        BIGINT       DEFAULT NULL COMMENT '调用方管理员 ID',
+  `args_summary`    VARCHAR(500) DEFAULT NULL COMMENT '入参摘要（脱敏，限长防泄露）',
+  `result_summary`  VARCHAR(500) DEFAULT NULL COMMENT '出参摘要（脱敏）',
+  `duration_ms`     INT          DEFAULT NULL COMMENT 'Tool 执行耗时（毫秒）',
+  `success`         TINYINT      NOT NULL DEFAULT 1 COMMENT '是否成功：0-失败 1-成功',
+  `error_message`   VARCHAR(1000) DEFAULT NULL COMMENT '错误信息（脱敏）',
+  `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_tool_usage_log` (`usage_log_id`),
+  KEY `idx_tool_agent_type` (`agent_type`),
+  KEY `idx_tool_user_id` (`user_id`),
+  KEY `idx_tool_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI Agent Tool 调用审计日志表';
+
+-- AI Agent ChatMemory 持久化表（V2，D-013；CI-DB-020；langchain4j 自定义 Store 承载，不复用 ai_message）
+CREATE TABLE `ai_chat_memory` (
+  `id`              VARCHAR(128) NOT NULL COMMENT '记忆会话 ID（langchain4j memory id）',
+  `agent_type`      VARCHAR(32)  NOT NULL COMMENT 'Agent 类型',
+  `serialized_messages` LONGTEXT NOT NULL COMMENT 'langchain4j 序列化 ChatMessage 列表（JSON）',
+  `message_count`   INT          NOT NULL DEFAULT 0 COMMENT '记忆窗口内消息数',
+  `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_memory_agent_type` (`agent_type`),
+  KEY `idx_memory_update_time` (`update_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI Agent ChatMemory 持久化表';
+
 -- ============================================================================
 -- J. 后台管理模块
 -- ============================================================================

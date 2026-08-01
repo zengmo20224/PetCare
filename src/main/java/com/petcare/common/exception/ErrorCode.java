@@ -17,6 +17,8 @@ public final class ErrorCode {
     public static final String UNAUTHORIZED = "unauthorized";
     public static final String FORBIDDEN = "forbidden";
     public static final String WECHAT_LOGIN_NOT_ENABLED = "wechat_login_not_enabled";
+    public static final String WECHAT_JS_CODE_INVALID = "wechat_js_code_invalid";
+    public static final String WECHAT_UNAVAILABLE = "wechat_unavailable";
     public static final String METHOD_NOT_ALLOWED = "method_not_allowed";
 
     // Rate limit (H2: 登录/注册/找回密码端点防暴力破解)

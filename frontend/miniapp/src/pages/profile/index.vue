@@ -94,6 +94,7 @@ import PcBottomNav from '@/components/PcBottomNav.vue'
 import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
 import { useUserStore } from '@/store/user'
 import { getUnreadCount } from '@/api/notification'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -104,9 +105,7 @@ const displayPhone = computed(() => userStore.profile?.phone || '')
 const avatarUrl = computed(() => {
   const url = userStore.profile?.avatarUrl
   if (!url) return null
-  if (url.startsWith('http')) return url
-  const base = import.meta.env.VITE_API_BASE_URL || ''
-  return base + url
+  return assetFullUrl(url)
 })
 
 function goLogin() {

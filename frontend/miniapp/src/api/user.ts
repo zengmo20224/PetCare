@@ -67,12 +67,16 @@ export function resetPassword(data: {
   return http.post<void>('/api/v1/auth/forgot-password/reset', data as any)
 }
 
-/** WeChat login — not yet implemented */
-export function wechatLogin(_code: string): Promise<ApiResponse<{ token: string }>> {
-  return Promise.resolve({
-    success: false,
-    error: { code: 'WECHAT_LOGIN_DISABLED', message: '微信登录尚未启用' },
-  })
+/**
+ * WeChat mini-program login.
+ * Sends the temporary authorization code (from `uni.login`) to the backend, which resolves
+ * an openid and issues a JWT. The response shape matches password login (AuthResult), so the
+ * same token-storage flow can be reused. Backend availability is controlled by
+ * `petcare.wechat.mode` (disabled | mock | real); when disabled the backend returns 422 and
+ * the request wrapper surfaces a sanitized error message.
+ */
+export function wechatLogin(code: string): Promise<ApiResponse<AuthResult>> {
+  return http.post<AuthResult>('/api/v1/auth/wechat-login', { code } as any)
 }
 
 /** Get current user profile */

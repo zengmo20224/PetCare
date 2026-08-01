@@ -23,7 +23,7 @@
 
           <!-- Product image -->
           <view class="cart-item__img-wrap">
-            <image v-if="item.productCoverUrl" class="cart-item__img" :src="fullUrl(item.productCoverUrl)" mode="aspectFill" />
+            <image v-if="item.productCoverUrl" class="cart-item__img" :src="assetFullUrl(item.productCoverUrl)" mode="aspectFill" />
           </view>
 
           <!-- Info -->
@@ -78,8 +78,8 @@ import PcStatePanel from '@/components/PcStatePanel.vue'
 import { getCartItems, updateCartItem, deleteCartItem, checkCartItems } from '@/api/cart'
 import { useUserStore } from '@/store/user'
 import type { CartItem } from '@/types/product'
+import { assetFullUrl } from '@/utils/asset-url'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
@@ -94,12 +94,6 @@ const checkedTotal = computed(() =>
 const allChecked = computed(() =>
   cartItems.value.length > 0 && cartItems.value.every(i => i.checked)
 )
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 async function loadCart() {
   listStatus.value = 'loading'

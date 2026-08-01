@@ -116,8 +116,8 @@ import type { ProductDetail } from '@/types/product'
 import { formatYuan } from '@/utils/format'
 import { getProductVisual } from '@/utils/product-visual'
 import { normalizeRouteParam } from '@/utils/route-query'
+import { assetFullUrl } from '@/utils/asset-url'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const PRODUCT_DETAIL_CAROUSEL_LIMIT = 5
 const userStore = useUserStore()
 
@@ -147,17 +147,11 @@ const galleryImages = computed(() => {
   if (realUrls.length > 0) {
     return realUrls
       .slice(0, PRODUCT_DETAIL_CAROUSEL_LIMIT)
-      .map(u => fullUrl(u))
+      .map(u => assetFullUrl(u))
   }
   const fallback = getProductVisual(product.value.id)
   return fallback ? [fallback] : []
 })
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 /**
  * Real product images for the description section (no placeholders).
@@ -169,7 +163,7 @@ const detailImages = computed(() => {
   if (product.value.detailImageUrls && product.value.detailImageUrls.length > 0) {
     urls.push(...product.value.detailImageUrls)
   }
-  return urls.map(u => fullUrl(u))
+  return urls.map(u => assetFullUrl(u))
 })
 
 function onSwiperChange(e: any) {

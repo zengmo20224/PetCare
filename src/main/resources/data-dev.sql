@@ -193,7 +193,8 @@ VALUES
 INSERT INTO `admin_role` (`id`, `role_code`, `role_name`, `description`, `status`) VALUES
   (1, 'SUPER_ADMIN', '超级管理员', '全部权限', 'ACTIVE'),
   (2, 'ADMIN',       '管理员',     '管理权限', 'ACTIVE'),
-  (3, 'STAFF',       '员工',       '只读权限', 'ACTIVE');
+  (3, 'STAFF',       '员工',       '只读权限', 'ACTIVE'),
+  (4, 'MODERATOR',   '内容审核员', '社区内容审核建议查看权限（V2 AI Agent，D-013）', 'ACTIVE');
 
 INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `module`, `status`) VALUES
   (7001, 'store:info:read',     '门店信息查看', 'store', 'ACTIVE'),
@@ -245,13 +246,21 @@ INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `mod
   (7047, 'staff:profile:enable',          '员工启用',     'staff', 'ACTIVE'),
   -- ai (7048-7049) — D-004 修订（2026-07-21）：用户端客服 + 管理端分析报告已激活
   (7048, 'ai:analysis:generate',          '生成AI分析报告', 'ai', 'ACTIVE'),
-  (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE');
+  (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE'),
+  -- ai V2 Agent (7055-7056) — D-013（2026-08-01）：审核建议 + 知识库重建
+  -- 注：ai:customer-service:chat / ai:post-assistant:use 是用户端权限（登录即可），不进管理端 RBAC
+  (7055, 'ai:moderation:review',          '查看AI审核建议', 'ai', 'ACTIVE'),
+  (7056, 'ai:knowledge:rebuild',          '重建AI知识库',   'ai', 'ACTIVE');
 
--- SUPER_ADMIN 和 ADMIN：全部权限（开发环境）
+-- SUPER_ADMIN 和 ADMIN：全部权限（开发环境，含 V2 ai 段）
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
-SELECT 80000 + p.id, 1, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7049;
+SELECT 80000 + p.id, 1, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7056;
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
-SELECT 81000 + p.id, 2, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7049;
+SELECT 81000 + p.id, 2, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7056;
+
+-- MODERATOR：只获得 ai:moderation:review（7055），不能重建知识库
+INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`) VALUES
+  (80055, 4, 7055);
 
 -- STAFF：只读权限
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`) VALUES

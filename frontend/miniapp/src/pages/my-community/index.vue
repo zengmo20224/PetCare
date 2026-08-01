@@ -44,7 +44,7 @@
             @tap="goDetail(post.id)"
           >
             <view class="mc-card__cover">
-              <image v-if="post.imageUrls && post.imageUrls.length > 0" class="mc-card__cover-img" :src="fullUrl(post.imageUrls[0])" mode="aspectFill" />
+              <image v-if="post.imageUrls && post.imageUrls.length > 0" class="mc-card__cover-img" :src="assetFullUrl(post.imageUrls[0])" mode="aspectFill" />
             </view>
 
             <view class="mc-card__body">
@@ -93,6 +93,7 @@ import PcStatePanel from '@/components/PcStatePanel.vue'
 import { getMyPosts, getMyLikedPosts, getMyFavoritedPosts, deletePost } from '@/api/community'
 import { useUserStore } from '@/store/user'
 import type { PostItem } from '@/types/community'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -100,14 +101,6 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const activeTab = ref<'posts' | 'liked' | 'favorited'>('posts')
 const listStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 const posts = ref<PostItem[]>([])
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 const emptyText = computed(() => {
   if (activeTab.value === 'posts') return '还没有发布过帖子'

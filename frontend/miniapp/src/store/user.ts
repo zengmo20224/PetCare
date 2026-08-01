@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as apiLogin, getUserProfile, type UserProfile } from '@/api/user'
+import { login as apiLogin, wechatLogin as apiWechatLogin, getUserProfile, type UserProfile } from '@/api/user'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref<string | null>(loadToken())
@@ -47,6 +47,21 @@ export const useUserStore = defineStore('user', () => {
     return false
   }
 
+  /**
+   * WeChat mini-program login.
+   * `uni.login({ provider: 'weixin' })` yields a temporary code, which the backend exchanges
+   * for an openid (real mode) or deterministically derives one (mock mode). Either way a JWT
+   * is issued and stored exactly like password login. The H5 build never calls this.
+   */
+  async function doWechatLogin(code: string): Promise<boolean> {
+    const res = await apiWechatLogin(code)
+    if (res.success && res.data) {
+      setToken(res.data.accessToken)
+      return true
+    }
+    return false
+  }
+
   /** Set token directly (used by register flow) */
   function setAuthToken(newToken: string): void {
     setToken(newToken)
@@ -68,5 +83,5 @@ export const useUserStore = defineStore('user', () => {
     profile.value = null
   }
 
-  return { token, isLoggedIn, profile, setToken, setAuthToken, doLogin, fetchProfile, logout }
+  return { token, isLoggedIn, profile, setToken, setAuthToken, doLogin, doWechatLogin, fetchProfile, logout }
 })

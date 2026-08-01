@@ -9,7 +9,7 @@
 | D-001 | 用户端改为响应式 H5 优先 | 已决定 | 2026-06-13 |
 | D-002 | 暂时保留 `frontend/miniapp` 目录，使用其 UniApp H5 构建能力 | 已决定 | 2026-06-13 |
 | D-003 | 微信登录和小程序适配延后，不阻塞 H5 | 已决定 | 2026-06-13 |
-| D-004 | AI 模块代码已实现但功能关闭（provider 未接真实 LLM，用户端 401、管理端 403），不进入 V1 业务流程，后续激活时接入 | **已修订（2026-07-21）** | 2026-07-10 更新 |
+| D-004 | AI 模块代码已实现；**V1 部分激活**（客服对话 + 经营分析报告接 DeepSeek），发帖助手/用量页仍关闭；V2 Agent 增量见 D-013 | **已修订（2026-07-21）** | 2026-07-10 更新 |
 | D-005 | 商品、购物车和订单必须真实可用 | 已决定 | 2026-06-13 |
 | D-006 | 社区简化为发帖、浏览、点赞、评论和收藏 | 已决定 | 2026-06-13 |
 | D-007 | 保留基础营销活动展示、管理和商品/服务关联 | 已决定 | 2026-06-13 |
@@ -18,6 +18,7 @@
 | D-010 | 不接**真实在线支付通道**（微信/支付宝等）、优惠券、会员积分和多门店；**钱包余额**为管理端手工台账，仅用于无支付资质下的支付链路验证，不计息、不可提现、不可转账 | 已决定 | 2026-07-18 更新（CR-20260718-003） |
 | D-011 | 预约并发、订单金额、库存和权限必须由后端强制控制 | 已决定 | 原设计延续 |
 | D-012 | 钱包余额的边界：扣款与扣库存必须同事务；失败必留痕；管理员调整必填理由；本期不做营销赠送 | 已决定 | 2026-07-18（CR-20260718-003） |
+| D-013 | V2 AI Agent 增量：引入 PgVector 向量库做 RAG + langchain4j 作 `AiProviderClient` 实现层 + Agent 受限工具调用；激活社区助手与内容审核；安全边界继承 D-004（不直连 DB / 不诊断 / 建议不改库） | **已决定（设计基线，待实施）** | 2026-08-01 |
 
 ## D-010 / D-012 补充说明（2026-07-18）
 
@@ -63,17 +64,60 @@
 
 **降级路径**：设 `AI_PROVIDER_ENABLED=false` 或不设 `DEEPSEEK_API_KEY`，Bean 构造时记 WARN、运行时返回 503，不影响应用启动与其他功能。
 
+## D-013 V2 AI Agent 增量（2026-08-01）
+
+**决策背景**：D-004 将 V1 AI 能力部分激活（客服对话 + 经营分析）。本次进入 V2 阶段，把"无状态 prompt-stuffing 客服"和"吃预聚合 JSON 的分析报告"升级为可检索（RAG）+ 可行动（Agent 工具调用）的 AI Agent，并激活 V1 关闭的社区助手与内容审核。完整设计见 `docs/09-ai-agent-design.md`。
+
+**核心技术选型**：
+
+| 维度 | 决定 | 理由 |
+|---|---|---|
+| 向量库 | **PgVector**（独立 PG 实例） | langchain4j/spring-ai 一等支持；业务库 MySQL 零污染（派生知识副本独立存储）；单门店数据量在 PgVector 舒适区 |
+| LLM 框架 | **langchain4j**，作为 `AiProviderClient` 端口的实现层 | 不破坏 V1 端口契约与 `AiProviderArchitectureTest`；RAG/ChatMemory/Tool 能力直接复用；DeepSeek 手写实现保留作降级 |
+| embedding | **all-MiniLM-L6-v2 本地 ONNX**（384 维，Java 内推理） | 零外部 API 费用；中文质量不足时可切厂商 API（schema 已留 `model_name`） |
+| 图片审核 | **ONNX Java 原生**（nsfw_model），不引入 Python sidecar | 与单门店运维定位不符；DJL + onnxruntime 成熟 |
+| 对话记忆 | langchain4j `MessageWindowChatMemory` + 自定义 JDBC Store 落 `ai_message` 表 | 不引入 Redis；对齐 V1 `MAX_HISTORY_TURNS` |
+
+**Agent 范围（M8 切片）**：
+1. 智能客服 Agent（升级 V1 客服，RAG + 只读 Tool + SSE 流式）
+2. 经营分析 Agent（升级 V1 报告，只读下钻 Tool + 结构化报告）
+3. 社区助手 Agent（激活 V1 的 401 + 个性化草稿，不自动发布）
+4. 内容审核 Agent（文本 LLM 分类 + 图片 ONNX，产 `PostReport` 不直接删）
+
+**安全边界（继承 D-004，强化为 8 条，详见 `docs/09` §2）**：
+- B1 AI 不直连 DB：V1 由 `AiProviderArchitectureTest` 强制 provider 包；V2 新增 `AiAgentArchitectureTest` 强制 `ai/agent/` 与 `ai/rag/` 不依赖 `*Mapper`，Agent 访问业务数据只通过受限 Tool → 业务 Service。
+- B2/B3/B5 三层医疗护栏 + 上游错误不外泄 + 输入校验：全部保留。
+- B4 AI 建议只作参考：经营分析 Tool 全只读；社区审核/图片审核产 `PostReport`，最终处置由 moderation 规则或人工确认，不自动删帖封号。
+- B6（新增）PgVector 只存派生知识副本，业务真源仍在 MySQL，跨库最终一致（`source_hash` 幂等 + 定时补偿），客服价格/库存不信向量库走实时 Tool。
+- B7（新增）Agent Tool 是静态白名单 + RBAC 双重校验。
+- B8（新增）流式输出仍过护栏（分句检查）。
+
+**降级路径**：
+- `AI_AGENT_ENABLED=false` / `AI_RAG_ENABLED=false`：Agent/RAG 不可达，退回 V1 客服（全量塞 prompt）与 V1 分析报告，应用启动与其他功能不受影响。
+- PgVector 故障：Agent 降级纯 Tool 回答；知识库可从 MySQL 全量重建。
+- langchain4j 故障：切 V1 DeepSeek 手写 Provider；RAG 退回全量塞 prompt（数据量小可承受）。
+
+**未决子项（不阻塞设计，实施时定）**：embedding 本地 vs 厂商 API（Q-1）、知识入库定时 vs 事件（Q-2）、是否引入 Reranker（Q-3）、图片审核自托管 vs 商用 API（Q-4）。详见 `docs/09` §14。
+
 ## 未决
 
 ### P-002：微信小程序是否进入 V2 范围
 
-状态：**长期规划，非当前优先级（已降级，2026-07-04）**。
+状态：**已决定推进 demo 形态（非上架），2026-08-01**。原 2026-07-04 降级为"长期规划"的结论针对的是"真实对大陆用户营业"场景；本次用户将项目定位为"展示 AI coding 实力的 demo"，不追求上架，故资质/备案/微信支付不再是阻断——小程序端全面铺开到"可在微信开发者工具里完整演示"的程度。
 
-降级原因：用户明确当前场景为"课程作业 / 演示"，且选择"国外服务器自用测试"。该场景下小程序的微信登录、微信支付、备案、类目资质等门槛不必要，H5 是更合适的载体（与项目 README"H5 优先"主线一致）。
+本次推进的精确边界（已落地，2026-08-01）：
+- **微信登录**：后端三态 Provider（`disabled`/`mock`/`real`）由 `petcare.wechat.mode` 切换。dev 默认 `mock`（按 code 确定性派生 openid，开发者工具点登录即拿 token）；`real` 调真实 `jscode2session`（需 appid/secret 才能真机）。登录链路对齐密码登录（返回 `tokenType`/`accessToken`/`expiresInSeconds`/`user`），前端复用 `AuthResult`。
+- **支付**：复用已实现的"钱包余额（WALLET）"模拟支付（D-010/D-012），不接微信支付。商品/购物车/订单全流程可演示。
+- **小程序兼容回归修复**：AI 客服页（v-html→rich-text、document/window→条件编译）、全站 15 个图片 helper（统一 `assetFullUrl`，修复小程序图片黑屏）。
+- **配置**：`manifest.json` 填 appid 占位 + 开分包优化（`optimization.subPackages` + `lazyCodeLoading:requiredComponents`）；主包 ≈332KB，远低于 2MB。
 
-历史背景：`docs/12-wechat-miniprogram-launch-plan.md` 完成了 gap 分析，作为长期参考资料保留。当未来场景升级为"真实对大陆用户营业"时再重新评估。
+仍不做（非 demo 范围）：真实资质办理、微信支付商户号、手机号解密、用户协议/隐私政策/`wx.requirePrivacyAuthorize`、内容安全 `msgSecCheck`。
 
-当前阻塞：**无**。不阻塞 H5 演示部署，不阻塞任何当前开发切片。
+降级原因（历史，2026-07-04）：用户明确当前场景为"课程作业 / 演示"，且选择"国外服务器自用测试"。该场景下小程序的微信登录、微信支付、备案、类目资质等门槛不必要，H5 是更合适的载体（与项目 README"H5 优先"主线一致）。
+
+历史背景：`docs/12-wechat-miniprogram-launch-plan.md` 完成了 gap 分析，作为长期参考资料保留。当未来场景升级为"真实对大陆用户营业"时（需真实资质 + 微信支付 + 合规），仍需按 `docs/12` §2-§4 走完整上架流程。
+
+当前阻塞：**无**。demo 形态已可演示；上架形态依赖资质办理（非技术问题）。
 
 ### P-003：是否申请微信支付商户号
 

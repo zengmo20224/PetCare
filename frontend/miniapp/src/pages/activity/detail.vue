@@ -7,7 +7,7 @@
     >
       <template v-if="activity">
         <view v-if="activity.coverUrl" class="activity-detail__cover">
-          <image class="activity-detail__cover-img" :src="fullImageUrl(activity.coverUrl)" mode="aspectFill" />
+          <image class="activity-detail__cover-img" :src="assetFullUrl(activity.coverUrl)" mode="aspectFill" />
         </view>
         <view class="activity-detail__card">
           <text class="activity-detail__title">{{ activity.title }}</text>
@@ -22,7 +22,7 @@
                 class="activity-detail__related-card"
                 @tap="goProductDetail(item.id)"
               >
-                <image v-if="item.coverUrl" class="activity-detail__related-img" :src="fullImageUrl(item.coverUrl)" mode="aspectFill" />
+                <image v-if="item.coverUrl" class="activity-detail__related-img" :src="assetFullUrl(item.coverUrl)" mode="aspectFill" />
                 <view v-else class="activity-detail__related-img activity-detail__related-img--placeholder">
                   <text>商品</text>
                 </view>
@@ -48,7 +48,7 @@
                 class="activity-detail__related-card"
                 @tap="goServiceDetail(item.id)"
               >
-                <image v-if="item.coverUrl" class="activity-detail__related-img" :src="fullImageUrl(item.coverUrl)" mode="aspectFill" />
+                <image v-if="item.coverUrl" class="activity-detail__related-img" :src="assetFullUrl(item.coverUrl)" mode="aspectFill" />
                 <view v-else class="activity-detail__related-img activity-detail__related-img--placeholder">
                   <text>服务</text>
                 </view>
@@ -81,11 +81,11 @@ import { getActivityDetail } from '@/api/activity'
 import type { ActivityItem } from '@/types/activity'
 import { formatDuration, formatYuan } from '@/utils/format'
 import { normalizeRouteParam } from '@/utils/route-query'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const activity = ref<ActivityItem | null>(null)
 const pageStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 const currentActivityId = ref('')
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const productCards = computed(() => activity.value?.products ?? [])
 const serviceCards = computed(() => activity.value?.services ?? [])
 const productNames = computed(() => activity.value?.productNames ?? [])
@@ -124,12 +124,6 @@ function goProductDetail(id: string) {
 
 function goServiceDetail(id: string) {
   uni.navigateTo({ url: `/pages/services/detail?id=${id}` })
-}
-
-function fullImageUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
 }
 
 function formatActivityTime(item: ActivityItem): string {

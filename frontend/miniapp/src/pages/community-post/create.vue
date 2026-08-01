@@ -22,7 +22,7 @@
       <PcFormField label="图片（最多9张）">
         <view class="post-create__images">
           <view v-for="(img, index) in images" :key="index" class="post-create__image-item">
-            <image class="post-create__image-preview" :src="fullUrl(img)" mode="aspectFill" />
+            <image class="post-create__image-preview" :src="assetFullUrl(img)" mode="aspectFill" />
             <view class="post-create__image-remove" @tap="removeImage(index)">
               <text class="post-create__image-remove-icon">×</text>
             </view>
@@ -56,6 +56,7 @@ import TagInput from '@/components/TagInput.vue'
 import { createPost } from '@/api/community'
 import { uploadFile } from '@/api/user'
 import { useUserStore } from '@/store/user'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -65,14 +66,6 @@ const content = ref('')
 const tags = ref<string[]>([])
 const images = ref<string[]>([])
 const submitting = ref(false)
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string): string {
-  if (!url) return ''
-  if (url.startsWith('http') || url.startsWith('blob:')) return url
-  return API_BASE + url
-}
 
 function chooseImages() {
   const remaining = 9 - images.value.length

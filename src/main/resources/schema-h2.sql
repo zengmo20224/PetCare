@@ -579,6 +579,33 @@ CREATE TABLE IF NOT EXISTS `faq_knowledge` (
   PRIMARY KEY (`id`)
 );
 
+-- V2 AI Agent（D-013；CI-DB-019/020）—— H2 兼容版（无 COMMENT，TIMESTAMP/CLOB/IF NOT EXISTS）
+CREATE TABLE IF NOT EXISTS `ai_tool_call_log` (
+  `id`              BIGINT       NOT NULL,
+  `usage_log_id`    BIGINT       DEFAULT NULL,
+  `agent_type`      VARCHAR(32)  NOT NULL,
+  `tool_name`       VARCHAR(64)  NOT NULL,
+  `user_id`         BIGINT       DEFAULT NULL,
+  `admin_id`        BIGINT       DEFAULT NULL,
+  `args_summary`    VARCHAR(500) DEFAULT NULL,
+  `result_summary`  VARCHAR(500) DEFAULT NULL,
+  `duration_ms`     INT          DEFAULT NULL,
+  `success`         TINYINT      NOT NULL DEFAULT 1,
+  `error_message`   VARCHAR(1000) DEFAULT NULL,
+  `create_time`     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `ai_chat_memory` (
+  `id`                   VARCHAR(128) NOT NULL,
+  `agent_type`           VARCHAR(32)  NOT NULL,
+  `serialized_messages`  CLOB         NOT NULL,
+  `message_count`        INT          NOT NULL DEFAULT 0,
+  `create_time`          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time`          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+);
+
 -- J. Admin
 CREATE TABLE IF NOT EXISTS `admin_user` (
   `id`              BIGINT       NOT NULL,

@@ -2,7 +2,7 @@ package com.petcare.user.controller;
 
 import com.petcare.common.api.ApiResponse;
 import com.petcare.user.auth.UserAuthService;
-import com.petcare.user.auth.WechatLoginProvider;
+import com.petcare.user.auth.WechatLoginApplicationService;
 import com.petcare.user.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,23 +21,26 @@ import java.util.List;
 @RequestMapping("/api/v1/auth")
 public class UserAuthController {
 
-    private final WechatLoginProvider wechatLoginProvider;
+    private final WechatLoginApplicationService wechatLoginApplicationService;
     private final UserAuthService userAuthService;
 
-    public UserAuthController(WechatLoginProvider wechatLoginProvider,
+    public UserAuthController(WechatLoginApplicationService wechatLoginApplicationService,
                               UserAuthService userAuthService) {
-        this.wechatLoginProvider = wechatLoginProvider;
+        this.wechatLoginApplicationService = wechatLoginApplicationService;
         this.userAuthService = userAuthService;
     }
 
     /**
-     * WeChat login placeholder. Public endpoint (no auth required).
-     * V1 returns 422 with wechat_login_not_enabled error code.
+     * WeChat login. Public endpoint (no auth required).
+     * Behaviour depends on {@code petcare.wechat.mode}:
+     * {@code disabled} returns 422 wechat_login_not_enabled,
+     * {@code mock} derives a deterministic openid for dev/tests,
+     * {@code real} calls the WeChat jscode2session API.
      */
     @PostMapping("/wechat-login")
-    public ApiResponse<Void> wechatLogin(@Valid @RequestBody WechatLoginRequest request) {
-        wechatLoginProvider.login(request.code());
-        return ApiResponse.ok(null);
+    public ApiResponse<WechatLoginResponse> wechatLogin(@Valid @RequestBody WechatLoginRequest request) {
+        WechatLoginResponse response = wechatLoginApplicationService.login(request.code());
+        return ApiResponse.ok(response);
     }
 
     /**

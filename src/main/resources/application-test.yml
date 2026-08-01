@@ -19,5 +19,15 @@ petcare:
     rate-limit:
       window-seconds: 60
       max-requests: 10000
+  wechat:
+    # test 默认 disabled，保留 wechat-login 端点返回 422 的断言；
+    # 需要联调建账号链路的用例用 @TestPropertySource(properties="petcare.wechat.mode=mock") 覆盖。
+    mode: disabled
   test-login:
     allowed-phones: "13800138001,13800138002,13800138003,13800138010,13800138011,13800138050"
+  ai:
+    # 测试态强制关闭 V1 Provider 与 V2 Agent（对标 V1 test profile 不开 provider）。
+    # V2 Agent 测试通过 MockAiProviderClient / tc-pgvector profile 独立覆盖，见 docs/09 §10。
+    provider-enabled: false
+    agent-enabled: false
+    rag-enabled: false

@@ -27,8 +27,20 @@ petcare:
     jwt-secret: ${JWT_SECRET:}
     jwt-issuer: ${JWT_ISSUER:petcare-o2o-api}
     jwt-expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  wechat:
+    # Safe default: WeChat login endpoint returns 422 wechat_login_not_enabled.
+    # Override to `mock` (dev) or `real` (prod) via env/profile.
+    mode: ${WECHAT_LOGIN_MODE:disabled}
+    appid: ${WECHAT_APPID:}
+    secret: ${WECHAT_SECRET:}
+    connect-timeout: ${WECHAT_CONNECT_TIMEOUT:}
+    read-timeout: ${WECHAT_READ_TIMEOUT:}
   ai:
     provider-enabled: ${AI_PROVIDER_ENABLED:false}
+    # V2 AI Agent（D-013）：默认关闭，启用需 AI_AGENT_ENABLED=true 且 PgVector 可达
+    # 降级哲学（docs/09 §11）：任一开关 false 时对应能力不可达，不影响应用启动与其他功能
+    agent-enabled: ${AI_AGENT_ENABLED:false}
+    rag-enabled: ${AI_RAG_ENABLED:false}
     deepseek:
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       api-key: ${DEEPSEEK_API_KEY:}
@@ -37,3 +49,27 @@ petcare:
       read-timeout: ${DEEPSEEK_READ_TIMEOUT:}
       max-tokens: ${DEEPSEEK_MAX_TOKENS:}
       max-retries: ${DEEPSEEK_MAX_RETRIES:}
+    # V2 PgVector 连接（独立 PG 实例，仅 agent-enabled=true 时使用）
+    pgvector:
+      host: ${PGVECTOR_HOST:localhost}
+      port: ${PGVECTOR_PORT:5432}
+      database: ${PGVECTOR_DB:petcare_ai}
+      username: ${PGVECTOR_USER:petcare}
+      password: ${PGVECTOR_PASSWORD:}
+    # V2 Embedding（本地 ONNX 推理）
+    embedding:
+      model: ${AI_EMBEDDING_MODEL:all-MiniLM-L6-v2}
+      dimensions: ${AI_EMBEDDING_DIM:384}
+      onnx-model-path: ${AI_EMBEDDING_ONNX_PATH:./models/all-MiniLM-L6-v2/model.onnx}
+    # V2 RAG 检索参数
+    rag:
+      top-k: ${AI_RAG_TOP_K:5}
+    # V2 Agent 限流
+    agent:
+      rate-limit-per-min: ${AI_AGENT_RATE_LIMIT_PER_MIN:20}
+    # V2 内容审核（NSFW 模型渠道 M8.4 决策）
+    moderation:
+      nsfw-threshold: ${AI_MODERATION_NSFW_THRESHOLD:0.8}
+    # V2 知识库定时重建
+    knowledge:
+      rebuild-cron: ${AI_KNOWLEDGE_REBUILD_CRON:0 0 3 * * *}

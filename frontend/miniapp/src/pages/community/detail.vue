@@ -11,7 +11,7 @@
           <!-- Author -->
           <view class="community-detail__author">
             <view class="community-detail__author-avatar">
-              <image v-if="post.authorAvatar" class="community-detail__author-img" :src="fullUrl(post.authorAvatar)" mode="aspectFill" />
+              <image v-if="post.authorAvatar" class="community-detail__author-img" :src="assetFullUrl(post.authorAvatar)" mode="aspectFill" />
               <text v-else class="community-detail__author-initial">{{ (post.authorName || '?').charAt(0) }}</text>
             </view>
             <text class="community-detail__author-name">{{ post.authorName || '匿名用户' }}</text>
@@ -24,7 +24,7 @@
               v-for="(url, index) in post.imageUrls"
               :key="index"
               class="community-detail__image"
-              :src="fullUrl(url)"
+              :src="assetFullUrl(url)"
               mode="aspectFill"
               @tap="previewImage(index)"
             />
@@ -83,7 +83,7 @@
               <!-- Flat comment list (Douyin-style): author @ replyTo + content -->
               <view v-for="comment in comments" :key="comment.id" class="comment-item">
                 <view class="comment-item__avatar">
-                  <image v-if="comment.authorAvatar" class="comment-item__avatar-img" :src="fullUrl(comment.authorAvatar)" mode="aspectFill" />
+                  <image v-if="comment.authorAvatar" class="comment-item__avatar-img" :src="assetFullUrl(comment.authorAvatar)" mode="aspectFill" />
                   <text v-else class="comment-item__avatar-initial">{{ (comment.authorName || '?').charAt(0) }}</text>
                 </view>
                 <view class="comment-item__body">
@@ -129,6 +129,7 @@ import { useUserStore } from '@/store/user'
 import type { PostDetail, CommentFlatItem } from '@/types/community'
 import { normalizeRouteParam } from '@/utils/route-query'
 import { openCommunityTag } from '@/utils/community-navigation'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -154,18 +155,10 @@ const replyPlaceholder = computed(() => {
   return `回复 @${name}...`
 })
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
-
 /** Open the native full-screen image viewer with swipe + pinch-zoom. */
 function previewImage(index: number) {
   if (!post.value?.imageUrls || post.value.imageUrls.length === 0) return
-  const urls = post.value.imageUrls.map(u => fullUrl(u))
+  const urls = post.value.imageUrls.map(u => assetFullUrl(u))
   uni.previewImage({
     current: urls[index],
     urls,

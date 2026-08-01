@@ -1,0 +1,25 @@
+# Testcontainers PgVector profile（V2 AI Agent，docs/09 §10.4）
+# 对标 application-tc-mysql.yml；与 tc-mysql profile 可组合（主 MySQL + 向量 PgVector 双库）
+# 主数据源仍走 H2（纯 PgVector 测试）或由 tc-mysql profile 提供（双库组合测试）
+
+spring:
+  datasource:
+    # 纯 PgVector 测试默认用 H2 作主库（业务表），向量数据走 PgVector 容器（由 AbstractTcPgVectorIT 注入）
+    url: jdbc:h2:mem:tcpgvector;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+
+petcare:
+  security:
+    jwt-secret: tc-pgvector-test-secret-key-at-least-32-characters-long
+    jwt-issuer: petcare-o2o-api-tc-pgvector-test
+    jwt-expiration-minutes: 120
+  ai:
+    # agent-enabled / rag-enabled / pgvector.* 由 AbstractTcPgVectorIT 的 @DynamicPropertySource 注入容器连接信息
+    # provider 保持关闭（V2 Agent 测试用 MockAiProviderClient，不打真实 DeepSeek，对标 V1 策略）
+    provider-enabled: false

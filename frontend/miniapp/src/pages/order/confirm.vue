@@ -10,7 +10,7 @@
           <view class="confirm-items">
             <view v-for="item in checkedItems" :key="item.id" class="confirm-item">
               <view class="confirm-item__img-wrap">
-                <image v-if="item.productCoverUrl" class="confirm-item__img" :src="fullUrl(item.productCoverUrl)" mode="aspectFill" />
+                <image v-if="item.productCoverUrl" class="confirm-item__img" :src="assetFullUrl(item.productCoverUrl)" mode="aspectFill" />
               </view>
               <view class="confirm-item__info">
                 <text class="confirm-item__name">{{ item.productName }}</text>
@@ -147,8 +147,8 @@ import { getMyWallet } from '@/api/wallet'
 import { useUserStore } from '@/store/user'
 import type { CartItem } from '@/types/product'
 import type { StoreItem } from '@/types/store'
+import { assetFullUrl } from '@/utils/asset-url'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const userStore = useUserStore()
 
 const pageStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
@@ -176,12 +176,6 @@ const walletBalanceText = computed(() => walletBalance.value.toFixed(2))
 const walletInsufficient = computed(
   () => paymentMethod.value === 'WALLET' && walletBalance.value < Number(totalAmount.value)
 )
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 function fullAddress(addr: AddressItem): string {
   return `${addr.province ?? ''}${addr.city ?? ''}${addr.district ?? ''} ${addr.detailAddress ?? ''}`

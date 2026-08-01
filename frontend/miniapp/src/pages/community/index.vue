@@ -60,7 +60,7 @@
           <!-- Author row -->
           <view class="feed-card__author">
             <view class="feed-card__avatar">
-              <image v-if="post.authorAvatar" class="feed-card__avatar-img" :src="fullUrl(post.authorAvatar)" mode="aspectFill" />
+              <image v-if="post.authorAvatar" class="feed-card__avatar-img" :src="assetFullUrl(post.authorAvatar)" mode="aspectFill" />
               <text v-else class="feed-card__avatar-initial">{{ (post.authorName || '?').charAt(0) }}</text>
             </view>
             <text class="feed-card__author-name">{{ post.authorName || '匿名用户' }}</text>
@@ -94,7 +94,7 @@
               class="feed-card__image-wrap"
               :class="{ 'feed-card__image-wrap--more': idx === 5 && post.imageUrls.length > 6 }"
             >
-              <image class="feed-card__image" :src="fullUrl(img)" mode="aspectFill" lazy-load />
+              <image class="feed-card__image" :src="assetFullUrl(img)" mode="aspectFill" lazy-load />
               <text v-if="idx === 5 && post.imageUrls.length > 6" class="feed-card__image-more">+{{ post.imageUrls.length - 6 }}</text>
             </view>
           </view>
@@ -131,20 +131,13 @@ import { getPosts, getPopularTags } from '@/api/community'
 import type { PostItem, TagItem } from '@/types/community'
 import { normalizeRouteParam } from '@/utils/route-query'
 import { consumeCommunityTagIntent } from '@/utils/community-navigation'
+import { assetFullUrl } from '@/utils/asset-url'
 
 const listStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 const posts = ref<PostItem[]>([])
 const popularTags = ref<TagItem[]>([])
 const activeTag = ref('')
 const keyword = ref('')
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-
-function fullUrl(url: string | null): string {
-  if (!url) return ''
-  if (url.startsWith('http')) return url
-  return API_BASE + url
-}
 
 /** Cap displayed images at 6; the 6th slot shows a "+N" overlay when there are more. */
 function displayImages(urls: string[]): string[] {
