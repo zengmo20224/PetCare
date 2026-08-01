@@ -242,13 +242,16 @@ INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `mod
   (7044, 'user:profile:ban',              '用户封禁/解封', 'user', 'ACTIVE'),
   (7045, 'marketing:activity:read',       '营销活动查看', 'marketing', 'ACTIVE'),
   (7046, 'marketing:activity:manage',     '营销活动管理', 'marketing', 'ACTIVE'),
-  (7047, 'staff:profile:enable',          '员工启用',     'staff', 'ACTIVE');
+  (7047, 'staff:profile:enable',          '员工启用',     'staff', 'ACTIVE'),
+  -- ai (7048-7049) — D-004 修订（2026-07-21）：用户端客服 + 管理端分析报告已激活
+  (7048, 'ai:analysis:generate',          '生成AI分析报告', 'ai', 'ACTIVE'),
+  (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE');
 
 -- SUPER_ADMIN 和 ADMIN：全部权限（开发环境）
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
-SELECT 80000 + p.id, 1, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7047;
+SELECT 80000 + p.id, 1, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7049;
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
-SELECT 81000 + p.id, 2, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7047;
+SELECT 81000 + p.id, 2, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7049;
 
 -- STAFF：只读权限
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`) VALUES

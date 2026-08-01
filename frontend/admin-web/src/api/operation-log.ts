@@ -11,6 +11,8 @@ export interface OperationLog {
   requestMethod: string
   requestUrl: string
   result: string
+  /** Operation target details, e.g. "targetName=张三, targetId=3001, phone=139****1234". */
+  requestParams: string | null
   errorMessage: string | null
   createTime: string
 }

@@ -51,7 +51,6 @@ describe('mp-weixin UI page contracts', () => {
       'pages/addresses/index',
       'pages/addresses/edit',
       'pages/announcement/detail',
-      'pages/map-picker/index',
       'pages/my-community/index',
       'pages/notifications/index',
       'pages/pets/index',

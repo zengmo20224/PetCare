@@ -39,8 +39,9 @@ public class AdminAnnouncementController {
     @PreAuthorize("hasAuthority('system:config') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<PageResponse<AdminAnnouncementResponse>>> list(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        PageResponse<AdminAnnouncementResponse> result = notificationService.adminListAnnouncements(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status) {
+        PageResponse<AdminAnnouncementResponse> result = notificationService.adminListAnnouncements(page, size, status);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 

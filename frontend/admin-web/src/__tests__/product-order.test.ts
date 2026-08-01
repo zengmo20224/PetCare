@@ -2,7 +2,7 @@
  * H08 — Product Order Management Tests (RED phase)
  *
  * Covers:
- *  1. Shared component usage (FilterBar, DataTableShell, DetailDrawer, ActionConfirmDialog)
+ *  1. Shared component usage (FilterBar, DataTableShell, DetailDrawer, independent el-dialog)
  *  2. PetCare design tokens in styles (BEM naming)
  *  3. Feedback utils — no direct ElMessage / ElMessageBox
  *  4. Permission-based action button gating
@@ -48,9 +48,13 @@ describe('H08: Shared components', () => {
     expect(productOrderVue).toContain('DetailDrawer')
   })
 
-  it('uses ActionConfirmDialog for order actions', () => {
-    expect(productOrderVue).toContain('ActionConfirmDialog')
-    expect(productOrderVue).toContain('@confirm')
+  it('uses independent el-dialog for each order action (replaced ActionConfirmDialog)', () => {
+    // 6913f7f 起 ActionConfirmDialog 组件的 emit('confirm') 链路有时序缺陷（请求发不出），
+    // 商品订单页沿用 booking 页的同款修复：每个动作一个独立 el-dialog。
+    expect(productOrderVue).toContain('el-dialog')
+    // 不应再 import 该组件，也不应把它作为模板标签使用
+    expect(productOrderVue).not.toMatch(/import\s+ActionConfirmDialog\s+from/)
+    expect(productOrderVue).not.toMatch(/<ActionConfirmDialog[\s>]/)
   })
 
   it('does NOT use raw el-pagination', () => {
@@ -204,18 +208,29 @@ describe('H08: Query param lifecycle', () => {
 })
 
 // ──────────────────────────────────────────
-// 10. Unified confirm dialog pattern
+// 10. Independent action dialogs (replaces the buggy ActionConfirmDialog pattern)
 // ──────────────────────────────────────────
-describe('H08: Unified confirm dialog', () => {
-  it('uses a single pending action ref for all order actions', () => {
-    expect(productOrderVue).toMatch(/pendingAction/)
+describe('H08: Independent action dialogs', () => {
+  it('does NOT use the buggy ActionConfirmDialog emit chain (the open/execute/pending trio)', () => {
+    // 6913f7f 用 Playwright 复现：emit('confirm') → 待执行闭包内的请求发不出。
+    // 仅检查"作为代码标识符"出现，避免命中解释性注释。
+    expect(productOrderVue).not.toMatch(/\bconst\s+pendingAction\b/)
+    expect(productOrderVue).not.toMatch(/\bfunction\s+openConfirmDialog\b|\bconst\s+openConfirmDialog\b/)
+    expect(productOrderVue).not.toMatch(/\bfunction\s+executeConfirmedAction\b|\bconst\s+executeConfirmedAction\b/)
   })
 
-  it('has openConfirmDialog helper', () => {
-    expect(productOrderVue).toMatch(/openConfirmDialog/)
+  it('gives each order action an independent el-dialog with its own loading guard', () => {
+    // 每个 action 直调 API + 独立 loading 防"点不到/重复点"
+    expect(productOrderVue).toMatch(/confirmVisible/)
+    expect(productOrderVue).toMatch(/confirmLoading/)
+    expect(productOrderVue).toMatch(/cancelVisible/)
+    expect(productOrderVue).toMatch(/cancelLoading/)
+    expect(productOrderVue).toMatch(/outOfStockVisible/)
+    expect(productOrderVue).toMatch(/outOfStockLoading/)
   })
 
-  it('has executeConfirmedAction handler', () => {
-    expect(productOrderVue).toContain('executeConfirmedAction')
+  it('cancel/out-of-stock require a reason (audit-trail)', () => {
+    expect(productOrderVue).toMatch(/cancelRules[\s\S]*reason[\s\S]*required/)
+    expect(productOrderVue).toMatch(/outOfStockRules[\s\S]*reason[\s\S]*required/)
   })
 })

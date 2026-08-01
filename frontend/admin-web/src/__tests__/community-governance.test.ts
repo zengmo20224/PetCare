@@ -2,7 +2,7 @@
  * H09 — Community Governance Tests (RED phase)
  *
  * Covers both posts.vue and reports.vue:
- *  1. Shared component usage (FilterBar, DataTableShell, ActionConfirmDialog)
+ *  1. Shared component usage (FilterBar, DataTableShell, independent el-dialog)
  *  2. PetCare design tokens & BEM naming
  *  3. Feedback utils — no direct ElMessage / ElMessageBox
  *  4. Permission-based action button gating
@@ -42,8 +42,16 @@ describe('H09: Posts — shared components', () => {
     expect(postsVue).toContain('@page-change=')
   })
 
-  it('uses ActionConfirmDialog', () => {
-    expect(postsVue).toContain('ActionConfirmDialog')
+  it('uses independent el-dialog for post actions (replaced ActionConfirmDialog)', () => {
+    // 6913f7f 起 ActionConfirmDialog 组件的 emit('confirm') 链路有时序缺陷（请求发不出），
+    // 帖子页沿用 booking 页的同款修复：每个动作一个独立 el-dialog。
+    expect(postsVue).toContain('el-dialog')
+    // 不应再 import 该组件，也不应把它作为模板标签使用
+    expect(postsVue).not.toMatch(/import\s+ActionConfirmDialog\s+from/)
+    expect(postsVue).not.toMatch(/<ActionConfirmDialog[\s>]/)
+    // 也不应保留旧的"待执行闭包"三件套（作为代码标识符）
+    expect(postsVue).not.toMatch(/\bconst\s+pendingAction\b/)
+    expect(postsVue).not.toMatch(/\bconst\s+executeConfirmedAction\b/)
   })
 
   it('does NOT use raw el-pagination', () => {

@@ -102,8 +102,22 @@
 
 - 微信登录和小程序适配。
 - AI 功能的激活与真实 LLM 接入（代码已实现，当前关闭）。
-- 在线支付、优惠券、积分、多门店和复杂营销。
+- **真实在线支付通道**（微信/支付宝等第三方资质接入）、优惠券、会员积分、多门店和复杂营销。注：钱包余额属管理端台账，已在 CR-20260718-003 进入 M7 切片，不属于"在线支付"范畴。
+- 钱包营销赠送规则（如"充100送20"）、用户自助充值、提现/转账、退款审批流。
 - 非关键报表和大规模视觉重构。
+
+## 3a. M7 钱包余额切片（CR-20260718-003）
+
+> 目标：在无第三方支付资质的场景下，通过管理端手工台账验证商品订单与服务预约的完整支付链路（含金额、库存、并发、状态、审计）。详细边界见 `docs/08-pending-decisions.md` D-010/D-012。
+
+- 阶段 0：合规治理（CR 申请单 + 修订 D-010 + 新增 D-012 + 同步 boundary/architecture/登记表）。
+- 阶段 1：`user_wallet` / `wallet_transaction` 表 + Wallet Entity/Mapper/Service + 枚举与错误码 + WalletServiceTest/WalletConcurrencyMySqlIT。
+- 阶段 2：商品订单与服务预约下单/取消接入钱包扣款与退款 + WalletPaymentAtomicityIT/WalletRefundAtomicityIT。
+- 阶段 3：AdminWalletController + UserWalletController + RBAC 权限码 + 审计范式 + AdminWalletControllerTest/AdminWalletAuditRollbackTest。
+- 阶段 4：miniapp `pages/wallet` 分包 + 订单结算页接入钱包支付 + 预约页钱包选项。
+- 阶段 5：admin-web 钱包管理菜单（账户列表 + 流水查询）+ 操作日志字典。
+- 阶段 6：测试验证与全量回归（单元 + 真实 MySQL 并发 IT + E2E 验收 7 项）。
+- 阶段 7：归档（CR 实施记录 + 登记表 + CHANGELOG + 决策记录已实现清单）。
 
 ## 4. 任务切片规则
 

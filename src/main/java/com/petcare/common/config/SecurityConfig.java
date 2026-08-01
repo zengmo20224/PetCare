@@ -89,6 +89,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/posts/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/posts/{postId}/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/posts/{postId}/comments/flat").permitAll()
                         // Anonymous public announcement reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/announcements").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/announcements/{id}").permitAll()

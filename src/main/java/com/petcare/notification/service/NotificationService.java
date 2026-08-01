@@ -189,12 +189,28 @@ public class NotificationService {
     // ==================== Admin: Announcement Management ====================
 
     /**
-     * Lists all announcements for admin (includes DRAFT and deleted).
+     * Lists all announcements for admin (includes DRAFT).
      */
     public PageResponse<AdminAnnouncementResponse> adminListAnnouncements(int page, int size) {
+        return adminListAnnouncements(page, size, null);
+    }
+
+    /**
+     * Lists announcements for admin with optional status filter.
+     *
+     * <p>当 {@code status} 为 null 或空字符串时，返回全部状态（PUBLISHED + DRAFT）；
+     * 否则只返回指定状态。逻辑删除一律排除。
+     *
+     * @param status 可选状态过滤值（"PUBLISHED" / "DRAFT"），null 或空表示不过滤
+     */
+    public PageResponse<AdminAnnouncementResponse> adminListAnnouncements(int page, int size, String status) {
         LambdaQueryWrapper<Announcement> wrapper = new LambdaQueryWrapper<Announcement>()
-                .eq(Announcement::getDeleted, 0)
-                .orderByAsc(Announcement::getSort)
+                .eq(Announcement::getDeleted, 0);
+        // 前端状态下拉框传 PUBLISHED/DRAFT；空白值表示查全部，不加条件
+        if (status != null && !status.isBlank()) {
+            wrapper.eq(Announcement::getStatus, status);
+        }
+        wrapper.orderByAsc(Announcement::getSort)
                 .orderByDesc(Announcement::getCreateTime);
 
         Page<Announcement> pageResult = announcementMapper.selectPage(new Page<>(page, size), wrapper);

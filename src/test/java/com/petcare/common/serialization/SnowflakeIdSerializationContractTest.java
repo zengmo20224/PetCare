@@ -526,7 +526,8 @@ class SnowflakeIdSerializationContractTest {
         void operationLogView_id_and_adminId_areJsonStrings() throws Exception {
             var dto = new AdminManagementDtos.OperationLogView(
                     BIG_ID, BIG_ID, "product", "create",
-                    "POST", "/api/v1/admin/products", "SUCCESS", null, LocalDateTime.now());
+                    "POST", "/api/v1/admin/products", "SUCCESS",
+                    "targetName=测试商品, productId=123", null, LocalDateTime.now());
             String json = toJson(dto);
             assertIdIsString(json, "id");
             assertIdIsString(json, "adminId");

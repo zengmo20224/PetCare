@@ -70,6 +70,13 @@
       ]
     },
     {
+      "root": "pages/wallet",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "我的钱包" } },
+        { "path": "transactions", "style": { "navigationBarTitleText": "余额明细" } }
+      ]
+    },
+    {
       "root": "pages/community-post",
       "pages": [
         { "path": "create", "style": { "navigationBarTitleText": "发布帖子" } }
@@ -84,7 +91,8 @@
     {
       "root": "pages/ai",
       "pages": [
-        { "path": "status", "style": { "navigationBarTitleText": "智能助手" } }
+        { "path": "status", "style": { "navigationBarTitleText": "智能助手" } },
+        { "path": "chat", "style": { "navigationBarTitleText": "智能客服" } }
       ]
     },
     {
@@ -114,12 +122,6 @@
       "pages": [
         { "path": "index", "style": { "navigationBarTitleText": "我的地址" } },
         { "path": "edit", "style": { "navigationBarTitleText": "编辑地址" } }
-      ]
-    },
-    {
-      "root": "pages/map-picker",
-      "pages": [
-        { "path": "index", "style": { "navigationBarTitleText": "选择位置" } }
       ]
     },
     {

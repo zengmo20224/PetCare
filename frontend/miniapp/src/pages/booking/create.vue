@@ -69,7 +69,7 @@
         <!-- Pet Selection (optional) -->
         <view class="booking-section">
           <text class="booking-label">选择宠物{{ serviceItem.needPet ? '（必选）' : '（可选）' }}</text>
-          <PcStatePanel :status="petsStatus" empty-text="暂未添加宠物，可不选">
+          <PcStatePanel :status="petsStatus" empty-text="暂未添加宠物">
             <picker
               class="pc-picker"
               mode="selector"
@@ -83,13 +83,16 @@
                 <text class="pc-select__arrow">?</text>
               </view>
             </picker>
+            <template #empty-action>
+              <view class="booking-empty-action" @tap="goAddPet">+ 添加宠物</view>
+            </template>
           </PcStatePanel>
         </view>
 
         <!-- Address Selection (HOME / BOTH only) -->
         <view v-if="needAddress" class="booking-section">
           <text class="booking-label">上门地址（必选）</text>
-          <PcStatePanel :status="addressesStatus" empty-text="暂未添加地址，请先在个人中心添加地址">
+          <PcStatePanel :status="addressesStatus" empty-text="暂未添加地址">
             <picker
               class="pc-picker"
               mode="selector"
@@ -103,6 +106,9 @@
                 <text class="pc-select__arrow">?</text>
               </view>
             </picker>
+            <template #empty-action>
+              <view class="booking-empty-action" @tap="goAddAddress">+ 添加地址</view>
+            </template>
           </PcStatePanel>
         </view>
 
@@ -124,6 +130,31 @@
           </PcFormField>
         </view>
 
+        <!-- Payment method switch (CR-20260718-003) -->
+        <view class="booking-section">
+          <text class="booking-label">支付方式</text>
+          <view class="booking-pay">
+            <view
+              class="booking-pay__opt"
+              :class="{ 'booking-pay__opt--on': paymentMethod === 'OFFLINE_STORE' }"
+              @tap="paymentMethod = 'OFFLINE_STORE'"
+            >
+              <text>到店支付</text>
+            </view>
+            <view
+              class="booking-pay__opt"
+              :class="{ 'booking-pay__opt--on': paymentMethod === 'WALLET' }"
+              @tap="paymentMethod = 'WALLET'"
+            >
+              <text>钱包余额</text>
+            </view>
+          </view>
+          <view v-if="paymentMethod === 'WALLET'" class="booking-wallet-hint">
+            <text>钱包余额：¥{{ walletBalance.toFixed(2) }}</text>
+            <text v-if="walletInsufficient" class="booking-wallet-hint--low">（余额不足，请充值或选择到店支付）</text>
+          </view>
+        </view>
+
         <!-- Submit -->
         <view class="booking-action">
           <PcPrimaryButton text="提交预约" :loading="submitting" @tap="handleSubmit" />
@@ -135,7 +166,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
@@ -143,6 +174,7 @@ import PcFormField from '@/components/PcFormField.vue'
 import { getServiceDetail } from '@/api/service'
 import { getAvailability, createBooking } from '@/api/booking'
 import { getMyPets, getMyAddresses, type PetItem, type AddressItem } from '@/api/user'
+import { getMyWallet } from '@/api/wallet'
 import { useUserStore } from '@/store/user'
 import type { ServiceItem } from '@/types/service'
 import type { BookingSlot } from '@/types/booking'
@@ -167,6 +199,14 @@ const contactName = ref('')
 const contactPhone = ref('')
 const remark = ref('')
 const submitting = ref(false)
+
+// Payment (CR-20260718-003): OFFLINE_STORE (default) or WALLET.
+const paymentMethod = ref<'OFFLINE_STORE' | 'WALLET'>('OFFLINE_STORE')
+const walletBalance = ref(0)
+const walletInsufficient = computed(() => {
+  if (paymentMethod.value !== 'WALLET' || !serviceItem.value?.price) return false
+  return walletBalance.value < serviceItem.value.price
+})
 
 // Pet selection
 const pets = ref<PetItem[]>([])
@@ -348,6 +388,14 @@ async function loadSlots() {
   slotsStatus.value = slots.value.length > 0 ? 'success' : 'empty'
 }
 
+function goAddPet() {
+  uni.navigateTo({ url: '/pages/pets/index' })
+}
+
+function goAddAddress() {
+  uni.navigateTo({ url: '/pages/addresses/index' })
+}
+
 async function handleSubmit() {
   if (!userStore.isLoggedIn) {
     uni.showToast({ title: '请先登录', icon: 'none' })
@@ -375,6 +423,15 @@ async function handleSubmit() {
     return
   }
 
+  // Validate wallet balance if paying by wallet (CR-20260718-003)
+  if (paymentMethod.value === 'WALLET' && walletInsufficient.value) {
+    uni.showToast({
+      title: '钱包余额不足，请充值或选择到店支付',
+      icon: 'none',
+    })
+    return
+  }
+
   submitting.value = true
   const res = await createBooking({
     storeId: STORE_ID,
@@ -384,7 +441,7 @@ async function handleSubmit() {
     startTime: selectedSlot.value,
     contactName: contactName.value,
     contactPhone: contactPhone.value,
-    paymentMethod: 'OFFLINE_STORE',
+    paymentMethod: paymentMethod.value,
     petId: selectedPetId.value || undefined,
     addressId: selectedAddressId.value || undefined,
     remark: remark.value || undefined,
@@ -408,6 +465,24 @@ onLoad((query) => {
 
   currentServiceId.value = serviceId
   loadService(serviceId)
+  loadWalletBalance()
+})
+
+/** Load the user's wallet balance for the wallet-payment option. Non-fatal on failure. */
+async function loadWalletBalance() {
+  const res = await getMyWallet()
+  if (res.success && res.data) {
+    walletBalance.value = res.data.balance
+  }
+}
+
+// Refresh pets/addresses when returning from their add pages
+onShow(() => {
+  if (!currentServiceId.value) return
+  loadPets()
+  if (selectedMode.value === 'HOME') {
+    loadAddresses()
+  }
 })
 </script>
 
@@ -573,5 +648,58 @@ onLoad((query) => {
 
 .booking-action {
   margin-top: 24px;
+}
+
+.booking-empty-action {
+  margin-top: 10px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: #11796F;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Payment method switch (CR-20260718-003) */
+.booking-pay {
+  display: flex;
+  gap: 10px;
+}
+
+.booking-pay__opt {
+  flex: 1;
+  height: 42px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #E2E9E6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.booking-pay__opt--on {
+  background: #11796F;
+  border-color: #11796F;
+}
+
+.booking-pay__opt--on text {
+  color: #fff;
+  font-weight: 600;
+}
+
+.booking-pay__opt text {
+  font-size: 14px;
+  color: #19322E;
+}
+
+.booking-wallet-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #71817D;
+}
+
+.booking-wallet-hint--low {
+  color: #E85D4E;
 }
 </style>

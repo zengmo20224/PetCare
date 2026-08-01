@@ -78,7 +78,10 @@ INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `mod
   (7045, 'marketing:activity:read',       '营销活动查看', 'marketing', 'ACTIVE'),
   (7046, 'marketing:activity:manage',     '营销活动管理', 'marketing', 'ACTIVE'),
   -- staff enable (7047)
-  (7047, 'staff:profile:enable',          '员工启用',     'staff', 'ACTIVE')
+  (7047, 'staff:profile:enable',          '员工启用',     'staff', 'ACTIVE'),
+  -- ai (7048-7049) — D-004 修订（2026-07-21）：用户端客服 + 管理端分析报告已激活
+  (7048, 'ai:analysis:generate',          '生成AI分析报告', 'ai', 'ACTIVE'),
+  (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`), `status` = 'ACTIVE';
 
 -- ============================================================================
@@ -86,18 +89,18 @@ ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`), `status` 
 --    SUPER_ADMIN and ADMIN: all permissions (dev simplification)
 --    STAFF: read-only subset
 -- ============================================================================
--- SUPER_ADMIN (role_id=1): all permission ids 7001-7047
+-- SUPER_ADMIN (role_id=1): all permission ids 7001-7049
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
 SELECT 80000 + p.id, 1, p.id
 FROM `admin_permission` p
-WHERE p.id BETWEEN 7001 AND 7047
+WHERE p.id BETWEEN 7001 AND 7049
 ON DUPLICATE KEY UPDATE `role_id` = VALUES(`role_id`);
 
 -- ADMIN (role_id=2): same as SUPER_ADMIN in dev (all permissions)
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
 SELECT 81000 + p.id, 2, p.id
 FROM `admin_permission` p
-WHERE p.id BETWEEN 7001 AND 7047
+WHERE p.id BETWEEN 7001 AND 7049
 ON DUPLICATE KEY UPDATE `role_id` = VALUES(`role_id`);
 
 -- STAFF (role_id=3): read-only permissions only

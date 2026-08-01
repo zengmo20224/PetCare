@@ -11,4 +11,5 @@ export interface StoreItem {
   phone: string | null
   businessHours: string | null
   description: string | null
+  status: string | null
 }

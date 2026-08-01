@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.petcare.booking.domain.BookingAvailabilityCalculator;
-import com.petcare.booking.domain.BookingDistanceCalculator;
 import com.petcare.booking.domain.StaffAssignmentPolicy;
 import com.petcare.booking.dto.BookingAvailabilityRequest;
 import com.petcare.booking.dto.BookingAvailabilityResponse;
@@ -34,7 +33,6 @@ import com.petcare.staff.entity.Staff;
 import com.petcare.staff.entity.StaffSkill;
 import com.petcare.staff.service.StaffService;
 import com.petcare.staff.service.StaffSkillService;
-import com.petcare.store.entity.Store;
 import com.petcare.store.entity.StoreConfig;
 import com.petcare.store.service.StoreConfigService;
 import com.petcare.store.service.StoreService;
@@ -117,6 +115,9 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
         // 3. Load store config and validate date range
         StoreConfig config = getStoreConfig(request.storeId());
         validateBookingDate(request.bookingDate(), config);
+        // 门店配置的时段粒度必须为正，否则 BookingAvailabilityCalculator 的循环无法推进。
+        // 这里显式校验并报业务错误，避免下游静默返回空时段或陷入异常分支。
+        validateTimeSlotMinutes(config);
 
         // 4. Find staff with matching skill
         List<StaffSkill> skills = staffSkillService.list(new LambdaQueryWrapper<StaffSkill>()
@@ -203,6 +204,7 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
         // 3. Load store config and validate date
         StoreConfig config = getStoreConfig(request.storeId());
         validateBookingDate(request.bookingDate(), config);
+        validateTimeSlotMinutes(config);
 
         // 4. Validate HOME mode requirements
         BigDecimal distanceKm = null;
@@ -216,19 +218,8 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
             if (address == null) {
                 throw new BusinessException(ErrorCode.BOOKING_ADDRESS_NOT_FOUND, "地址不存在或不属于当前用户");
             }
-            if (address.getLongitude() == null || address.getLatitude() == null) {
-                throw new BusinessException(ErrorCode.BOOKING_ADDRESS_REQUIRED, "地址缺少经纬度信息");
-            }
-
-            Store store = storeService.getById(request.storeId());
-            if (store.getLongitude() == null || store.getLatitude() == null) {
-                throw new BusinessException(ErrorCode.BOOKING_SERVICE_UNAVAILABLE, "门店缺少经纬度信息");
-            }
-
-            distanceKm = BookingDistanceCalculator.calculateDistance(
-                    address.getLatitude(), address.getLongitude(),
-                    store.getLatitude(), store.getLongitude());
-            BookingDistanceCalculator.validateHomeServiceDistance(distanceKm, config.getHomeServiceRadiusKm());
+            // 距离限制已取消：不再要求地址/门店经纬度，不再计算服务距离。
+            // distanceKm 保持 null，booking 记录的 distance_km 为空。
         }
 
         // 5. Find available staff for the requested time slot
@@ -359,15 +350,17 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
     @Transactional
     public BookingResponse confirmBooking(Long bookingId, String merchantRemark, Long operatorId) {
         String url = "/api/v1/admin/bookings/" + bookingId + "/confirm";
-        String params = "bookingId=" + bookingId;
+        String failParams = "bookingId=" + bookingId;
         try {
             ServiceBooking updated = bookingTransactionService.transitionStatusOnce(
                     bookingId, "CONFIRMED", "ADMIN", operatorId, "管理员确认预约",
                     null, merchantRemark);
+            String params = "bookingNo=" + updated.getBookingNo() + ", bookingId=" + bookingId
+                    + ", userId=" + updated.getUserId();
             auditSuccess(operatorId, "confirm-booking", url, params);
             return toResponse(updated);
         } catch (RuntimeException e) {
-            auditFail(operatorId, "confirm-booking", url, params, e);
+            auditFail(operatorId, "confirm-booking", url, failParams, e);
             throw e;
         }
     }
@@ -376,15 +369,17 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
     @Transactional
     public BookingResponse rejectBooking(Long bookingId, String reason, Long operatorId) {
         String url = "/api/v1/admin/bookings/" + bookingId + "/reject";
-        String params = "bookingId=" + bookingId;
+        String failParams = "bookingId=" + bookingId;
         try {
             ServiceBooking updated = bookingTransactionService.transitionStatusOnce(
                     bookingId, "REJECTED", "ADMIN", operatorId, "管理员拒绝预约：" + reason,
                     reason, null);
+            String params = "bookingNo=" + updated.getBookingNo() + ", bookingId=" + bookingId
+                    + ", userId=" + updated.getUserId();
             auditSuccess(operatorId, "reject-booking", url, params);
             return toResponse(updated);
         } catch (RuntimeException e) {
-            auditFail(operatorId, "reject-booking", url, params, e);
+            auditFail(operatorId, "reject-booking", url, failParams, e);
             throw e;
         }
     }
@@ -393,15 +388,17 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
     @Transactional
     public BookingResponse startBooking(Long bookingId, Long operatorId) {
         String url = "/api/v1/admin/bookings/" + bookingId + "/start";
-        String params = "bookingId=" + bookingId;
+        String failParams = "bookingId=" + bookingId;
         try {
             ServiceBooking updated = bookingTransactionService.transitionStatusOnce(
                     bookingId, "IN_SERVICE", "ADMIN", operatorId, "管理员开始服务",
                     null, null);
+            String params = "bookingNo=" + updated.getBookingNo() + ", bookingId=" + bookingId
+                    + ", userId=" + updated.getUserId();
             auditSuccess(operatorId, "start-booking", url, params);
             return toResponse(updated);
         } catch (RuntimeException e) {
-            auditFail(operatorId, "start-booking", url, params, e);
+            auditFail(operatorId, "start-booking", url, failParams, e);
             throw e;
         }
     }
@@ -410,15 +407,17 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
     @Transactional
     public BookingResponse completeBooking(Long bookingId, Long operatorId) {
         String url = "/api/v1/admin/bookings/" + bookingId + "/complete";
-        String params = "bookingId=" + bookingId;
+        String failParams = "bookingId=" + bookingId;
         try {
             ServiceBooking updated = bookingTransactionService.transitionStatusOnce(
                     bookingId, "COMPLETED", "ADMIN", operatorId, "管理员完成服务",
                     null, null);
+            String params = "bookingNo=" + updated.getBookingNo() + ", bookingId=" + bookingId
+                    + ", userId=" + updated.getUserId();
             auditSuccess(operatorId, "complete-booking", url, params);
             return toResponse(updated);
         } catch (RuntimeException e) {
-            auditFail(operatorId, "complete-booking", url, params, e);
+            auditFail(operatorId, "complete-booking", url, failParams, e);
             throw e;
         }
     }
@@ -427,15 +426,17 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
     @Transactional
     public BookingResponse cancelBookingAdmin(Long bookingId, String reason, Long operatorId) {
         String url = "/api/v1/admin/bookings/" + bookingId + "/cancel";
-        String params = "bookingId=" + bookingId;
+        String failParams = "bookingId=" + bookingId;
         try {
             ServiceBooking updated = bookingTransactionService.transitionStatusOnce(
                     bookingId, "CANCELLED", "ADMIN", operatorId, "管理员取消预约：" + reason,
                     reason, null);
+            String params = "bookingNo=" + updated.getBookingNo() + ", bookingId=" + bookingId
+                    + ", userId=" + updated.getUserId();
             auditSuccess(operatorId, "cancel-booking", url, params);
             return toResponse(updated);
         } catch (RuntimeException e) {
-            auditFail(operatorId, "cancel-booking", url, params, e);
+            auditFail(operatorId, "cancel-booking", url, failParams, e);
             throw e;
         }
     }
@@ -444,7 +445,7 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
     @Transactional
     public BookingResponse reassignBooking(Long bookingId, BookingReassignRequest request, Long operatorId) {
         String url = "/api/v1/admin/bookings/" + bookingId + "/reassign";
-        String params = "bookingId=" + bookingId + ",newStaffId=" + request.newStaffId();
+        Staff newStaff = null;
         try {
             // Pre-validate staff skill and status (optimistic checks before transaction)
             ServiceItem item = serviceItemService.getById(
@@ -456,7 +457,7 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
                 throw new BusinessException(ErrorCode.BOOKING_STAFF_UNAVAILABLE, "该员工不具备此服务技能");
             }
 
-            Staff newStaff = staffService.getById(request.newStaffId());
+            newStaff = staffService.getById(request.newStaffId());
             if (newStaff == null || !"ACTIVE".equals(newStaff.getStatus())) {
                 throw new BusinessException(ErrorCode.BOOKING_STAFF_UNAVAILABLE, "该员工不存在或已停用");
             }
@@ -466,9 +467,15 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
             bookingTransactionService.reassignBookingOnce(bookingId, request.newStaffId(),
                     booking.getBookingDate(), booking.getStartTime(), booking.getEndTime(), operatorId);
 
+            String params = "bookingId=" + bookingId + ", newStaffName=" + newStaff.getName()
+                    + ", newStaffId=" + request.newStaffId();
             auditSuccess(operatorId, "reassign-booking", url, params);
             return toResponse(serviceBookingService.getById(bookingId));
         } catch (RuntimeException e) {
+            String params = newStaff != null
+                    ? "bookingId=" + bookingId + ", newStaffName=" + newStaff.getName()
+                            + ", newStaffId=" + request.newStaffId()
+                    : "bookingId=" + bookingId + ", newStaffId=" + request.newStaffId();
             auditFail(operatorId, "reassign-booking", url, params, e);
             throw e;
         }
@@ -550,6 +557,19 @@ public class BookingApplicationServiceImpl implements BookingApplicationService 
         if (bookingDate.isAfter(maxDate)) {
             throw new BusinessException(ErrorCode.BOOKING_DATE_OUT_OF_RANGE,
                     String.format("预约日期不能超过%d天后", config.getBookingAdvanceDays()));
+        }
+    }
+
+    /**
+     * 校验门店配置的时段粒度为正整数。time_slot_minutes ≤ 0 会让时段生成循环无法推进
+     * （candidate 永远不前进），历史上曾导致请求挂起直至连接池耗尽。详见
+     * BookingAvailabilityCalculator.generateSlots 的防御性注释。
+     */
+    private void validateTimeSlotMinutes(StoreConfig config) {
+        Integer slotMinutes = config.getTimeSlotMinutes();
+        if (slotMinutes == null || slotMinutes <= 0) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION,
+                    "门店时段粒度配置异常，请联系管理员检查 store_config.time_slot_minutes");
         }
     }
 

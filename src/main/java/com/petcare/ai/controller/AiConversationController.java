@@ -6,6 +6,7 @@ import com.petcare.common.api.ApiResponse;
 import com.petcare.common.exception.BusinessException;
 import com.petcare.common.exception.ErrorCode;
 import com.petcare.common.pagination.PageResponse;
+import com.petcare.common.security.SecurityContextHelper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,10 +88,11 @@ public class AiConversationController {
 
     /**
      * Resolves current user ID from the security context.
-     * Returns 401 if no user identity is available.
-     * Note: User JWT is not yet implemented; admin tokens are not accepted as user identity.
+     * Returns 401 if no user identity is available (anonymous or admin token).
+     * D-004 修订（2026-07-21）：用户端 AI 客服已激活，依赖已实现的 User JWT。
      */
     private Long resolveCurrentUserId() {
-        throw new BusinessException(ErrorCode.UNAUTHORIZED, "用户端 AI 功能暂未开放，请等待用户登录功能上线");
+        return SecurityContextHelper.getCurrentUserId()
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED, "请先登录"));
     }
 }

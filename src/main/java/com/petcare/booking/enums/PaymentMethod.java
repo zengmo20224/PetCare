@@ -11,6 +11,7 @@ public enum PaymentMethod {
     OFFLINE_STORE("OFFLINE_STORE"),
     OFFLINE_HOME("OFFLINE_HOME"),
     ONLINE_WECHAT("ONLINE_WECHAT"),
+    WALLET("WALLET"),
     FREE("FREE");
 
     private final String code;

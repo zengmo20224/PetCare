@@ -84,6 +84,9 @@
               :value="Number(cat.id)"
             />
           </el-select>
+          <div class="pc-staff__hint">
+            决定该员工出现在哪些服务的预约时段中。不选则该员工的排班不会出现在任何用户预约里。
+          </div>
         </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" />
@@ -97,6 +100,17 @@
 
     <!-- Schedule Dialog -->
     <el-dialog :title="`排班管理 - ${scheduleStaffName}`" v-model="scheduleDialogVisible" width="700px">
+      <!-- 技能信息条：getAvailability 按 staff_skill 过滤员工，0 技能的员工排班再多也不会出现在用户预约里 -->
+      <el-alert
+        v-if="scheduleSkillLoaded"
+        :title="scheduleSkillCount > 0
+          ? `该员工当前已配置 ${scheduleSkillCount} 项服务技能，排班将出现在对应服务的用户预约时段中。`
+          : '该员工尚未配置任何服务技能。新增排班后，用户端预约查询仍会过滤掉该员工——请先在「编辑」中为其选择服务技能。'"
+        :type="scheduleSkillCount > 0 ? 'info' : 'warning'"
+        :closable="false"
+        show-icon
+        style="margin-bottom: var(--pc-spacing-md);"
+      />
       <div class="pc-staff__schedule-actions">
         <el-button type="primary" size="small" @click="openScheduleForm" :disabled="!userStore.hasPermission('staff:schedule:manage')">新增排班</el-button>
       </div>
@@ -282,6 +296,9 @@ const scheduleStaffId = ref(0)
 const scheduleStaffName = ref('')
 const scheduleData = ref<StaffSchedule[]>([])
 const scheduleLoading = ref(false)
+// 技能信息条：决定排班弹窗里那条 el-alert 的文案/类型
+const scheduleSkillCount = ref(0)
+const scheduleSkillLoaded = ref(false)
 const showScheduleForm = ref(false)
 const scheduleFormRef = ref<FormInstance>()
 const scheduleSubmitting = ref(false)
@@ -340,15 +357,21 @@ const openEditDialog = async (row: StaffMember) => {
   isEdit.value = true
   currentId.value = row.id
   dialogTitle.value = '编辑员工'
-  form.value = { storeId: row.storeId, name: row.name, phone: row.phone ?? undefined, role: row.role, description: row.description ?? undefined, skillCategoryIds: [] }
-  // 回填已有技能
+  // skillCategoryIds 设为 undefined：让后端 updateStaff 走"未提供技能 → 不更新"分支
+  // （AdminManagementServiceImpl.updateStaff: if (request.skillCategoryIds() != null)）。
+  // 若读取失败仍保持 undefined，避免把空数组当成"清空技能"提交。
+  form.value = { storeId: row.storeId, name: row.name, phone: row.phone ?? undefined, role: row.role, description: row.description ?? undefined, skillCategoryIds: undefined }
+  // 回填已有技能；失败时显式报错并保持 undefined（绝不静默吞错后用 [] 覆盖）
   try {
     const res = await getStaffSkills(row.id)
     if (res.data?.serviceCategoryIds) {
       form.value.skillCategoryIds = res.data.serviceCategoryIds.map(Number)
+    } else {
+      form.value.skillCategoryIds = []
     }
   } catch {
-    // 读取失败不阻塞编辑
+    showError('读取员工技能失败，请关闭后重试。本次保存不会改动技能（保留原值）。')
+    form.value.skillCategoryIds = undefined
   }
   dialogVisible.value = true
 }
@@ -383,8 +406,23 @@ const openScheduleDialog = async (row: StaffMember) => {
   scheduleStaffId.value = row.id
   scheduleStaffName.value = row.name
   showScheduleForm.value = false
+  // 重置技能信息条状态，避免上一名员工的数据残留导致误导
+  scheduleSkillCount.value = 0
+  scheduleSkillLoaded.value = false
   scheduleDialogVisible.value = true
-  await loadSchedules()
+  // 并行加载排班与技能数；技能失败时降级为"未加载"，不阻塞排班操作
+  await Promise.all([loadSchedules(), loadScheduleSkillCount(row.id)])
+}
+
+const loadScheduleSkillCount = async (staffId: number) => {
+  try {
+    const res = await getStaffSkills(staffId)
+    scheduleSkillCount.value = res.data?.serviceCategoryIds?.length ?? 0
+    scheduleSkillLoaded.value = true
+  } catch {
+    // 加载失败时不展示告警条（scheduleSkillLoaded 保持 false），避免误报"0 技能"
+    scheduleSkillLoaded.value = false
+  }
 }
 
 const loadSchedules = async () => {
@@ -462,5 +500,12 @@ onMounted(() => {
   margin-top: var(--pc-spacing-md);
   border-top: 1px solid var(--pc-line);
   padding-top: var(--pc-spacing-md);
+}
+
+.pc-staff__hint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-text-color-secondary, #909399);
 }
 </style>

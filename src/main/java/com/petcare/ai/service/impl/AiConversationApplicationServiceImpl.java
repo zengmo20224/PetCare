@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -110,15 +111,19 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
         userMsg.setContent(request.content());
         messageMapper.insert(userMsg);
 
-        // Step 2: Route to appropriate AI service based on conversation type
+        // Step 2: Route to appropriate AI service based on conversation type.
+        // History is loaded BEFORE the current user message so the provider receives prior turns
+        // as multi-turn context; the current message is appended separately inside the handlers.
+        List<AiProviderMessage> history = loadHistory(conversationId);
+
         String assistantText;
         AiApiType apiType;
 
         if (AiConversationType.CUSTOMER_SERVICE.getCode().equals(type)) {
-            assistantText = handleCustomerService(currentUserId, request.content());
+            assistantText = handleCustomerService(currentUserId, history, request.content());
             apiType = AiApiType.CUSTOMER_SERVICE;
         } else if (AiConversationType.PET_CHAT.getCode().equals(type)) {
-            assistantText = handlePetChat(currentUserId, request.content());
+            assistantText = handlePetChat(currentUserId, history, request.content());
             apiType = AiApiType.CHAT;
         } else {
             throw new BusinessException(ErrorCode.AI_CONVERSATION_TYPE_INVALID, "不支持的会话类型");
@@ -152,9 +157,9 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
     }
 
     /**
-     * Handles customer service message with context grounding.
+     * Handles customer service message with context grounding and multi-turn history.
      */
-    private String handleCustomerService(Long currentUserId, String userQuestion) {
+    private String handleCustomerService(Long currentUserId, List<AiProviderMessage> history, String userQuestion) {
         CustomerServiceContext context = contextBuilder.build();
 
         // If no trusted context and question requires grounding, return fallback
@@ -162,7 +167,7 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
             return CustomerServiceGroundingPolicy.getNoContextFallback();
         }
 
-        List<AiProviderMessage> messages = PromptFactory.buildCustomerServiceMessages(context, userQuestion);
+        List<AiProviderMessage> messages = PromptFactory.buildCustomerServiceMessages(context, history, userQuestion);
 
         try {
             AiProviderResponse response = providerClient.complete(
@@ -194,15 +199,15 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
     }
 
     /**
-     * Handles pet chat message with medical safety checks.
+     * Handles pet chat message with medical safety checks and multi-turn history.
      */
-    private String handlePetChat(Long currentUserId, String userMessage) {
+    private String handlePetChat(Long currentUserId, List<AiProviderMessage> history, String userMessage) {
         // Step 1: Check high-risk symptoms BEFORE calling Provider
         if (HighRiskSymptomDetector.isHighRisk(userMessage)) {
             return HighRiskSymptomDetector.getFixedSafetyResponse();
         }
 
-        List<AiProviderMessage> messages = PromptFactory.buildPetChatMessages(userMessage);
+        List<AiProviderMessage> messages = PromptFactory.buildPetChatMessages(history, userMessage);
 
         try {
             AiProviderResponse response = providerClient.complete(
@@ -278,6 +283,29 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
         }
 
         return conversation;
+    }
+
+    /**
+     * Loads prior conversation messages (oldest-first) for multi-turn context.
+     * Called BEFORE the current user message is persisted by the caller, so the result
+     * naturally excludes the in-flight turn. Capped at the most recent N rows to bound tokens;
+     * further truncation by turns happens inside {@link PromptFactory}.
+     */
+    private List<AiProviderMessage> loadHistory(Long conversationId) {
+        int limit = PromptFactory.MAX_HISTORY_TURNS * 2 + 4;
+        List<AiMessage> rows = messageMapper.selectList(
+                new QueryWrapper<AiMessage>()
+                        .eq("conversation_id", conversationId)
+                        .in("role", "user", "assistant")
+                        .orderByDesc("create_time")
+                        .last("LIMIT " + limit));
+        // Reverse to oldest-first for prompt construction.
+        List<AiProviderMessage> history = new ArrayList<>(rows.size());
+        for (int i = rows.size() - 1; i >= 0; i--) {
+            AiMessage m = rows.get(i);
+            history.add(new AiProviderMessage(m.getRole(), m.getContent()));
+        }
+        return history;
     }
 
     private AiConversationResponse toConversationResponse(AiConversation c) {

@@ -598,3 +598,37 @@ CREATE TABLE IF NOT EXISTS `admin_operation_log` (
   `create_time`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 );
+
+CREATE TABLE IF NOT EXISTS `user_wallet` (
+  `id`             BIGINT        NOT NULL,
+  `user_id`        BIGINT        NOT NULL,
+  `balance`        DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `frozen_amount`  DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `version`        INT           NOT NULL DEFAULT 0,
+  `create_time`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted`        TINYINT       NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_id` (`user_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `wallet_transaction` (
+  `id`                 BIGINT        NOT NULL,
+  `user_id`            BIGINT        NOT NULL,
+  `direction`          VARCHAR(8)    NOT NULL,
+  `source_type`        VARCHAR(32)   NOT NULL,
+  `amount`             DECIMAL(10,2) NOT NULL,
+  `balance_before`     DECIMAL(10,2) NOT NULL,
+  `balance_after`      DECIMAL(10,2) NOT NULL,
+  `related_order_type` VARCHAR(16)   DEFAULT NULL,
+  `related_order_id`   BIGINT        DEFAULT NULL,
+  `operator_type`      VARCHAR(16)   NOT NULL,
+  `operator_id`        BIGINT        DEFAULT NULL,
+  `idempotency_key`    VARCHAR(64)   DEFAULT NULL,
+  `reason`             VARCHAR(500)  DEFAULT NULL,
+  `create_time`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_wallet_idempotency` (`user_id`, `idempotency_key`),
+  KEY `idx_wallet_user_time` (`user_id`, `create_time`),
+  KEY `idx_wallet_related_order` (`related_order_type`, `related_order_id`)
+);

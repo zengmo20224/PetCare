@@ -137,8 +137,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StoreView updateStore(Long id, StoreUpdateRequest request, Long operatorId) {
         String url = "/api/v1/admin/stores/" + id;
+        Store store = null;
         try {
-            Store store = requireStore(id);
+            store = requireStore(id);
             store.setStoreName(request.storeName());
             store.setPhone(request.phone());
             store.setAddress(request.address());
@@ -148,10 +149,12 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             store.setStatus(request.status());
             store.setDescription(request.description());
             storeService.updateById(store);
-            audit(operatorId, "store", "update-info", "PATCH", url, "SUCCESS", null);
+            String params = "targetName=" + store.getStoreName() + ", storeId=" + store.getId();
+            audit(operatorId, "store", "update-info", "PATCH", url, "SUCCESS", params, null);
             return storeView(store);
         } catch (RuntimeException e) {
-            audit(operatorId, "store", "update-info", "PATCH", url, "FAIL", auditFailureMessage(e));
+            String params = store != null ? "targetName=" + store.getStoreName() + ", storeId=" + store.getId() : null;
+            audit(operatorId, "store", "update-info", "PATCH", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -165,9 +168,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StoreConfigView updateStoreConfig(Long storeId, StoreConfigUpdateRequest request, Long operatorId) {
         String url = "/api/v1/admin/stores/" + storeId + "/config";
+        StoreConfig config = null;
         try {
             requireStore(storeId);
-            StoreConfig config = requireStoreConfig(storeId);
+            config = requireStoreConfig(storeId);
             config.setHomeServiceRadiusKm(request.homeServiceRadiusKm());
             config.setBookingAdvanceDays(request.bookingAdvanceDays());
             config.setBookingCancelHours(request.bookingCancelHours());
@@ -175,10 +179,12 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             config.setAutoConfirmBooking(flag(request.autoConfirmBooking()));
             config.setContentAutoPublish(flag(request.contentAutoPublish()));
             storeConfigService.updateById(config);
-            audit(operatorId, "store", "update-config", "PUT", url, "SUCCESS", null);
+            String params = "storeId=" + storeId;
+            audit(operatorId, "store", "update-config", "PUT", url, "SUCCESS", params, null);
             return storeConfigView(config);
         } catch (RuntimeException e) {
-            audit(operatorId, "store", "update-config", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = "storeId=" + storeId;
+            audit(operatorId, "store", "update-config", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -197,17 +203,20 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ServiceItemView createServiceItem(ServiceItemRequest request, Long operatorId) {
         String url = "/api/v1/admin/service-items";
+        ServiceItem item = null;
         try {
             requireServiceCategory(request.categoryId());
-            ServiceItem item = new ServiceItem();
+            item = new ServiceItem();
             apply(item, request);
             item.setStatus("ON_SALE");
             serviceItemService.save(item);
             replaceServiceItemImages(item.getId(), request.imageUrls());
-            audit(operatorId, "service", "create-item", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + item.getName() + ", serviceItemId=" + item.getId();
+            audit(operatorId, "service", "create-item", "POST", url, "SUCCESS", params, null);
             return serviceItemView(item);
         } catch (RuntimeException e) {
-            audit(operatorId, "service", "create-item", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = item != null ? "targetName=" + item.getName() + ", serviceItemId=" + item.getId() : null;
+            audit(operatorId, "service", "create-item", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -216,16 +225,19 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ServiceItemView updateServiceItem(Long id, ServiceItemRequest request, Long operatorId) {
         String url = "/api/v1/admin/service-items/" + id;
+        ServiceItem item = null;
         try {
             requireServiceCategory(request.categoryId());
-            ServiceItem item = requireServiceItem(id);
+            item = requireServiceItem(id);
             apply(item, request);
             serviceItemService.updateById(item);
             replaceServiceItemImages(item.getId(), request.imageUrls());
-            audit(operatorId, "service", "update-item", "PUT", url, "SUCCESS", null);
+            String params = "targetName=" + item.getName() + ", serviceItemId=" + item.getId();
+            audit(operatorId, "service", "update-item", "PUT", url, "SUCCESS", params, null);
             return serviceItemView(item);
         } catch (RuntimeException e) {
-            audit(operatorId, "service", "update-item", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = item != null ? "targetName=" + item.getName() + ", serviceItemId=" + item.getId() : null;
+            audit(operatorId, "service", "update-item", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -234,14 +246,17 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ServiceItemView disableServiceItem(Long id, Long operatorId) {
         String url = "/api/v1/admin/service-items/" + id + "/disable";
+        ServiceItem item = null;
         try {
-            ServiceItem item = requireServiceItem(id);
+            item = requireServiceItem(id);
             item.setStatus("OFF_SALE");
             serviceItemService.updateById(item);
-            audit(operatorId, "service", "disable-item", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + item.getName() + ", serviceItemId=" + item.getId();
+            audit(operatorId, "service", "disable-item", "POST", url, "SUCCESS", params, null);
             return serviceItemView(item);
         } catch (RuntimeException e) {
-            audit(operatorId, "service", "disable-item", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = item != null ? "targetName=" + item.getName() + ", serviceItemId=" + item.getId() : null;
+            audit(operatorId, "service", "disable-item", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -260,9 +275,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StaffView createStaff(StaffRequest request, Long operatorId) {
         String url = "/api/v1/admin/staff";
+        Staff staff = null;
         try {
             requireStore(request.storeId());
-            Staff staff = new Staff();
+            staff = new Staff();
             apply(staff, request);
             staff.setStatus("ACTIVE");
             staffService.save(staff);
@@ -270,10 +286,12 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             if (request.skillCategoryIds() != null && !request.skillCategoryIds().isEmpty()) {
                 replaceStaffSkills(staff.getId(), request.skillCategoryIds(), operatorId);
             }
-            audit(operatorId, "staff", "create-profile", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + ", staffId=" + staff.getId();
+            audit(operatorId, "staff", "create-profile", "POST", url, "SUCCESS", params, null);
             return staffView(staff);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "create-profile", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = staff != null ? "targetName=" + staff.getName() + ", staffId=" + staff.getId() : null;
+            audit(operatorId, "staff", "create-profile", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -282,19 +300,22 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StaffView updateStaff(Long id, StaffRequest request, Long operatorId) {
         String url = "/api/v1/admin/staff/" + id;
+        Staff staff = null;
         try {
             requireStore(request.storeId());
-            Staff staff = requireStaff(id);
+            staff = requireStaff(id);
             apply(staff, request);
             staffService.updateById(staff);
             // 编辑时若提供了技能列表，一并更新
             if (request.skillCategoryIds() != null) {
                 replaceStaffSkills(id, request.skillCategoryIds(), operatorId);
             }
-            audit(operatorId, "staff", "update-profile", "PUT", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + ", staffId=" + staff.getId();
+            audit(operatorId, "staff", "update-profile", "PUT", url, "SUCCESS", params, null);
             return staffView(staff);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "update-profile", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = staff != null ? "targetName=" + staff.getName() + ", staffId=" + staff.getId() : null;
+            audit(operatorId, "staff", "update-profile", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -303,14 +324,17 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StaffView disableStaff(Long id, Long operatorId) {
         String url = "/api/v1/admin/staff/" + id + "/disable";
+        Staff staff = null;
         try {
-            Staff staff = requireStaff(id);
+            staff = requireStaff(id);
             staff.setStatus("INACTIVE");
             staffService.updateById(staff);
-            audit(operatorId, "staff", "disable-profile", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + ", staffId=" + staff.getId();
+            audit(operatorId, "staff", "disable-profile", "POST", url, "SUCCESS", params, null);
             return staffView(staff);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "disable-profile", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = staff != null ? "targetName=" + staff.getName() + ", staffId=" + staff.getId() : null;
+            audit(operatorId, "staff", "disable-profile", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -319,17 +343,20 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StaffView enableStaff(Long id, Long operatorId) {
         String url = "/api/v1/admin/staff/" + id + "/enable";
+        Staff staff = null;
         try {
-            Staff staff = requireStaff(id);
+            staff = requireStaff(id);
             if (!"INACTIVE".equals(staff.getStatus())) {
                 throw new BusinessException(ErrorCode.STATE_CONFLICT, "该员工未处于停用状态");
             }
             staff.setStatus("ACTIVE");
             staffService.updateById(staff);
-            audit(operatorId, "staff", "enable-profile", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + ", staffId=" + staff.getId();
+            audit(operatorId, "staff", "enable-profile", "POST", url, "SUCCESS", params, null);
             return staffView(staff);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "enable-profile", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = staff != null ? "targetName=" + staff.getName() + ", staffId=" + staff.getId() : null;
+            audit(operatorId, "staff", "enable-profile", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -338,8 +365,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StaffSkillView replaceStaffSkills(Long staffId, List<Long> categoryIds, Long operatorId) {
         String url = "/api/v1/admin/staff/" + staffId + "/skills";
+        Staff staff = null;
         try {
-            requireStaff(staffId);
+            staff = requireStaff(staffId);
             List<Long> distinctIds = categoryIds.stream().distinct().toList();
             distinctIds.forEach(this::requireServiceCategory);
             staffSkillService.remove(new LambdaQueryWrapper<StaffSkill>().eq(StaffSkill::getStaffId, staffId));
@@ -349,10 +377,12 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 skill.setServiceCategoryId(categoryId);
                 staffSkillService.save(skill);
             });
-            audit(operatorId, "staff", "replace-skills", "PUT", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + ", staffId=" + staff.getId();
+            audit(operatorId, "staff", "replace-skills", "PUT", url, "SUCCESS", params, null);
             return new StaffSkillView(staffId, distinctIds);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "replace-skills", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = staff != null ? "targetName=" + staff.getName() + ", staffId=" + staff.getId() : null;
+            audit(operatorId, "staff", "replace-skills", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -381,17 +411,25 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public StaffScheduleView createSchedule(Long staffId, StaffScheduleRequest request, Long operatorId) {
         String url = "/api/v1/admin/staff/" + staffId + "/schedules";
+        Staff staff = null;
+        StaffSchedule schedule = null;
         try {
-            Staff staff = requireStaff(staffId);
+            staff = requireStaff(staffId);
             validateSchedule(staff, request, null);
-            StaffSchedule schedule = new StaffSchedule();
+            schedule = new StaffSchedule();
             schedule.setStaffId(staffId);
             apply(schedule, request);
             scheduleService.save(schedule);
-            audit(operatorId, "staff", "create-schedule", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + " " + schedule.getWorkDate()
+                    + ", staffId=" + staff.getId() + ", scheduleId=" + schedule.getId();
+            audit(operatorId, "staff", "create-schedule", "POST", url, "SUCCESS", params, null);
             return scheduleView(schedule);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "create-schedule", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = (staff != null && schedule != null)
+                    ? "targetName=" + staff.getName() + " " + schedule.getWorkDate()
+                    + ", staffId=" + staff.getId() + ", scheduleId=" + schedule.getId()
+                    : null;
+            audit(operatorId, "staff", "create-schedule", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -401,16 +439,24 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     public StaffScheduleView updateSchedule(Long staffId, Long scheduleId,
             StaffScheduleRequest request, Long operatorId) {
         String url = "/api/v1/admin/staff/" + staffId + "/schedules/" + scheduleId;
+        Staff staff = null;
+        StaffSchedule schedule = null;
         try {
-            Staff staff = requireStaff(staffId);
-            StaffSchedule schedule = requireSchedule(staffId, scheduleId);
+            staff = requireStaff(staffId);
+            schedule = requireSchedule(staffId, scheduleId);
             validateSchedule(staff, request, scheduleId);
             apply(schedule, request);
             scheduleService.updateById(schedule);
-            audit(operatorId, "staff", "update-schedule", "PUT", url, "SUCCESS", null);
+            String params = "targetName=" + staff.getName() + " " + schedule.getWorkDate()
+                    + ", staffId=" + staff.getId() + ", scheduleId=" + schedule.getId();
+            audit(operatorId, "staff", "update-schedule", "PUT", url, "SUCCESS", params, null);
             return scheduleView(schedule);
         } catch (RuntimeException e) {
-            audit(operatorId, "staff", "update-schedule", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = (staff != null && schedule != null)
+                    ? "targetName=" + staff.getName() + " " + schedule.getWorkDate()
+                    + ", staffId=" + staff.getId() + ", scheduleId=" + schedule.getId()
+                    : null;
+            audit(operatorId, "staff", "update-schedule", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -429,9 +475,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ProductView createProduct(ProductRequest request, Long operatorId) {
         String url = "/api/v1/admin/products";
+        Product product = null;
         try {
             requireProductCategory(request.categoryId());
-            Product product = new Product();
+            product = new Product();
             apply(product, request);
             product.setStock(0);
             product.setSalesCount(0);
@@ -439,10 +486,12 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             productService.save(product);
             replaceProductImages(product.getId(), request.imageUrls());
             replaceProductDetailImages(product.getId(), request.detailImageUrls());
-            audit(operatorId, "product", "create-item", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + product.getName() + ", productId=" + product.getId();
+            audit(operatorId, "product", "create-item", "POST", url, "SUCCESS", params, null);
             return productView(product);
         } catch (RuntimeException e) {
-            audit(operatorId, "product", "create-item", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
+            audit(operatorId, "product", "create-item", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -451,17 +500,20 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ProductView updateProduct(Long id, ProductRequest request, Long operatorId) {
         String url = "/api/v1/admin/products/" + id;
+        Product product = null;
         try {
             requireProductCategory(request.categoryId());
-            Product product = requireProduct(id);
+            product = requireProduct(id);
             apply(product, request);
             productService.updateById(product);
             replaceProductImages(product.getId(), request.imageUrls());
             replaceProductDetailImages(product.getId(), request.detailImageUrls());
-            audit(operatorId, "product", "update-item", "PUT", url, "SUCCESS", null);
+            String params = "targetName=" + product.getName() + ", productId=" + product.getId();
+            audit(operatorId, "product", "update-item", "PUT", url, "SUCCESS", params, null);
             return productView(product);
         } catch (RuntimeException e) {
-            audit(operatorId, "product", "update-item", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
+            audit(operatorId, "product", "update-item", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -470,14 +522,17 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ProductView disableProduct(Long id, Long operatorId) {
         String url = "/api/v1/admin/products/" + id + "/disable";
+        Product product = null;
         try {
-            Product product = requireProduct(id);
+            product = requireProduct(id);
             product.setStatus("OFF_SALE");
             productService.updateById(product);
-            audit(operatorId, "product", "disable-item", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + product.getName() + ", productId=" + product.getId();
+            audit(operatorId, "product", "disable-item", "POST", url, "SUCCESS", params, null);
             return productView(product);
         } catch (RuntimeException e) {
-            audit(operatorId, "product", "disable-item", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
+            audit(operatorId, "product", "disable-item", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -486,14 +541,17 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public ProductView updateProductStock(Long id, Integer stock, Long operatorId) {
         String url = "/api/v1/admin/products/" + id + "/stock";
+        Product product = null;
         try {
-            Product product = requireProductForUpdate(id);
+            product = requireProductForUpdate(id);
             product.setStock(stock);
             productService.updateById(product);
-            audit(operatorId, "product", "update-stock", "PUT", url, "SUCCESS", null);
+            String params = "targetName=" + product.getName() + ", productId=" + product.getId();
+            audit(operatorId, "product", "update-stock", "PUT", url, "SUCCESS", params, null);
             return productView(product);
         } catch (RuntimeException e) {
-            audit(operatorId, "product", "update-stock", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
+            audit(operatorId, "product", "update-stock", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -525,10 +583,12 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                 productCarouselImageService.save(image);
                 sort++;
             }
-            audit(operatorId, "product", "replace-carousel-images", "PUT", url, "SUCCESS", null);
+            String params = "scope=carousel-images, count=" + request.images().size();
+            audit(operatorId, "product", "replace-carousel-images", "PUT", url, "SUCCESS", params, null);
             return listProductCarouselImages();
         } catch (RuntimeException e) {
-            audit(operatorId, "product", "replace-carousel-images", "PUT", url, "FAIL", auditFailureMessage(e));
+            String params = "scope=carousel-images, count=" + request.images().size();
+            audit(operatorId, "product", "replace-carousel-images", "PUT", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -565,8 +625,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public UserBanResult banUser(Long id, String reason, Long operatorId) {
         String url = "/api/v1/admin/users/" + id + "/ban";
+        User user = null;
         try {
-            User user = requireUser(id);
+            user = requireUser(id);
             // Progressive ban: compute next level + duration from ban history
             PhoneBlacklist ban = null;
             if (hasText(user.getPhone())) {
@@ -574,7 +635,8 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             }
             user.setStatus("BANNED");
             userService.updateById(user);
-            audit(operatorId, "user", "ban-user", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + user.getNickname() + ", userId=" + user.getId() + ", phone=" + user.getPhone();
+            audit(operatorId, "user", "ban-user", "POST", url, "SUCCESS", params, null);
             String description = (ban != null) ? phoneBlacklistService.describeRemaining(ban) : "已封禁";
             return new UserBanResult(
                     user.getId(),
@@ -584,7 +646,10 @@ public class AdminManagementServiceImpl implements AdminManagementService {
                     ban != null ? ban.getBanUntil() : null,
                     description);
         } catch (RuntimeException e) {
-            audit(operatorId, "user", "ban-user", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = user != null
+                    ? "targetName=" + user.getNickname() + ", userId=" + user.getId() + ", phone=" + user.getPhone()
+                    : null;
+            audit(operatorId, "user", "ban-user", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -593,8 +658,9 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     @Transactional
     public UserView unbanUser(Long id, Long operatorId) {
         String url = "/api/v1/admin/users/" + id + "/unban";
+        User user = null;
         try {
-            User user = requireUser(id);
+            user = requireUser(id);
             if (!"BANNED".equals(user.getStatus())) {
                 throw new BusinessException(ErrorCode.STATE_CONFLICT, "该用户未被封禁");
             }
@@ -604,10 +670,14 @@ public class AdminManagementServiceImpl implements AdminManagementService {
             if (hasText(user.getPhone())) {
                 phoneBlacklistService.unbanPhone(user.getPhone());
             }
-            audit(operatorId, "user", "unban-user", "POST", url, "SUCCESS", null);
+            String params = "targetName=" + user.getNickname() + ", userId=" + user.getId() + ", phone=" + user.getPhone();
+            audit(operatorId, "user", "unban-user", "POST", url, "SUCCESS", params, null);
             return userView(user);
         } catch (RuntimeException e) {
-            audit(operatorId, "user", "unban-user", "POST", url, "FAIL", auditFailureMessage(e));
+            String params = user != null
+                    ? "targetName=" + user.getNickname() + ", userId=" + user.getId() + ", phone=" + user.getPhone()
+                    : null;
+            audit(operatorId, "user", "unban-user", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
@@ -654,6 +724,17 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     private void audit(Long operatorId, String module, String operation,
             String method, String url, String result, String errorMessage) {
+        audit(operatorId, module, operation, method, url, result, null, errorMessage);
+    }
+
+    /**
+     * Writes an audit log entry. {@code params} carries the operation target's human-readable
+     * details (e.g. "targetName=张三, targetId=3001, phone=139****1234") so admins can answer
+     * "who/what was acted on" without cross-referencing IDs. Null/blank params falls back to
+     * legacy behavior (URL-only).
+     */
+    private void audit(Long operatorId, String module, String operation,
+            String method, String url, String result, String params, String errorMessage) {
         AdminOperationLog entry = new AdminOperationLog();
         entry.setAdminId(operatorId);
         entry.setModule(module);
@@ -661,6 +742,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         entry.setRequestMethod(method);
         entry.setRequestUrl(url);
         entry.setResult(result);
+        entry.setRequestParams(params);
         entry.setErrorMessage(errorMessage);
         entry.setCreateTime(LocalDateTime.now());
         if ("FAIL".equals(result)) {
@@ -1001,6 +1083,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     private OperationLogView operationLogView(AdminOperationLog entry) {
         return new OperationLogView(entry.getId(), entry.getAdminId(), entry.getModule(), entry.getOperation(),
                 entry.getRequestMethod(), entry.getRequestUrl(), entry.getResult(),
+                entry.getRequestParams(),
                 entry.getErrorMessage(), entry.getCreateTime());
     }
 }

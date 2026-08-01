@@ -4,7 +4,7 @@
 
 import { http } from './request'
 import type { ApiResponse, PageResponse, PageParams } from '@/types/api'
-import type { PostItem, PostDetail, CommentTreeNode, TopicItem, TagItem } from '@/types/community'
+import type { PostItem, PostDetail, CommentTreeNode, CommentFlatItem, TopicItem, TagItem } from '@/types/community'
 
 /** List published posts (paginated, with optional topic, keyword, and tag filter) */
 export function getPosts(params?: PageParams & { topicId?: string; keyword?: string; tag?: string }): Promise<ApiResponse<PageResponse<PostItem>>> {
@@ -39,6 +39,11 @@ export function getPostDetail(id: string): Promise<ApiResponse<PostDetail>> {
 /** List published comments for a post (tree structure) */
 export function getPostComments(postId: string): Promise<ApiResponse<CommentTreeNode[]>> {
   return http.get<CommentTreeNode[]>(`/api/v1/posts/${postId}/comments`)
+}
+
+/** List published comments for a post as a flat list (Douyin-style, no depth cap) */
+export function getPostCommentsFlat(postId: string): Promise<ApiResponse<CommentFlatItem[]>> {
+  return http.get<CommentFlatItem[]>(`/api/v1/posts/${postId}/comments/flat`)
 }
 
 /** Create a post (requires auth) */

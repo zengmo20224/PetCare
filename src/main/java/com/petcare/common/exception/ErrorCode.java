@@ -77,6 +77,13 @@ public final class ErrorCode {
     public static final String PRODUCT_ORDER_PICKUP_REQUIRED = "product_order_pickup_required";
     public static final String PRODUCT_ORDER_AMOUNT_INVALID = "product_order_amount_invalid";
 
+    // Wallet error codes
+    public static final String WALLET_NOT_FOUND = "wallet_not_found";
+    public static final String WALLET_BALANCE_INSUFFICIENT = "wallet_balance_insufficient";
+    public static final String WALLET_AMOUNT_INVALID = "wallet_amount_invalid";
+    public static final String WALLET_TRANSACTION_DUPLICATE = "wallet_transaction_duplicate";
+    public static final String WALLET_ADJUST_REASON_REQUIRED = "wallet_adjust_reason_required";
+
     // AI error codes
     public static final String AI_PROVIDER_NOT_ENABLED = "ai_provider_not_enabled";
     public static final String AI_PROVIDER_CONFIGURATION_INVALID = "ai_provider_configuration_invalid";

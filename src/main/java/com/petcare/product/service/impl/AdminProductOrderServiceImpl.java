@@ -86,10 +86,11 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
         String url = "/api/v1/admin/product-orders/" + orderId + "/confirm";
         try {
             ProductOrder order = transactionService.confirmOrder(orderId, operatorId);
-            saveLog(operatorId, operation, url, "success", null);
+            saveLog(operatorId, operation, url,
+                    "orderNo=" + order.getOrderNo() + ", orderId=" + orderId, "success", null);
             return toOrderResponse(order);
         } catch (BusinessException e) {
-            saveLog(operatorId, operation, url, "fail", e.getMessage());
+            saveLog(operatorId, operation, url, "orderId=" + orderId, "fail", e.getMessage());
             throw e;
         }
     }
@@ -100,10 +101,11 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
         String url = "/api/v1/admin/product-orders/" + orderId + "/ready";
         try {
             ProductOrder order = transactionService.markReadyForPickup(orderId, operatorId);
-            saveLog(operatorId, operation, url, "success", null);
+            saveLog(operatorId, operation, url,
+                    "orderNo=" + order.getOrderNo() + ", orderId=" + orderId, "success", null);
             return toOrderResponse(order);
         } catch (BusinessException e) {
-            saveLog(operatorId, operation, url, "fail", e.getMessage());
+            saveLog(operatorId, operation, url, "orderId=" + orderId, "fail", e.getMessage());
             throw e;
         }
     }
@@ -114,10 +116,11 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
         String url = "/api/v1/admin/product-orders/" + orderId + "/confirm-payment";
         try {
             ProductOrder order = transactionService.confirmPayment(orderId, operatorId);
-            saveLog(operatorId, operation, url, "success", null);
+            saveLog(operatorId, operation, url,
+                    "orderNo=" + order.getOrderNo() + ", orderId=" + orderId, "success", null);
             return toOrderResponse(order);
         } catch (BusinessException e) {
-            saveLog(operatorId, operation, url, "fail", e.getMessage());
+            saveLog(operatorId, operation, url, "orderId=" + orderId, "fail", e.getMessage());
             throw e;
         }
     }
@@ -128,10 +131,11 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
         String url = "/api/v1/admin/product-orders/" + orderId + "/complete";
         try {
             ProductOrder order = transactionService.completeOrder(orderId, operatorId);
-            saveLog(operatorId, operation, url, "success", null);
+            saveLog(operatorId, operation, url,
+                    "orderNo=" + order.getOrderNo() + ", orderId=" + orderId, "success", null);
             return toOrderResponse(order);
         } catch (BusinessException e) {
-            saveLog(operatorId, operation, url, "fail", e.getMessage());
+            saveLog(operatorId, operation, url, "orderId=" + orderId, "fail", e.getMessage());
             throw e;
         }
     }
@@ -142,10 +146,11 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
         String url = "/api/v1/admin/product-orders/" + orderId + "/cancel";
         try {
             ProductOrder order = transactionService.adminCancelOrder(orderId, reason, operatorId);
-            saveLog(operatorId, operation, url, "success", null);
+            saveLog(operatorId, operation, url,
+                    "orderNo=" + order.getOrderNo() + ", orderId=" + orderId, "success", null);
             return toOrderResponse(order);
         } catch (BusinessException e) {
-            saveLog(operatorId, operation, url, "fail", e.getMessage());
+            saveLog(operatorId, operation, url, "orderId=" + orderId, "fail", e.getMessage());
             throw e;
         }
     }
@@ -156,10 +161,11 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
         String url = "/api/v1/admin/product-orders/" + orderId + "/out-of-stock";
         try {
             ProductOrder order = transactionService.outOfStock(orderId, reason, operatorId);
-            saveLog(operatorId, operation, url, "success", null);
+            saveLog(operatorId, operation, url,
+                    "orderNo=" + order.getOrderNo() + ", orderId=" + orderId, "success", null);
             return toOrderResponse(order);
         } catch (BusinessException e) {
-            saveLog(operatorId, operation, url, "fail", e.getMessage());
+            saveLog(operatorId, operation, url, "orderId=" + orderId, "fail", e.getMessage());
             throw e;
         }
     }
@@ -168,7 +174,7 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
      * Writes an audit log entry. Failures are caught and logged but do NOT
      * propagate — audit logging must not roll back the main business transaction.
      */
-    private void saveLog(Long operatorId, String operation, String url,
+    private void saveLog(Long operatorId, String operation, String url, String params,
                          String result, String errorMessage) {
         try {
             AdminOperationLog logEntry = new AdminOperationLog();
@@ -177,6 +183,7 @@ public class AdminProductOrderServiceImpl implements AdminProductOrderService {
             logEntry.setOperation(operation);
             logEntry.setRequestMethod("POST");
             logEntry.setRequestUrl(url);
+            logEntry.setRequestParams(params);
             logEntry.setResult(result);
             logEntry.setErrorMessage(errorMessage);
             logEntry.setCreateTime(LocalDateTime.now());

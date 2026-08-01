@@ -24,9 +24,17 @@ vi.mock('../utils/request', () => ({
 // ─── Staff API Contract ───
 
 describe('Staff API contract', () => {
-  it('must NOT export getStaffSkills (no backend GET endpoint)', async () => {
+  it('must export getStaffSkills (backend GET endpoint added in efd8632)', async () => {
     const staffModule = await import('../api/staff')
-    expect(staffModule).not.toHaveProperty('getStaffSkills')
+    expect(staffModule).toHaveProperty('getStaffSkills')
+    expect(typeof staffModule.getStaffSkills).toBe('function')
+  })
+
+  it('getStaffSkills calls GET /v1/admin/staff/{id}/skills', async () => {
+    const request = (await import('../utils/request')).default
+    const { getStaffSkills } = await import('../api/staff')
+    await getStaffSkills(42)
+    expect(request.get).toHaveBeenCalledWith('/v1/admin/staff/42/skills')
   })
 
   it('must still export updateStaffSkills (real PUT endpoint)', async () => {

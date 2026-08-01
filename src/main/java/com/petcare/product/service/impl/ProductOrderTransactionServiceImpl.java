@@ -20,6 +20,7 @@ import com.petcare.product.mapper.ProductOrderMapper;
 import com.petcare.product.service.ProductOrderTransactionService;
 import com.petcare.user.entity.UserAddress;
 import com.petcare.user.mapper.UserAddressMapper;
+import com.petcare.wallet.service.WalletService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,7 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
     private final ProductOrderItemMapper orderItemMapper;
     private final UserAddressMapper userAddressMapper;
     private final ProductOrderIdempotencyHelper idempotencyHelper;
+    private final WalletService walletService;
 
     public ProductOrderTransactionServiceImpl(
             CartItemMapper cartItemMapper,
@@ -57,13 +59,15 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
             ProductOrderMapper orderMapper,
             ProductOrderItemMapper orderItemMapper,
             UserAddressMapper userAddressMapper,
-            ProductOrderIdempotencyHelper idempotencyHelper) {
+            ProductOrderIdempotencyHelper idempotencyHelper,
+            WalletService walletService) {
         this.cartItemMapper = cartItemMapper;
         this.productMapper = productMapper;
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.userAddressMapper = userAddressMapper;
         this.idempotencyHelper = idempotencyHelper;
+        this.walletService = walletService;
     }
 
     /**
@@ -103,12 +107,20 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
 
     /**
      * 实际下单逻辑：扣库存 + 插单 + 插订单项 + 删购物车。
+     *
+     * <p>钱包支付（CR-20260718-003 / D-012）：当 {@code paymentMethod == WALLET} 时，
+     * 钱包行先于商品库存被锁定（锁序 wallet → product asc），扣款与扣库存同处一个事务——
+     * 任何一方失败（余额不足/库存不足/幂等冲突）都会整体回滚，绝不出现"扣了钱没扣库存"
+     * 或"扣了库存没扣钱"。退款在 {@link #cancelOrder} / {@link #adminCancelOrder} 同事务回滚。</p>
      */
     private ProductOrder doCreateOrder(Long currentUserId, ProductOrderCreateRequest request, String idempotencyKey) {
         String deliveryMethod = request.deliveryMethod();
         boolean isPickup = "PICKUP".equals(deliveryMethod);
         Long storeId = request.storeId();
         Long addressId = request.addressId();
+        // 解析付款方式：null/blank 归一化为 OFFLINE_STORE（向后兼容）。
+        String paymentMethod = request.effectivePaymentMethod();
+        boolean payByWallet = "WALLET".equals(paymentMethod);
 
         // 0. Validate fulfillment-specific requirements and snapshot the address.
         //    Address snapshot is captured at order time so later edits/deletes
@@ -184,6 +196,15 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
                     product.getPrice(), ci.getQuantity(), lineTotal));
         }
 
+        // 4b. Wallet payment: lock the wallet row BEFORE stock deduction to fix the global
+        //     lock order (wallet → product asc). This serializes concurrent wallet payments
+        //     for the same user. Lazy-creates the wallet on first use.
+        //     Balance is NOT checked here — the final deduct happens in step 6b after the
+        //     order total is known, and it is atomic with stock deduction via the transaction.
+        if (payByWallet) {
+            walletService.lockWalletForUpdate(currentUserId);
+        }
+
         // 5. Atomically deduct stock for each product (in product ID ascending order)
         for (LineSnapshot line : lines) {
             int rows = productMapper.deductStock(line.productId(), line.quantity());
@@ -197,6 +218,22 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
         BigDecimal totalAmount = ProductOrderAmountCalculator.calculateOrderTotal(
                 lines.stream().map(LineSnapshot::totalAmount).toList());
 
+        // 6b. Wallet payment: deduct the order total from the wallet now that the amount is known.
+        //     This runs in the same transaction as stock deduction — if balance is insufficient,
+        //     the thrown BusinessException rolls back the already-deducted stock (D-012).
+        //     The ledger entry references the order via idempotency key (orderId is assigned
+        //     by the DB on insert below; we link by the request-scoped idempotency key to
+        //     keep the deduction ahead of order insert while still traceable).
+        if (payByWallet) {
+            // 钱包流水幂等键：优先复用订单幂等键（保证整个下单流程幂等）；
+            // 订单未启用幂等时用 nanoTime 生成一次性键（钱包流水仍可去重）。
+            String walletIdemKey = (idempotencyKey != null && !idempotencyKey.isBlank())
+                    ? "wallet-pay-" + idempotencyKey
+                    : "wallet-pay-" + System.nanoTime();
+            walletService.deductForPayment(
+                    currentUserId, totalAmount, "PRODUCT_ORDER", null, walletIdemKey);
+        }
+
         // 7. Create order
         ProductOrder order = new ProductOrder();
         order.setOrderNo(generateOrderNo());
@@ -206,8 +243,10 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
         order.setDeliveryMethod(deliveryMethod);
         order.setAddressId(addressId);
         order.setAddressSnapshot(addressSnapshot);
-        order.setPaymentMethod("OFFLINE_STORE");
-        order.setPaymentStatus("UNPAID");
+        order.setPaymentMethod(paymentMethod);
+        // 钱包支付即时到账：paymentStatus 直接置为 WALLET_PAID；
+        // 线下支付保持 UNPAID，等管理员"确认支付"按钮翻转为 OFFLINE_PAID。
+        order.setPaymentStatus(payByWallet ? "WALLET_PAID" : "UNPAID");
         order.setPickupStatus(PickupStatus.WAIT_PREPARE.getCode());
         order.setStatus(ProductOrderStatus.PENDING_CONFIRM.getCode());
         order.setContactName(request.contactName());
@@ -257,6 +296,10 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
 
         // Restore stock
         restoreOrderStock(orderId);
+
+        // Wallet refund: if the order was paid by wallet, refund the original amount back to
+        // the user's wallet in this same transaction (D-012: stock restore + wallet refund atomic).
+        refundWalletIfPaidByWallet(order);
 
         // Update order
         order.setStatus(ProductOrderStatus.CANCELLED.getCode());
@@ -351,6 +394,9 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
         // Restore stock
         restoreOrderStock(orderId);
 
+        // Wallet refund (same atomic guarantee as user cancel).
+        refundWalletIfPaidByWallet(order);
+
         order.setStatus(ProductOrderStatus.CANCELLED.getCode());
         order.setCancelTime(LocalDateTime.now());
         order.setMerchantRemark(reason);
@@ -392,6 +438,22 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
         for (ProductOrderItem item : items) {
             productMapper.restoreStock(item.getProductId(), item.getQuantity());
         }
+    }
+
+    /**
+     * 如果订单是用钱包支付的（paymentMethod=WALLET），在同事务内把原金额退回用户钱包。
+     * 与库存恢复同处一个事务，保证"库存退了钱没退"或"钱退了库存没退"都不会发生（D-012）。
+     * 非钱包支付订单（OFFLINE_STORE）不触发任何钱包动作——线下收款的退款由门店线下处理。
+     */
+    private void refundWalletIfPaidByWallet(ProductOrder order) {
+        if (!"WALLET".equals(order.getPaymentMethod())) {
+            return;
+        }
+        // 退款幂等键：基于订单 ID 生成，保证同一订单取消多次（理论上不会，但防御）只退一次。
+        String refundIdemKey = "wallet-refund-order-" + order.getId();
+        walletService.refundForCancellation(
+                order.getUserId(), order.getTotalAmount(), "PRODUCT_ORDER",
+                order.getId(), refundIdemKey);
     }
 
     private String generateOrderNo() {

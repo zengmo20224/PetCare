@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,6 +26,9 @@ import com.petcare.product.mapper.ProductOrderMapper;
 import com.petcare.product.service.impl.ProductOrderIdempotencyHelper;
 import com.petcare.product.service.impl.ProductOrderTransactionServiceImpl;
 import com.petcare.user.mapper.UserAddressMapper;
+import com.petcare.wallet.entity.Wallet;
+import com.petcare.wallet.entity.WalletTransaction;
+import com.petcare.wallet.service.WalletService;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -65,6 +69,9 @@ class ProductOrderTransactionServiceTest {
 
     @Mock
     private ProductOrderIdempotencyHelper idempotencyHelper;
+
+    @Mock
+    private WalletService walletService;
 
     @InjectMocks
     private ProductOrderTransactionServiceImpl orderService;
@@ -272,6 +279,65 @@ class ProductOrderTransactionServiceTest {
         }
 
         @Test
+        @DisplayName("WALLET payment: locks wallet first, deducts balance after stock, sets WALLET_PAID")
+        void createOrder_walletPayment_locksAndDeducts() {
+            // Arrange
+            doReturn(List.of(defaultCheckedCartItem)).when(cartItemMapper).selectList(any());
+            doReturn(defaultProduct).when(productMapper).selectById(PRODUCT_ID);
+            doReturn(1).when(productMapper).deductStock(PRODUCT_ID, 2);
+            doReturn(1).when(orderMapper).insert((ProductOrder) any());
+            doReturn(1).when(orderItemMapper).insert((ProductOrderItem) any());
+            doReturn(1).when(cartItemMapper).deleteByIds(any());
+            // walletService stubs (lockWalletForUpdate returns a wallet; deduct returns a tx)
+            Wallet wallet = new Wallet();
+            wallet.setUserId(USER_ID);
+            wallet.setBalance(new BigDecimal("300.00"));
+            doReturn(wallet).when(walletService).lockWalletForUpdate(USER_ID);
+            doReturn(new WalletTransaction()).when(walletService)
+                    .deductForPayment(anyLong(), any(), any(), any(), any());
+
+            // Act
+            ProductOrder result = orderService.createOrder(
+                    USER_ID, pickupWalletOrderRequest(null), null);
+
+            // Assert: order marked WALLET_PAID, paymentMethod WALLET.
+            assertThat(result.getPaymentMethod()).isEqualTo("WALLET");
+            assertThat(result.getPaymentStatus()).isEqualTo("WALLET_PAID");
+
+            // Verify wallet interactions: locked before stock deduction (call order not asserted
+            // here, but both must happen), deducted with the order total (99 × 2 = 198).
+            verify(walletService).lockWalletForUpdate(USER_ID);
+            ArgumentCaptor<java.math.BigDecimal> amountCaptor = ArgumentCaptor.forClass(java.math.BigDecimal.class);
+            verify(walletService).deductForPayment(
+                    eq(USER_ID), amountCaptor.capture(), eq("PRODUCT_ORDER"), any(), any());
+            assertThat(amountCaptor.getValue()).isEqualByComparingTo("198.00");
+        }
+
+        @Test
+        @DisplayName("WALLET payment with insufficient balance rolls back stock deduction")
+        void createOrder_walletInsufficientBalance_rollsBackStock() {
+            // Arrange: stock deduction succeeds, but wallet throws insufficient balance.
+            doReturn(List.of(defaultCheckedCartItem)).when(cartItemMapper).selectList(any());
+            doReturn(defaultProduct).when(productMapper).selectById(PRODUCT_ID);
+            doReturn(1).when(productMapper).deductStock(PRODUCT_ID, 2);
+            doReturn(new Wallet()).when(walletService).lockWalletForUpdate(USER_ID);
+            // Wallet deduction fails — simulates balance < 198.00.
+            org.mockito.Mockito.doThrow(new BusinessException(
+                    ErrorCode.WALLET_BALANCE_INSUFFICIENT, "钱包余额不足"))
+                    .when(walletService).deductForPayment(anyLong(), any(), any(), any(), any());
+
+            // Act & Assert: the BusinessException propagates (the real rollback is verified by
+            // WalletPaymentAtomicityIT against MySQL; here we just confirm the exception path).
+            assertThatThrownBy(() -> orderService.createOrder(
+                    USER_ID, pickupWalletOrderRequest(null), null))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("code").isEqualTo(ErrorCode.WALLET_BALANCE_INSUFFICIENT);
+
+            // Order must NOT be inserted.
+            verify(orderMapper, never()).insert((ProductOrder) any());
+        }
+
+        @Test
         @DisplayName("Creating order with pickupOnly null should throw PRODUCT_NOT_PICKUP_ONLY")
         void createOrder_pickupOnlyNull() {
             // Arrange
@@ -395,6 +461,12 @@ class ProductOrderTransactionServiceTest {
                 STORE_ID, "PICKUP", null, "张三", "13800000000", remark, null);
     }
 
+    /** Same as {@link #pickupOrderRequest} but selects WALLET as the payment method. */
+    private ProductOrderCreateRequest pickupWalletOrderRequest(String remark) {
+        return new ProductOrderCreateRequest(
+                STORE_ID, "PICKUP", null, "张三", "13800000000", remark, null, "WALLET");
+    }
+
     // ==================== cancelOrder ====================
 
     @Nested
@@ -419,6 +491,40 @@ class ProductOrderTransactionServiceTest {
 
             verify(productMapper).restoreStock(PRODUCT_ID, 2);
             verify(orderMapper).updateById((ProductOrder) any());
+            // default order is OFFLINE_STORE → no wallet refund.
+            verify(walletService, never()).refundForCancellation(anyLong(), any(), any(), anyLong(), any());
+        }
+
+        @Test
+        @DisplayName("Cancelling a WALLET-paid order triggers wallet refund in the same transaction")
+        void cancelOrder_walletPaid_triggersRefund() {
+            // Arrange: build a wallet-paid order (defaultOrder is OFFLINE_STORE by default).
+            ProductOrder walletOrder = new ProductOrder();
+            walletOrder.setId(ORDER_ID);
+            walletOrder.setDeleted(0);
+            walletOrder.setUserId(USER_ID);
+            walletOrder.setPaymentMethod("WALLET");
+            walletOrder.setPaymentStatus("WALLET_PAID");
+            walletOrder.setPickupStatus(PickupStatus.WAIT_PREPARE.getCode());
+            walletOrder.setStatus(ProductOrderStatus.PENDING_CONFIRM.getCode());
+            walletOrder.setTotalAmount(new BigDecimal("99.00"));
+
+            doReturn(walletOrder).when(orderMapper).selectForUpdate(ORDER_ID);
+            doReturn(List.of(defaultOrderItem)).when(orderItemMapper).selectByOrderId(ORDER_ID);
+            doReturn(1).when(productMapper).restoreStock(anyLong(), anyInt());
+            doReturn(1).when(orderMapper).updateById((ProductOrder) any());
+
+            // Act
+            orderService.cancelOrder(ORDER_ID, USER_ID);
+
+            // Assert: wallet refund invoked with the order's total amount, linked to the order id.
+            ArgumentCaptor<java.math.BigDecimal> amountCaptor = ArgumentCaptor.forClass(java.math.BigDecimal.class);
+            verify(walletService).refundForCancellation(
+                    eq(USER_ID), amountCaptor.capture(), eq("PRODUCT_ORDER"),
+                    eq(ORDER_ID), eq("wallet-refund-order-" + ORDER_ID));
+            assertThat(amountCaptor.getValue()).isEqualByComparingTo("99.00");
+            // Stock also restored (atomic with refund).
+            verify(productMapper).restoreStock(PRODUCT_ID, 2);
         }
 
         @Test

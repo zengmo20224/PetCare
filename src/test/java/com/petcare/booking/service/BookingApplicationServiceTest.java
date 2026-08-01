@@ -238,29 +238,6 @@ class BookingApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("HOME mode with address beyond radius throws BOOKING_HOME_DISTANCE_EXCEEDED")
-        void homeModeBeyondRadius() {
-            // Create address far away (Shanghai coordinates)
-            UserAddress address = new UserAddress();
-            address.setUserId(1000L);
-            address.setContactName("张三");
-            address.setContactPhone("13800000000");
-            address.setDetailAddress("上海某地");
-            address.setLongitude(new BigDecimal("121.473700"));
-            address.setLatitude(new BigDecimal("31.230400"));
-            userAddressService.save(address);
-
-            BookingCreateRequest request = new BookingCreateRequest(
-                    storeId, serviceItemId, null, "HOME", futureDate,
-                    LocalTime.of(10, 0), address.getId(), "张三", "13800000000",
-                    "OFFLINE_HOME", null);
-
-            assertThatThrownBy(() -> bookingApplicationService.createBooking(1000L, request))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting("code").isEqualTo(ErrorCode.BOOKING_HOME_DISTANCE_EXCEEDED);
-        }
-
-        @Test
         @DisplayName("HOME mode with address not belonging to user throws BOOKING_ADDRESS_NOT_FOUND")
         void homeModeWrongUser() {
             // Create address for different user
@@ -332,7 +309,8 @@ class BookingApplicationServiceTest {
 
             BookingResponse response = bookingApplicationService.createBooking(1000L, request);
             assertThat(response.status()).isEqualTo("CONFIRMED");
-            assertThat(response.distanceKm()).isNotNull();
+            // 距离限制已取消：distanceKm 不再计算，保持为 null
+            assertThat(response.distanceKm()).isNull();
         }
     }
 }

@@ -3,8 +3,10 @@ package com.petcare.ai.config;
 import com.petcare.ai.analytics.*;
 import com.petcare.ai.domain.CustomerServiceContextBuilder;
 import com.petcare.ai.provider.AiProviderClient;
+import com.petcare.ai.provider.DeepSeekAiProviderClient;
 import com.petcare.ai.provider.DisabledAiProviderClient;
 import com.petcare.booking.mapper.ServiceBookingMapper;
+import com.petcare.common.config.DeepSeekProperties;
 import com.petcare.community.mapper.PostCommentMapper;
 import com.petcare.community.mapper.PostMapper;
 import com.petcare.community.mapper.PostReportMapper;
@@ -15,25 +17,41 @@ import com.petcare.service.mapper.ServiceItemMapper;
 import com.petcare.ai.mapper.FaqKnowledgeMapper;
 import com.petcare.store.mapper.StoreConfigMapper;
 import com.petcare.store.mapper.StoreMapper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 
 /**
  * Spring configuration for AI module beans.
  * Wires up the Provider client, context builder, and analytics aggregators.
  */
 @Configuration
-@EnableConfigurationProperties(com.petcare.common.config.DeepSeekProperties.class)
+@EnableConfigurationProperties(DeepSeekProperties.class)
 public class AiConfig {
 
     /**
-     * Provider client bean. Default is disabled — no fake AI responses.
-     * When provider-enabled is true and all required config is present,
-     * a real adapter bean will replace this in phase 8B.
+     * Real DeepSeek provider client. Active only when
+     * {@code petcare.ai.provider-enabled=true} (D-004 修订 2026-07-21).
+     * The adapter validates DEEPSEEK_API_KEY / DEEPSEEK_MODEL at construction time.
      */
     @Bean
-    public AiProviderClient aiProviderClient() {
+    @ConditionalOnProperty(prefix = "petcare.ai", name = "provider-enabled", havingValue = "true")
+    public AiProviderClient deepSeekAiProviderClient(
+            DeepSeekProperties properties,
+            RestClient.Builder restClientBuilder) {
+        return new DeepSeekAiProviderClient(properties, restClientBuilder);
+    }
+
+    /**
+     * Fallback provider bean when {@code petcare.ai.provider-enabled} is false/absent.
+     * Always throws {@code AiProviderUnavailableException}; never fakes a successful response.
+     */
+    @Bean
+    @ConditionalOnMissingBean(AiProviderClient.class)
+    public AiProviderClient disabledAiProviderClient() {
         return new DisabledAiProviderClient();
     }
 

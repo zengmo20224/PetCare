@@ -7,7 +7,7 @@
  * 3. Staff page uses feedback utils (not ElMessage direct)
  * 4. Disable action uses ActionConfirmDialog (not ElMessageBox)
  * 5. Schedule dialog shows conflict/save failure feedback
- * 6. Skill editing is blocked (no GET endpoint)
+ * 6. Skill editing is exposed inside the staff form (multi-select, since efd8632)
  * 7. Permission checks on all action buttons
  * 8. canDisableStaff guard used for disable button visibility
  */
@@ -140,18 +140,19 @@ describe('Schedule conflict handling', () => {
   })
 })
 
-// ─── Skill Blocking ───
+// ─── Skill Editing（自 efd8632 起岗位自由化，技能多选在表单内，不再独立按钮） ───
 
-describe('Staff skill editing blocked', () => {
+describe('Staff skill editing in form', () => {
   let source: string
 
   beforeEach(() => {
     source = readFile('../views/staff/index.vue')
   })
 
-  it('does not expose skill editing entry (no skill button in actions)', () => {
-    // The skill update API exists but no GET endpoint, so skill editing should be blocked
-    // Should NOT have a "技能" or "skill" action button
-    expect(source).not.toMatch(/技能|skill.*button|editSkills|openSkillDialog/i)
+  it('exposes skill multi-select inside the staff form (skillCategoryIds)', () => {
+    // 技能关联决定员工能否出现在预约可选列表（无 staff_skill 的员工会被 getAvailability 过滤），
+    // 必须在新建/编辑表单中可填，不再像早期版本那样被阻塞。
+    expect(source).toMatch(/skillCategoryIds/)
+    expect(source).toMatch(/multiple/)
   })
 })

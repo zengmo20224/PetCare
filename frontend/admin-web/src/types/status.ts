@@ -199,10 +199,14 @@ export type SensitiveWordStatus = keyof typeof SENSITIVE_WORD_STATUS
 /**
  * Returns available booking actions for the given status.
  * Backend: BookingStateMachine
+ *
+ * 注：拒绝与取消已合并为单一"取消"入口（cancel=reject/作废），统一走 cancel 接口。
+ * 后端状态机仍保留 PENDING_CONFIRM → REJECTED 流转以兼容历史数据，但管理端前端
+ * 不再暴露 reject 动作——待确认预约用"取消"处理，效果等价且同样写审计日志。
  */
 export function getBookingActions(status: string): string[] {
   const actions: Record<string, string[]> = {
-    PENDING_CONFIRM: ['confirm', 'reject', 'cancel'],
+    PENDING_CONFIRM: ['confirm', 'cancel'],
     CONFIRMED: ['start', 'cancel'],
     IN_SERVICE: ['complete'],
     COMPLETED: [],

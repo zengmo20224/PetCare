@@ -8,6 +8,7 @@ import com.petcare.community.dto.CommentCreateRequest;
 import com.petcare.community.dto.CommentResponse;
 import com.petcare.community.dto.PostCreateRequest;
 import com.petcare.community.dto.PostResponse;
+import com.petcare.community.dto.PublicCommentFlatResponse;
 import com.petcare.community.dto.PublicCommentResponse;
 import com.petcare.community.dto.PublicCommentTreeResponse;
 import com.petcare.community.dto.PublicPostDetailResponse;
@@ -92,6 +93,19 @@ public class PostController {
     public ResponseEntity<ApiResponse<List<PublicCommentTreeResponse>>> listComments(
             @PathVariable Long postId) {
         List<PublicCommentTreeResponse> result = postService.listPublicCommentsTree(postId);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /**
+     * List published comments for a published post as a flat list
+     * (Douyin-style). Each item carries author info and an optional
+     * {@code replyToName} so the UI can render "author @ replyTo" without a
+     * nested tree. Unlike the tree endpoint, replies-to-replies are visible.
+     */
+    @GetMapping("/{postId}/comments/flat")
+    public ResponseEntity<ApiResponse<List<PublicCommentFlatResponse>>> listCommentsFlat(
+            @PathVariable Long postId) {
+        List<PublicCommentFlatResponse> result = postService.listPublicCommentsFlat(postId);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 

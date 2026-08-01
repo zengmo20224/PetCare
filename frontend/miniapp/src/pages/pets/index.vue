@@ -39,6 +39,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
@@ -87,7 +88,10 @@ async function handleDelete(petId: string) {
 // expose for long-press delete via uni native
 defineExpose({ handleDelete })
 
-loadPets()
+// 每次显示时刷新（从编辑页返回后自动更新列表）
+onShow(() => {
+  loadPets()
+})
 </script>
 
 <style scoped>

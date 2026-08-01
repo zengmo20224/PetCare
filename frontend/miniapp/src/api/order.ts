@@ -7,7 +7,10 @@ import type { ApiResponse, PageResponse, PageParams } from '@/types/api'
 import type { OrderItem, OrderDetail } from '@/types/product'
 
 /** Create order from checked cart items.
- *  deliveryMethod PICKUP requires storeId; EXPRESS requires addressId. */
+ *  deliveryMethod PICKUP requires storeId; EXPRESS requires addressId.
+ *  paymentMethod defaults to OFFLINE_STORE when omitted (backward compatible).
+ *  WALLET deducts the order total from the user's wallet in the same transaction
+ *  as stock deduction (CR-20260718-003 / D-012). */
 export function createOrder(data: {
   deliveryMethod: 'PICKUP' | 'EXPRESS'
   storeId?: string
@@ -15,6 +18,7 @@ export function createOrder(data: {
   contactName: string
   contactPhone: string
   remark?: string
+  paymentMethod?: 'OFFLINE_STORE' | 'WALLET'
 }): Promise<ApiResponse<OrderItem>> {
   return http.post<OrderItem>('/api/v1/product-orders', data as any)
 }

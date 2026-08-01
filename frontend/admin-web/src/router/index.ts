@@ -69,6 +69,18 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '自提订单', icon: 'Box', permission: 'product:order:read' },
       },
       {
+        path: 'wallet/accounts',
+        name: 'WalletAccounts',
+        component: () => import('../views/wallet/accounts/index.vue'),
+        meta: { title: '用户钱包', icon: 'Wallet', permission: 'wallet:account:read' },
+      },
+      {
+        path: 'wallet/transactions',
+        name: 'WalletTransactions',
+        component: () => import('../views/wallet/transactions/index.vue'),
+        meta: { title: '钱包流水', icon: 'List', permission: 'wallet:transaction:read' },
+      },
+      {
         path: 'announcements',
         name: 'Announcements',
         component: () => import('../views/announcement/index.vue'),
@@ -103,6 +115,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'OperationLogs',
         component: () => import('../views/operation-logs/index.vue'),
         meta: { title: '操作日志', icon: 'Document', permission: 'admin:operation-log:read' },
+      },
+      {
+        path: 'ai/reports',
+        name: 'AiReports',
+        component: () => import('../views/ai/reports.vue'),
+        meta: { title: 'AI 分析报告', icon: 'DataAnalysis', permission: 'ai:analysis:generate' },
       },
     ],
   },

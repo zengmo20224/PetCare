@@ -12,6 +12,7 @@ public class MockAiProviderClient implements AiProviderClient {
     private AiProviderResponse nextResponse;
     private RuntimeException nextException;
     private int callCount;
+    private AiProviderRequest lastCapturedRequest;
 
     public MockAiProviderClient() {
         this.callCount = 0;
@@ -57,6 +58,7 @@ public class MockAiProviderClient implements AiProviderClient {
     @Override
     public AiProviderResponse complete(AiProviderRequest request) {
         callCount++;
+        this.lastCapturedRequest = request;
         if (nextException != null) {
             throw nextException;
         }
@@ -80,5 +82,14 @@ public class MockAiProviderClient implements AiProviderClient {
         this.nextResponse = null;
         this.nextException = null;
         this.callCount = 0;
+        this.lastCapturedRequest = null;
+    }
+
+    /**
+     * Returns the most recent {@link AiProviderRequest} passed to {@link #complete},
+     * or null if not yet called. Useful for asserting multi-turn history wiring.
+     */
+    public AiProviderRequest getLastCapturedRequest() {
+        return lastCapturedRequest;
     }
 }

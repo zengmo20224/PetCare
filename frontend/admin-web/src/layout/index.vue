@@ -66,6 +66,18 @@
           <el-menu-item v-if="userStore.hasPermission('product:order:read')" index="/product-orders">商品订单</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu
+          v-if="userStore.hasPermission('wallet:account:read') || userStore.hasPermission('wallet:transaction:read')"
+          index="wallet-sub"
+        >
+          <template #title>
+            <el-icon><Wallet /></el-icon>
+            <span>钱包管理</span>
+          </template>
+          <el-menu-item v-if="userStore.hasPermission('wallet:account:read')" index="/wallet/accounts">用户钱包</el-menu-item>
+          <el-menu-item v-if="userStore.hasPermission('wallet:transaction:read')" index="/wallet/transactions">钱包流水</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu v-if="userStore.hasPermission('community:post:read') || userStore.hasPermission('community:report:handle')" index="community-sub">
           <template #title>
             <el-icon><ChatDotRound /></el-icon>
@@ -83,6 +95,11 @@
         <el-menu-item v-if="userStore.hasPermission('admin:operation-log:read')" index="/operation-logs">
           <el-icon><Document /></el-icon>
           <span>操作日志</span>
+        </el-menu-item>
+
+        <el-menu-item v-if="userStore.hasPermission('ai:analysis:generate')" index="/ai/reports">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>AI 分析报告</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -120,8 +137,10 @@ import {
   ChatDotRound,
   Filter,
   Document,
+  DataAnalysis,
   Fold,
   Expand,
+  Wallet,
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()

@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
@@ -50,6 +50,11 @@ const isSelectMode = ref(false)
 // event and returns to the caller (order confirm page) instead of opening edit.
 onLoad((query) => {
   isSelectMode.value = normalizeRouteParam(query?.mode) === 'select'
+})
+
+// 每次显示时刷新（从编辑页返回后自动更新列表）
+onShow(() => {
+  loadAddresses()
 })
 
 function fullAddress(addr: AddressItem): string {

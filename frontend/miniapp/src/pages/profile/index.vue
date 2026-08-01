@@ -45,6 +45,10 @@
         <text class="profile-menu-item__label">我的订单</text>
         <text class="profile-menu-item__arrow">›</text>
       </view>
+      <view class="profile-menu-item" @tap="goPage('/pages/wallet/index')">
+        <text class="profile-menu-item__label">我的钱包</text>
+        <text class="profile-menu-item__arrow">›</text>
+      </view>
       <view class="profile-menu-item" @tap="goPage('/pages/pets/index')">
         <text class="profile-menu-item__label">我的宠物</text>
         <text class="profile-menu-item__arrow">›</text>

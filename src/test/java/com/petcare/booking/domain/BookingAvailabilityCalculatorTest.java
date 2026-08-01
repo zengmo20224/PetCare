@@ -241,6 +241,77 @@ class BookingAvailabilityCalculatorTest {
         }
     }
 
+    /**
+     * 全天/跨临界排班的回归守卫。
+     *
+     * <p>历史缺陷：generateSlots 用 {@code LocalTime.plusMinutes} 推进 candidate，当
+     * candidate 接近一天结束、加上服务时长后跨过 24:00 时，LocalTime 会环绕回 00:00，
+     * 导致循环条件永远为真 → 死循环 → 请求挂起 → DB 连接池耗尽 → 全站 availability 不可用。
+     * 触发条件是 staff_schedule 中存在窗口足够大的排班（如 00:00–23:59 全天排班）。
+     * 这一组测试是 AGENTS.md 第 4 节"预约容量"强制回归守卫的一部分，任何情况下都保留。
+     */
+    @Nested
+    @DisplayName("Whole-day / midnight-wrap schedule (regression guard)")
+    class WholeDayScheduleGuard {
+
+        @Test
+        @DisplayName("00:00–23:59 全天排班必须正常终止，不能死循环（30 分钟粒度 / 60 分钟服务）")
+        void wholeDayScheduleDoesNotInfiniteLoop() {
+            // 用 assertTimeoutPreemptively 双保险：即使循环真的退化成死循环，
+            // 测试也会在 5 秒后被强制中断并失败，而不是挂住整个测试套件。
+            org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(
+                    java.time.Duration.ofSeconds(5),
+                    () -> {
+                        Map<Long, List<StaffSchedule>> schedules = Map.of(
+                                1L, List.of(schedule(1L, "00:00", "23:59")));
+
+                        Map<LocalTime, Integer> slots = BookingAvailabilityCalculator.calculateAvailableSlots(
+                                schedules, Map.of(), Map.of(), 30, 60);
+
+                        // 最后一个合法起始时间是 22:59（22:59 + 60min = 23:59，刚好等于 end）
+                        // 23:00 + 60min = 24:00 → 环绕到 00:00 → 不应计入
+                        assertThat(slots).isNotEmpty();
+                        assertThat(slots).doesNotContainKey(LocalTime.of(23, 0));
+                        assertThat(slots).doesNotContainKey(LocalTime.of(23, 30));
+                        // 起始候选数应为 46 个（00:00, 00:30, ..., 22:30, 22:59 不在序列里，
+                        // 但 22:30 + 60 = 23:30 ≤ 23:59 ✓，22:59 不是 30 分钟整点）
+                        // 这里只断言数量合理范围，避免对粒度边界的过度耦合
+                        assertThat(slots.size()).isBetween(30, 48);
+                    });
+        }
+
+        @Test
+        @DisplayName("晚班 22:00–23:59 不应触发环绕（30 分钟粒度 / 60 分钟服务）")
+        void lateShiftDoesNotWrap() {
+            Map<Long, List<StaffSchedule>> schedules = Map.of(
+                    1L, List.of(schedule(1L, "22:00", "23:59")));
+
+            Map<LocalTime, Integer> slots = BookingAvailabilityCalculator.calculateAvailableSlots(
+                    schedules, Map.of(), Map.of(), 30, 60);
+
+            // 22:00 + 60 = 23:00 ≤ 23:59 ✓；22:30 + 60 = 23:30 ≤ 23:59 ✓；
+            // 23:00 + 60 = 24:00 → 环绕 → 不应计入
+            assertThat(slots).containsKey(LocalTime.of(22, 0));
+            assertThat(slots).containsKey(LocalTime.of(22, 30));
+            assertThat(slots).doesNotContainKey(LocalTime.of(23, 0));
+        }
+
+        @Test
+        @DisplayName("时段粒度 ≤ 0 时直接返回空结果（防御性，不进入循环）")
+        void nonPositiveSlotMinutesReturnsEmpty() {
+            Map<Long, List<StaffSchedule>> schedules = Map.of(
+                    1L, List.of(schedule(1L, "09:00", "17:00")));
+
+            Map<LocalTime, Integer> slotsZero = BookingAvailabilityCalculator.calculateAvailableSlots(
+                    schedules, Map.of(), Map.of(), 0, 60);
+            Map<LocalTime, Integer> slotsNegative = BookingAvailabilityCalculator.calculateAvailableSlots(
+                    schedules, Map.of(), Map.of(), -5, 60);
+
+            assertThat(slotsZero).isEmpty();
+            assertThat(slotsNegative).isEmpty();
+        }
+    }
+
     // --- helper methods ---
 
     private static StaffSchedule schedule(long staffId, String start, String end) {

@@ -242,14 +242,17 @@ describe('PickupStatus contract', () => {
 // CONFIRMED → IN_SERVICE, CANCELLED
 // IN_SERVICE → COMPLETED
 // COMPLETED/CANCELLED/REJECTED → terminal
+// 注：前端把"拒绝"与"取消"合并为单一"取消"入口（cancel=reject/作废），统一走
+// cancel 接口。后端状态机仍允许 PENDING_CONFIRM→REJECTED，但前端不再暴露 reject 动作。
 
 describe('getBookingActions', () => {
-  it('PENDING_CONFIRM allows confirm, reject, cancel', () => {
+  it('PENDING_CONFIRM allows confirm, cancel (reject merged into cancel)', () => {
     const actions = getBookingActions('PENDING_CONFIRM')
     expect(actions).toContain('confirm')
-    expect(actions).toContain('reject')
     expect(actions).toContain('cancel')
-    expect(actions).toHaveLength(3)
+    // reject 已合并进 cancel，不再作为独立前端动作
+    expect(actions).not.toContain('reject')
+    expect(actions).toHaveLength(2)
   })
 
   it('CONFIRMED allows start, cancel', () => {

@@ -101,6 +101,7 @@ const MODULE_LABELS: Record<string, string> = {
   moderation: '内容审核',
   admin: '后台权限',
   system: '系统设置',
+  wallet: '钱包管理',
   AI分析: 'AI分析'
 }
 
@@ -132,6 +133,8 @@ const OPERATION_LABELS: Record<string, string> = {
   complete: '完成商品订单',
   cancel: '取消商品订单',
   'out-of-stock': '标记商品缺货',
+  'wallet-recharge': '钱包充值',
+  'wallet-adjust': '钱包余额调整',
   生成报告: '生成AI分析报告'
 }
 
@@ -175,10 +178,49 @@ const formatMethodLabel = (method: string) => METHOD_LABELS[(method || '').toUpp
 
 const formatOperationSummary = (row: OperationLog) => formatOperationLabel(row.operation)
 
+/**
+ * Parses the operation target hint from requestParams (preferred) or requestUrl (fallback).
+ *
+ * Backend writes params as a flat "key=value, key2=value2" string. The most human-readable
+ * key is `targetName` (e.g. staff/user/product name); secondary keys like `phone`,
+ * `orderNo`, `bookingNo` add context. If params is empty, we fall back to extracting a
+ * numeric ID from the URL so legacy log rows still show something useful.
+ */
 const formatTargetHint = (row: OperationLog) => {
-  const segments = (row.requestUrl || '').split('/').filter(Boolean)
-  const targetId = [...segments].reverse().find((segment) => /^\d{6,}$/.test(segment))
+  const parts = parseParams(row.requestParams)
+  if (parts.size > 0) {
+    const segments: string[] = []
+    // Prefer the explicit human-readable name fields, in priority order.
+    const nameKeys = ['targetName', 'staffName', 'userNickname', 'productName', 'serviceName', 'storeName']
+    const nameKey = nameKeys.find((k) => parts.has(k))
+    if (nameKey) segments.push(parts.get(nameKey)!)
+    // Add secondary identifiers for context (phone / business numbers).
+    const contextKeys = ['phone', 'orderNo', 'bookingNo', 'targetId', 'staffId', 'userId', 'productId', 'bookingId']
+    for (const k of contextKeys) {
+      if (parts.has(k) && k !== nameKey) {
+        segments.push(`${k}=${parts.get(k)}`)
+      }
+    }
+    if (segments.length > 0) return segments.join(' · ')
+  }
+  // Fallback: extract numeric ID from URL (legacy rows without params).
+  const urlSegments = (row.requestUrl || '').split('/').filter(Boolean)
+  const targetId = [...urlSegments].reverse().find((segment) => /^\d{6,}$/.test(segment))
   return targetId ? `关联对象编号：${targetId}` : '未记录具体对象编号'
+}
+
+/** Parses a "k1=v1, k2=v2" string into a Map. Tolerant of whitespace and missing values. */
+const parseParams = (raw: string | null): Map<string, string> => {
+  const result = new Map<string, string>()
+  if (!raw) return result
+  for (const chunk of raw.split(',')) {
+    const idx = chunk.indexOf('=')
+    if (idx <= 0) continue
+    const key = chunk.slice(0, idx).trim()
+    const value = chunk.slice(idx + 1).trim()
+    if (key && value) result.set(key, value)
+  }
+  return result
 }
 
 const formatAdminLabel = (adminId: OperationLog['adminId']) => {

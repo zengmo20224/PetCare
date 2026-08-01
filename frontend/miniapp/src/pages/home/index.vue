@@ -6,8 +6,14 @@
         <text class="home-brand__name">PetCare</text>
         <text class="home-brand__location">萌宠家园 · 上海徐汇店</text>
       </view>
-      <wd-tag class="home-brand__status" type="primary" plain round>
-        <wd-icon name="check-outline" size="12px" /> 营业中
+      <wd-tag
+        class="home-brand__status"
+        :type="storeStatus === 'OPEN' ? 'primary' : 'warning'"
+        :plain="storeStatus === 'OPEN'"
+        round
+      >
+        <wd-icon :name="storeStatus === 'OPEN' ? 'check-outline' : 'lock'" size="12px" />
+        {{ storeStatus === 'OPEN' ? '营业中' : '已休息' }}
       </wd-tag>
     </view>
 
@@ -29,16 +35,22 @@
       </template>
     </PcHeroCard>
 
-    <!-- Announcement Banner — wot notice-bar -->
-    <wd-notice-bar
+    <!-- Announcement Entry — green-themed card with unread red dot -->
+    <view
       v-if="latestAnnouncement"
       class="home-announcement"
-      type="warning"
-      scrollable
-      prefix="warn-bold"
-      :text="`社区公告：${latestAnnouncement.title}`"
-      @click="goAnnouncementDetail(latestAnnouncement.id)"
-    />
+      @tap="goAnnouncementDetail(latestAnnouncement.id)"
+    >
+      <view class="home-announcement__icon">
+        <text class="home-announcement__icon-text">📢</text>
+      </view>
+      <view class="home-announcement__info">
+        <text class="home-announcement__label">社区公告</text>
+        <text class="home-announcement__title">{{ latestAnnouncement.title }}</text>
+      </view>
+      <view v-if="hasUnreadAnnouncement" class="home-announcement__dot" />
+      <text class="home-announcement__arrow">›</text>
+    </view>
 
     <!-- Quick Service Shortcuts — wot grid 风格的彩色入口 -->
     <view class="pc-section">
@@ -159,9 +171,18 @@
       </PcStatePanel>
     </view>
 
-    <!-- AI Status -->
+    <!-- AI Assistant Entry -->
     <view class="pc-section">
-      <PcBlockedFeature title="智能助手暂未开放" reason="AI 能力正在开发中，敬请期待" />
+      <view class="home-ai-card" @tap="goAiChat">
+        <view class="home-ai-card__icon">
+          <text class="home-ai-card__icon-text">AI</text>
+        </view>
+        <view class="home-ai-card__body">
+          <text class="home-ai-card__title">智能客服</text>
+          <text class="home-ai-card__desc">营业时间、服务价格、宠物闲聊，问 AI 就行</text>
+        </view>
+        <text class="home-ai-card__arrow">›</text>
+      </view>
     </view>
     <PcBottomNav current-path="pages/home/index" />
   </view>
@@ -172,7 +193,6 @@ import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import PcHeroCard from '@/components/PcHeroCard.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
-import PcBlockedFeature from '@/components/PcBlockedFeature.vue'
 import PcProductCard from '@/components/PcProductCard.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
 import PcServiceIcon from '@/components/PcServiceIcon.vue'
@@ -180,6 +200,7 @@ import { getPosts } from '@/api/community'
 import { getActivities } from '@/api/activity'
 import { getAnnouncements } from '@/api/notification'
 import { getProducts } from '@/api/product'
+import { getStoreDetail } from '@/api/store'
 import type { PostItem } from '@/types/community'
 import type { ActivityItem } from '@/types/activity'
 import type { AnnouncementItem } from '@/types/notification'
@@ -190,6 +211,7 @@ import { hasUnreadAnnouncements } from '@/utils/announcement-read'
 const latestAnnouncement = ref<AnnouncementItem | null>(null)
 const announcements = ref<AnnouncementItem[]>([])
 const hasUnreadAnnouncement = ref(false)
+const storeStatus = ref<string>('OPEN')
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
 const serviceShortcuts = [
@@ -270,6 +292,10 @@ function goActivities() {
   uni.navigateTo({ url: '/pages/activity/index' })
 }
 
+function goAiChat() {
+  uni.navigateTo({ url: '/pages/ai/chat' })
+}
+
 function goActivityDetail(id: string) {
   uni.navigateTo({ url: `/pages/activity/detail?id=${id}` })
 }
@@ -311,11 +337,19 @@ async function loadAnnouncement() {
   }
 }
 
+async function loadStoreStatus() {
+  const res = await getStoreDetail('1001')
+  if (res.success && res.data) {
+    storeStatus.value = res.data.status ?? 'OPEN'
+  }
+}
+
 function loadHomeData() {
   loadRecentPosts()
   loadRecentActivities()
   loadFeaturedProducts()
   loadAnnouncement()
+  loadStoreStatus()
 }
 
 function goAnnouncementDetail(id: string) {
@@ -361,11 +395,76 @@ onShow(loadAnnouncement)
   flex-shrink: 0;
 }
 
-/* ─── wot 公告条 ─── */
+/* ─── 公告入口卡片（绿色主题）─── */
 .home-announcement {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-top: 14px;
-  border-radius: 20px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #F4FFFB 0%, #E7F6F1 100%);
+  border: 1px solid rgba(17, 121, 111, 0.16);
+  box-shadow: 0 4px 14px rgba(17, 121, 111, 0.08);
+}
+
+.home-announcement__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #11796F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-announcement__icon-text {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.home-announcement__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-announcement__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #11796F;
+}
+
+.home-announcement__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0C4D48;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-announcement__dot {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #F5465C;
+  border: 2px solid #FFFFFF;
+}
+
+.home-announcement__arrow {
+  font-size: 20px;
+  color: #11796F;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* ─── Hero 按钮 ─── */
@@ -577,5 +676,57 @@ onShow(loadAnnouncement)
   gap: 4px;
   font-size: 11px;
   color: #71817D;
+}
+
+/* AI 客服入口卡（D-004 修订 2026-07-21） */
+.home-ai-card {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #F4FFFB 0%, #E7F6F1 100%);
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.home-ai-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #11796F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-ai-card__icon-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.home-ai-card__body {
+  flex: 1;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-ai-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0C4D48;
+}
+
+.home-ai-card__desc {
+  font-size: 12px;
+  color: #71817D;
+  margin-top: 2px;
+}
+
+.home-ai-card__arrow {
+  font-size: 20px;
+  color: #11796F;
+  margin-left: 8px;
 }
 </style>

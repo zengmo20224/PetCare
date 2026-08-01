@@ -60,6 +60,7 @@ public class StoreController {
                 store.getAddress(),
                 store.getPhone(),
                 store.getBusinessHours(),
-                store.getDescription());
+                store.getDescription(),
+                store.getStatus());
     }
 }

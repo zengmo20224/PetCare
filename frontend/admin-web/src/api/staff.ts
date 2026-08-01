@@ -9,7 +9,8 @@ export interface StaffMember {
   name: string
   phone: string | null
   avatarUrl: string | null
-  role: string // GROOMER | WALKER | FEEDER | MANAGER
+  // role 为自由文本（自 efd8632 起由枚举改为 @Size(max=32)，店主可自定义岗位）。
+  role: string
   status: string
   description: string | null
 }
@@ -80,10 +81,10 @@ export const enableStaff = (id: number) => {
 }
 
 // ─── Staff Skills ───
-// NOTE: Backend only has PUT /staff/{id}/skills (replace). No GET endpoint exists.
-// The full skill editing flow is blocked until a read endpoint is added to the backend.
+// 岗位自由化后（commit efd8632），员工的可服务类别完全由 staff_skill 关联表决定，
+// role 字段退化为自由文本。两个端点都需要 staff:skill:manage 权限。
 
-/** PUT /api/v1/admin/staff/{id}/skills — @PreAuthorize('staff:skill:manage') */
+/** PUT /api/v1/admin/staff/{id}/skills — 整体替换该员工的技能；@PreAuthorize('staff:skill:manage') */
 export const updateStaffSkills = (staffId: number, data: StaffSkillUpdateParams) => {
   return request.put<StaffSkillView>(`/v1/admin/staff/${staffId}/skills`, data)
 }

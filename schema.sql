@@ -294,8 +294,8 @@ CREATE TABLE `service_booking` (
   `contact_name`    VARCHAR(64)   DEFAULT NULL COMMENT '联系人姓名',
   `contact_phone`   VARCHAR(20)   DEFAULT NULL COMMENT '联系人手机号',
   `price`           DECIMAL(10,2) DEFAULT NULL COMMENT '预约价格',
-  `payment_method`  VARCHAR(32)   DEFAULT NULL COMMENT '付款方式：OFFLINE_STORE / OFFLINE_HOME / ONLINE_WECHAT / FREE',
-  `payment_status`  VARCHAR(32)   NOT NULL DEFAULT 'UNPAID' COMMENT '支付状态：UNPAID / OFFLINE_PAID / REFUNDED',
+  `payment_method`  VARCHAR(32)   DEFAULT NULL COMMENT '付款方式：OFFLINE_STORE / OFFLINE_HOME / ONLINE_WECHAT / WALLET / FREE',
+  `payment_status`  VARCHAR(32)   NOT NULL DEFAULT 'UNPAID' COMMENT '支付状态：UNPAID / OFFLINE_PAID / WALLET_PAID / REFUNDED',
   `status`          VARCHAR(32)   NOT NULL DEFAULT 'CONFIRMED' COMMENT '预约状态：PENDING_CONFIRM / CONFIRMED / IN_SERVICE / COMPLETED / CANCELLED / REJECTED（创建即确认，默认 CONFIRMED）',
   `remark`          VARCHAR(500)  DEFAULT NULL COMMENT '用户备注',
   `merchant_remark` VARCHAR(500)  DEFAULT NULL COMMENT '商家备注',
@@ -594,8 +594,8 @@ CREATE TABLE `product_order` (
   `delivery_method` VARCHAR(16)   NOT NULL DEFAULT 'PICKUP' COMMENT '交付方式：PICKUP / DELIVERY',
   `address_id`      BIGINT        DEFAULT NULL COMMENT '配送地址 ID',
   `address_snapshot` VARCHAR(500) DEFAULT NULL COMMENT '配送地址快照',
-  `payment_method`  VARCHAR(32)   DEFAULT NULL COMMENT '付款方式：OFFLINE_STORE / ONLINE_WECHAT / FREE',
-  `payment_status`  VARCHAR(32)   NOT NULL DEFAULT 'UNPAID' COMMENT '支付状态：UNPAID / OFFLINE_PAID / REFUNDED',
+  `payment_method`  VARCHAR(32)   DEFAULT NULL COMMENT '付款方式：OFFLINE_STORE / ONLINE_WECHAT / WALLET / FREE',
+  `payment_status`  VARCHAR(32)   NOT NULL DEFAULT 'UNPAID' COMMENT '支付状态：UNPAID / OFFLINE_PAID / WALLET_PAID / REFUNDED',
   `pickup_status`   VARCHAR(32)   NOT NULL DEFAULT 'WAIT_PREPARE' COMMENT '自提状态：WAIT_PREPARE / READY_FOR_PICKUP / PICKED_UP',
   `status`          VARCHAR(32)   NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT '订单状态：PENDING_CONFIRM / PREPARING / READY_FOR_PICKUP / COMPLETED / CANCELLED / OUT_OF_STOCK',
   `contact_name`    VARCHAR(64)   DEFAULT NULL COMMENT '联系人姓名',
@@ -946,3 +946,45 @@ CREATE TABLE `user_notification` (
   KEY `idx_user_read` (`user_id`, `is_read`),
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知表';
+
+-- 用户钱包账户表
+-- 管理端手工台账，用于无第三方支付资质下的支付链路验证
+-- 详见 docs/08-pending-decisions.md D-010/D-012 与 CR-20260718-003
+-- 余额变更必须先 SELECT ... FOR UPDATE 行锁，再条件 UPDATE（balance >= amount）
+-- 全局锁顺序：wallet → product(asc) → booking，防死锁
+CREATE TABLE `user_wallet` (
+  `id`             BIGINT        NOT NULL COMMENT '主键，雪花 ID',
+  `user_id`        BIGINT        NOT NULL COMMENT '所属用户 ID',
+  `balance`        DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '可用余额',
+  `frozen_amount`  DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '冻结金额（预留，本期不使用）',
+  `version`        INT           NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  `create_time`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`        TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-正常 1-已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户钱包账户表（管理端手工台账）';
+
+-- 钱包流水表
+-- 只追加不修改：所有余额变更必须有对应流水记录（含 before/after 余额快照）
+-- 幂等：同一 user_id + idempotency_key 唯一，防止重复扣款/退款
+CREATE TABLE `wallet_transaction` (
+  `id`                BIGINT        NOT NULL COMMENT '主键，雪花 ID',
+  `user_id`           BIGINT        NOT NULL COMMENT '所属用户 ID',
+  `direction`         VARCHAR(8)    NOT NULL COMMENT '方向：DEBIT-扣减 / CREDIT-增加',
+  `source_type`       VARCHAR(32)   NOT NULL COMMENT '来源类型：RECHARGE-充值 / PAY-支付 / REFUND-退款 / ADMIN_ADJUST-管理员调整 / BONUS-赠送（预留，本期不写入）',
+  `amount`            DECIMAL(10,2) NOT NULL COMMENT '发生金额（始终为正数，方向由 direction 区分）',
+  `balance_before`    DECIMAL(10,2) NOT NULL COMMENT '变更前余额',
+  `balance_after`     DECIMAL(10,2) NOT NULL COMMENT '变更后余额',
+  `related_order_type` VARCHAR(16) DEFAULT NULL COMMENT '关联订单类型：PRODUCT_ORDER / SERVICE_BOOKING / NULL',
+  `related_order_id`  BIGINT        DEFAULT NULL COMMENT '关联订单 ID',
+  `operator_type`     VARCHAR(16)   NOT NULL COMMENT '操作方类型：USER-用户 / ADMIN-管理员 / SYSTEM-系统',
+  `operator_id`       BIGINT        DEFAULT NULL COMMENT '操作方 ID（USER 为 user_id，ADMIN 为 admin_id，SYSTEM 为 NULL）',
+  `idempotency_key`   VARCHAR(64)   DEFAULT NULL COMMENT '幂等键，与 user_id 共同唯一；NULL 表示不启用幂等',
+  `reason`            VARCHAR(500)  DEFAULT NULL COMMENT '操作理由（管理员调整必填）',
+  `create_time`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_wallet_idempotency` (`user_id`, `idempotency_key`),
+  KEY `idx_wallet_user_time` (`user_id`, `create_time`),
+  KEY `idx_wallet_related_order` (`related_order_type`, `related_order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='钱包流水表（只追加）';

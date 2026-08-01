@@ -8,3 +8,16 @@ spring:
 petcare:
   security:
     jwt-secret: ${JWT_SECRET:dev-secret-key-for-local-testing-only-32chars}
+  ai:
+    # D-004 修订（2026-07-21）：dev 默认启用 AI 客服 + 分析报告。
+    # 未配置 DEEPSEEK_API_KEY 时 DeepSeekAiProviderClient 构造抛 AiProviderUnavailableException，
+    # 由全局处理器返回 503，不影响应用启动。
+    provider-enabled: ${AI_PROVIDER_ENABLED:true}
+    deepseek:
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${DEEPSEEK_API_KEY:}
+      model: ${DEEPSEEK_MODEL:deepseek-chat}
+      connect-timeout: ${DEEPSEEK_CONNECT_TIMEOUT:10000}
+      read-timeout: ${DEEPSEEK_READ_TIMEOUT:60000}
+      max-tokens: ${DEEPSEEK_MAX_TOKENS:1024}
+      max-retries: ${DEEPSEEK_MAX_RETRIES:1}

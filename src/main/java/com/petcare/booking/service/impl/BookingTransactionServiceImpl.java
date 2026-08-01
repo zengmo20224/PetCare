@@ -16,6 +16,7 @@ import com.petcare.staff.entity.Staff;
 import com.petcare.staff.entity.StaffSkill;
 import com.petcare.staff.mapper.StaffMapper;
 import com.petcare.staff.mapper.StaffSkillMapper;
+import com.petcare.wallet.service.WalletService;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,19 +44,22 @@ public class BookingTransactionServiceImpl implements BookingTransactionService 
     private final StaffMapper staffMapper;
     private final StaffSkillMapper staffSkillMapper;
     private final ServiceItemService serviceItemService;
+    private final WalletService walletService;
 
     public BookingTransactionServiceImpl(StaffBookingLockMapper staffBookingLockMapper,
                                          ServiceBookingMapper serviceBookingMapper,
                                          BookingStatusLogService bookingStatusLogService,
                                          StaffMapper staffMapper,
                                          StaffSkillMapper staffSkillMapper,
-                                         ServiceItemService serviceItemService) {
+                                         ServiceItemService serviceItemService,
+                                         WalletService walletService) {
         this.staffBookingLockMapper = staffBookingLockMapper;
         this.serviceBookingMapper = serviceBookingMapper;
         this.bookingStatusLogService = bookingStatusLogService;
         this.staffMapper = staffMapper;
         this.staffSkillMapper = staffSkillMapper;
         this.serviceItemService = serviceItemService;
+        this.walletService = walletService;
     }
 
     @Override
@@ -63,6 +67,15 @@ public class BookingTransactionServiceImpl implements BookingTransactionService 
     public ServiceBooking createBookingOnce(ServiceBooking booking) {
         Long staffId = booking.getStaffId();
         LocalDate bookingDate = booking.getBookingDate();
+        boolean payByWallet = "WALLET".equals(booking.getPaymentMethod());
+
+        // Step 0 (wallet): lock the wallet row FIRST to fix global lock order
+        // (wallet → staff_booking_lock). Lazy-creates the wallet on first use.
+        // Final deduction happens in Step 4b after the booking is persisted (so the ledger
+        // can reference bookingId), still inside this same transaction (D-012).
+        if (payByWallet) {
+            walletService.lockWalletForUpdate(booking.getUserId());
+        }
 
         // Step 1: Ensure lock point exists with a snowflake id
         long lockId = generateLockId();
@@ -85,8 +98,22 @@ public class BookingTransactionServiceImpl implements BookingTransactionService 
                     "预约时间与已有预约冲突，请选择其他时间");
         }
 
-        // Step 4: Insert booking
+        // Step 4: Insert booking (assigns booking.id via snowflake)
+        // 钱包支付即时到账：paymentStatus 直接置 WALLET_PAID；线下支付保持 UNPAID。
+        if (payByWallet) {
+            booking.setPaymentStatus("WALLET_PAID");
+        }
         serviceBookingMapper.insert(booking);
+
+        // Step 4b (wallet): deduct the booking price from the wallet in this same transaction.
+        // If balance is insufficient, the thrown BusinessException rolls back the booking insert
+        // (D-012: booking creation + wallet deduction atomic).
+        if (payByWallet && booking.getPrice() != null) {
+            String walletIdemKey = "wallet-booking-" + booking.getId();
+            walletService.deductForPayment(
+                    booking.getUserId(), booking.getPrice(), "SERVICE_BOOKING",
+                    booking.getId(), walletIdemKey);
+        }
 
         // Step 5: Write status log（初始状态由调用方决定，支持 PENDING_CONFIRM 或 CONFIRMED）
         writeStatusLog(booking.getId(), null, booking.getStatus(), "USER", booking.getUserId(), "创建预约");
@@ -202,6 +229,11 @@ public class BookingTransactionServiceImpl implements BookingTransactionService 
                 if (cancelReason != null) {
                     booking.setCancelReason(cancelReason);
                 }
+                // Wallet refund: if the booking was paid by wallet, refund the original price
+                // back to the user's wallet in this same transaction (D-012). The refund runs
+                // BEFORE the status update is flushed, so any refund failure rolls back the
+                // whole cancellation — we never end up with a CANCELLED booking and no refund.
+                refundWalletIfPaidByWallet(booking);
             }
             case "COMPLETED" -> booking.setCompleteTime(now);
             default -> { /* IN_SERVICE has no extra fields */ }
@@ -224,6 +256,25 @@ public class BookingTransactionServiceImpl implements BookingTransactionService 
         statusLog.setOperatorId(operatorId);
         statusLog.setRemark(remark);
         bookingStatusLogService.save(statusLog);
+    }
+
+    /**
+     * 如果预约是用钱包支付的（paymentMethod=WALLET），在同事务内把原价格退回用户钱包。
+     * 与状态翻转同处一个事务，保证"预约取消了钱没退"不会发生（D-012）。
+     * 非钱包支付预约（OFFLINE_STORE/OFFLINE_HOME）不触发钱包动作。
+     */
+    private void refundWalletIfPaidByWallet(ServiceBooking booking) {
+        if (!"WALLET".equals(booking.getPaymentMethod())) {
+            return;
+        }
+        if (booking.getPrice() == null) {
+            return;
+        }
+        // 退款幂等键：基于预约 ID，保证同一预约取消多次只退一次。
+        String refundIdemKey = "wallet-refund-booking-" + booking.getId();
+        walletService.refundForCancellation(
+                booking.getUserId(), booking.getPrice(), "SERVICE_BOOKING",
+                booking.getId(), refundIdemKey);
     }
 
     /**

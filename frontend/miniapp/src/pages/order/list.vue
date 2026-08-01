@@ -32,7 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcStatusTag from '@/components/PcStatusTag.vue'
@@ -74,7 +75,8 @@ function goDetail(id: string) {
   uni.navigateTo({ url: `/pages/order/detail?id=${id}` })
 }
 
-onMounted(() => {
+// 每次显示时刷新（从下单/详情返回后自动更新列表）
+onShow(() => {
   if (isLoggedIn.value) loadOrders()
 })
 </script>

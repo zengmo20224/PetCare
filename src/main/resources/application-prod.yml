@@ -39,8 +39,17 @@ petcare:
     jwt-issuer: ${JWT_ISSUER:petcare-o2o-api}
     jwt-expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
   ai:
-    # V1 保持禁用（决策 D-004）
-    provider-enabled: ${AI_PROVIDER_ENABLED:false}
+    # D-004 修订（2026-07-21）：生产默认启用 AI 客服 + 分析报告（接入 DeepSeek）。
+    # API Key / Model 必须由环境变量提供；缺失时构造抛 AiProviderUnavailableException → 503。
+    provider-enabled: ${AI_PROVIDER_ENABLED:true}
+    deepseek:
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      api-key: ${DEEPSEEK_API_KEY:}
+      model: ${DEEPSEEK_MODEL:deepseek-chat}
+      connect-timeout: ${DEEPSEEK_CONNECT_TIMEOUT:10000}
+      read-timeout: ${DEEPSEEK_READ_TIMEOUT:60000}
+      max-tokens: ${DEEPSEEK_MAX_TOKENS:1024}
+      max-retries: ${DEEPSEEK_MAX_RETRIES:1}
 
 # 服务器配置
 server:

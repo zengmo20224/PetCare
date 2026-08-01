@@ -105,7 +105,7 @@ public final class ProductOrderStateMachine {
                     ErrorCode.PRODUCT_ORDER_STATUS_INVALID,
                     "只有待自提状态的订单才能确认收款");
         }
-        if ("OFFLINE_PAID".equals(paymentStatus)) {
+        if (isPaid(paymentStatus)) {
             throw new BusinessException(
                     ErrorCode.PRODUCT_ORDER_STATUS_INVALID,
                     "订单已确认收款，不能重复确认");
@@ -119,7 +119,8 @@ public final class ProductOrderStateMachine {
 
     /**
      * Validates that an order can be completed.
-     * Must be READY_FOR_PICKUP, payment must be OFFLINE_PAID, pickup must be PICKED_UP.
+     * Must be READY_FOR_PICKUP, payment must be paid (OFFLINE_PAID or WALLET_PAID),
+     * pickup must be PICKED_UP.
      */
     public static void validateCanComplete(String status, String paymentStatus, String pickupStatus) {
         if (!ProductOrderStatus.READY_FOR_PICKUP.getCode().equals(status)) {
@@ -127,7 +128,7 @@ public final class ProductOrderStateMachine {
                     ErrorCode.PRODUCT_ORDER_STATUS_INVALID,
                     "只有待自提状态的订单才能完成");
         }
-        if (!"OFFLINE_PAID".equals(paymentStatus)) {
+        if (!isPaid(paymentStatus)) {
             throw new BusinessException(
                     ErrorCode.PRODUCT_ORDER_PAYMENT_REQUIRED,
                     "订单尚未确认收款，无法完成");
@@ -144,6 +145,8 @@ public final class ProductOrderStateMachine {
      * Already-paid or already-picked-up orders cannot be normally cancelled.
      */
     public static void validateCanCancel(String paymentStatus, String pickupStatus) {
+        // 线下已收款的订单不能普通取消（需门店线下退款）；钱包支付订单可以取消，
+        // 因为 cancelOrder/adminCancelOrder 会在同事务内自动退款到钱包（D-012）。
         if ("OFFLINE_PAID".equals(paymentStatus)) {
             throw new BusinessException(
                     ErrorCode.PRODUCT_ORDER_STATUS_INVALID,
@@ -154,6 +157,14 @@ public final class ProductOrderStateMachine {
                     ErrorCode.PRODUCT_ORDER_STATUS_INVALID,
                     "已自提订单不能取消");
         }
+    }
+
+    /**
+     * 判断订单是否已付款。线下收款（OFFLINE_PAID）和钱包支付（WALLET_PAID）都视为已付款，
+     * 二者在 confirmPayment/complete 校验中等价（CR-20260718-003）。
+     */
+    private static boolean isPaid(String paymentStatus) {
+        return "OFFLINE_PAID".equals(paymentStatus) || "WALLET_PAID".equals(paymentStatus);
     }
 
     private static ProductOrderStatus parseStatus(String status) {

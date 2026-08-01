@@ -6,6 +6,55 @@
 
 ---
 
+## [Unreleased] / v1.1.0 — 钱包余额（CR-20260718-003）
+
+### 变更（决策与边界）
+
+- **D-004 修订（2026-07-21）**：部分激活 AI——用户端智能客服对话（CUSTOMER_SERVICE / PET_CHAT，多轮上下文）+ 管理端 AI 经营分析报告（BUSINESS/COMMUNITY/SALES/ACTIVITY），接入真实 DeepSeek LLM。发帖助手、AI 用量查看页仍关闭。安全边界不变（AI 不直连 DB、不做诊断/处方/治疗承诺）。
+- **D-010 修订**：精确化为"不接真实在线支付通道（微信/支付宝等）、优惠券、会员积分和多门店；钱包余额为管理端手工台账，不计息、不可提现、不可转账"。
+
+- **D-010 修订**：精确化为"不接真实在线支付通道（微信/支付宝等）、优惠券、会员积分和多门店；钱包余额为管理端手工台账，不计息、不可提现、不可转账"。
+- **D-012 新增**：钱包余额强制规则——扣款与扣库存同事务、行锁 + 条件 UPDATE、流水只追加、审计照 booking 范式、调整必填理由、金额精度 `DECIMAL(10,2)` + `HALF_UP`。
+- **boundary §3 精确化**：明确"在线支付"指真实第三方支付通道，钱包余额不属于此范畴。
+
+### 新增（后端）
+
+- **com.petcare.ai DeepSeek 接入（D-004 修订 2026-07-21）**：
+  - `DeepSeekAiProviderClient`：真实 DeepSeek HTTP 适配器，调用 `POST {base-url}/chat/completions`，失败映射为 `AiProviderUnavailableException`（503）或 `AiProviderException(internalCode)`，不外泄原始 body/headers/apiKey。
+  - `AiConfig`：Bean 条件装配——`provider-enabled=true` 时用 DeepSeek，否则回落 `DisabledAiProviderClient`。
+  - `AiConversationController.resolveCurrentUserId`：移除硬编码 401，改用 `SecurityContextHelper.getCurrentUserId()`（用户 JWT 已实现）。
+  - `AiConversationApplicationServiceImpl`：修复单轮失忆——`sendMessage` 加载历史 `ai_message`（最近 10 轮）拼入 provider 请求；`PromptFactory` 新增带历史重载。
+  - RBAC 种子：`data-dev.sql` / `migration-phase7-admin-rbac.sql` 新增 `ai:analysis:generate`（7048）、`ai:usage:read`（7049），授予 SUPER_ADMIN / ADMIN。
+  - 配置：`application-dev.yml` / `application-prod.yml` 默认 `provider-enabled=true`；`DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL` 走环境变量。
+- **com.petcare.wallet 模块**：`user_wallet` 账户表（含乐观锁 version）、`wallet_transaction` 只追加流水表（含 before/after 余额、direction、source_type、related_order、operator、idempotency_key）。
+- **WalletService**：`getOrCreateWallet` / `deductForPayment` / `refundForCancellation` / `rechargeByAdmin` / `adjustByAdmin`，全部行锁 + 条件 UPDATE + 流水写入。
+- **AdminWalletController**：充值、双向调整（必填理由 + 强制审计）、账户列表、流水查询。
+- **UserWalletController**：用户只读查询自己的余额与流水。
+- **RBAC**：新增 `wallet:account:{read,recharge,adjust}`、`wallet:transaction:read` 权限码，绑定 SUPER_ADMIN。
+- **PaymentMethod 枚举**：新增 `WALLET`。**PaymentStatus 枚举**：新增 `WALLET_PAID`。
+
+### 变更（后端）
+
+- **ProductOrderCreateRequest**：新增 `paymentMethod` 字段，向后兼容默认 `OFFLINE_STORE`。
+- **ProductOrderTransactionServiceImpl**：下单事务内接入钱包扣款（锁顺序 wallet→product asc），取消事务内接入钱包退款；移除 `paymentMethod` 硬编码。
+- **BookingApplicationServiceImpl**：预约下单/取消接入钱包扣款与退款。
+
+### 新增（前端）
+
+- **miniapp AI 客服（D-004 修订 2026-07-21）**：新增 `pages/ai/chat.vue`（智能客服 / 宠物闲聊切换、多轮气泡、乐观发送）、`api/ai.ts`、`types/ai.ts`；`pages.json` 注册 `pages/ai/chat` 路由；首页 `PcBlockedFeature` 占位卡替换为可点击的"智能客服"入口卡。
+- **admin-web AI 分析报告**：新增 `views/ai/reports.vue`（报告列表 + 生成对话框 + 详情对话框）、`api/ai-report.ts`；路由与侧边栏菜单注册，受 `ai:analysis:generate` 权限保护。
+- **miniapp `pages/wallet` 分包**：余额卡片、流水查询；订单结算页与预约创建页新增"钱包支付"切换；用户端不实现自助充值（仅提示联系门店）。
+- **admin-web `views/wallet`**：账户列表（充值 + 双向调整）、流水查询；新增"钱包管理"菜单；操作日志页 `wallet` 模块字典。
+
+### 新增（测试）
+
+- `WalletServiceTest`、`WalletConcurrencyMySqlIT`（并发扣款不超卖）。
+- `WalletPaymentAtomicityIT`（**扣款与扣库存原子性**）、`WalletRefundAtomicityIT`（退款与库存恢复原子性）。
+- `AdminWalletControllerTest`（失败必留痕 6 用例）、`AdminWalletAuditRollbackTest`。
+- 扩展 `ProductOrderTransactionServiceTest`、`BookingApplicationServiceTest` 覆盖钱包支付分支。
+
+---
+
 ## [Unreleased] / v1.0.0-rc1 — 2026-06-22
 
 ### 新增（配置管理 / CI/CD — 课程作业核心）

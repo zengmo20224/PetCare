@@ -52,13 +52,15 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="viewDetail(row.id)">详情</el-button>
-          <el-button size="small" type="danger" v-if="getBookingActions(row.status).includes('reject')" @click="openRejectDialog(row.id)" :disabled="!userStore.hasPermission('booking:booking:reject')">拒绝</el-button>
+          <!-- 拒绝与取消已合并为单一“取消”入口（取消=拒绝/作废），统一走 cancel 接口，
+               强制填写原因并经 admin_operation_log + booking_status_log 双层留痕。
+               开始服务/完成两步服务流程由下方两个按钮承载（a5a8810 起的设计）。 -->
           <el-button size="small" type="primary" v-if="getBookingActions(row.status).includes('start')" @click="handleStart(row.id)" :disabled="!userStore.hasPermission('booking:booking:start')">开始服务</el-button>
           <el-button size="small" type="success" v-if="getBookingActions(row.status).includes('complete')" @click="handleComplete(row.id)" :disabled="!userStore.hasPermission('booking:booking:complete')">完成</el-button>
-          <el-button size="small" v-if="getBookingActions(row.status).includes('cancel')" @click="handleCancel(row.id)" :disabled="!userStore.hasPermission('booking:booking:cancel')">取消</el-button>
+          <el-button size="small" type="danger" v-if="getBookingActions(row.status).includes('cancel')" @click="handleCancel(row.id)" :disabled="!userStore.hasPermission('booking:booking:cancel')">取消</el-button>
         </template>
       </el-table-column>
     </DataTableShell>
@@ -85,20 +87,7 @@
       </el-descriptions>
     </DetailDrawer>
 
-    <!-- Reject Dialog (needs form input) -->
-    <el-dialog title="拒绝预约" v-model="rejectVisible" width="400px">
-      <el-form ref="rejectFormRef" :model="rejectForm" :rules="rejectRules" label-width="80px">
-        <el-form-item label="拒绝原因" prop="reason">
-          <el-input v-model="rejectForm.reason" type="textarea" :rows="3" placeholder="请输入拒绝原因" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="rejectVisible = false">取消</el-button>
-        <el-button type="danger" @click="submitReject" :loading="rejectLoading">确认拒绝</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- Cancel Dialog (需要填写取消原因) -->
+    <!-- Cancel Dialog (拒绝/取消合并入口；需填写原因，记录留痕) -->
     <el-dialog title="取消预约" v-model="cancelVisible" width="400px">
       <el-form ref="cancelFormRef" :model="cancelForm" :rules="cancelRules" label-width="80px">
         <el-form-item label="取消原因" prop="reason">
@@ -133,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getBookingList, getBookingDetail, rejectBooking, startBooking, completeBooking, cancelBooking } from '../../api/booking'
+import { getBookingList, getBookingDetail, startBooking, completeBooking, cancelBooking } from '../../api/booking'
 import type { Booking } from '../../api/booking'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '../../store/user'
@@ -279,46 +268,9 @@ const submitCancel = async () => {
   })
 }
 
-// ─── Reject ───
-
-const rejectVisible = ref(false)
-const rejectLoading = ref(false)
-const rejectFormRef = ref<FormInstance>()
-const rejectTargetId = ref(0)
-const rejectForm = reactive({ reason: '' })
-const rejectRules: FormRules = { reason: [{ required: true, message: '请输入拒绝原因', trigger: 'blur' }] }
-
-const openRejectDialog = (id: number) => {
-  rejectTargetId.value = id
-  rejectForm.reason = ''
-  rejectVisible.value = true
-}
-
-const submitReject = async () => {
-  if (!rejectFormRef.value) return
-  await rejectFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    rejectLoading.value = true
-    try {
-      await rejectBooking(rejectTargetId.value, { reason: rejectForm.reason })
-      showSuccess('预约已拒绝')
-      rejectVisible.value = false
-      await fetchData()
-    } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error) {
-        const resp = (error as { response?: { status?: number } }).response
-        if (resp?.status === 409) {
-          showConflict()
-          await fetchData()
-          return
-        }
-      }
-      showError(error instanceof Error ? error.message : '操作失败')
-    } finally {
-      rejectLoading.value = false
-    }
-  })
-}
+// ─── Reject 与 Cancel 已合并：统一走 Cancel 入口（cancelBooking API）。
+//     历史的 reject 独立弹窗/表单/submitReject 已移除。后端 cancelBookingAdmin 同样
+//     写 admin_operation_log + booking_status_log，留痕等价。
 
 // ─── Data Fetching ───
 

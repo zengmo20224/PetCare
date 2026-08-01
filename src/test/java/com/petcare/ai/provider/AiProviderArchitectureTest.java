@@ -38,6 +38,7 @@ class AiProviderArchitectureTest {
                 AiProviderException.class,
                 AiProviderUnavailableException.class,
                 DisabledAiProviderClient.class,
+                DeepSeekAiProviderClient.class,
                 AiApiType.class
         };
 

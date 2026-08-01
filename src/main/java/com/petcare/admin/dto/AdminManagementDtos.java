@@ -178,6 +178,7 @@ public final class AdminManagementDtos {
             @JsonSerialize(using = SnowflakeIdSerializer.class) Long adminId,
             String module, String operation,
             String requestMethod, String requestUrl, String result,
+            String requestParams,
             String errorMessage, LocalDateTime createTime) {
     }
 

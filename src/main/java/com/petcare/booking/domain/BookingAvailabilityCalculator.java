@@ -97,6 +97,16 @@ public final class BookingAvailabilityCalculator {
 
     /**
      * Generates candidate start times within available windows and counts them.
+     *
+     * <p>Defensive termination: a single day has at most {@code 24h / slotMinutes} slots.
+     * The hard cap below guards against any unexpected input that would otherwise let the
+     * while-loop run forever — most notably the {@code LocalTime} wrap-around at 24:00.
+     * If a candidate near end-of-day plus {@code durationMinutes} crosses midnight,
+     * {@code LocalTime.plusMinutes} silently wraps back to 00:00, so the original loop
+     * condition {@code !candidate.plusMinutes(durationMinutes).isAfter(end)} could never
+     * become true for a window ending late (e.g. 00:00–23:59), causing an infinite loop
+     * that also held the DB connection until pool exhaustion. A whole-day staff_schedule
+     * row is the real-world trigger.
      */
     static void generateSlots(
             List<TimeRange> windows,
@@ -104,13 +114,35 @@ public final class BookingAvailabilityCalculator {
             int durationMinutes,
             Map<LocalTime, Integer> slotCounts) {
 
+        // slotMinutes must be strictly positive, otherwise candidate never advances.
+        // The caller (BookingApplicationServiceImpl) validates this, but the calculator
+        // is pure domain logic — defend in depth rather than trust the caller.
+        if (slotMinutes <= 0) {
+            return;
+        }
+
+        // Hard cap per window: 24h / slotMinutes, doubled for safety. Any legitimate
+        // same-day schedule stays well under this; hitting the cap means upstream data
+        // is wrong, and we'd rather return partial slots than hang the request.
+        int maxIterationsPerWindow = Math.max(1, (24 * 60) / slotMinutes) * 2;
+
         for (TimeRange window : windows) {
             LocalTime candidate = window.getStart();
             LocalTime end = window.getEnd();
 
-            while (!candidate.plusMinutes(durationMinutes).isAfter(end)) {
+            int iterations = 0;
+            while (iterations < maxIterationsPerWindow) {
+                LocalTime serviceEnd = candidate.plusMinutes(durationMinutes);
+                // Stop if the service no longer fits inside [candidate, end].
+                // The wrap-around case (serviceEnd <= candidate, i.e. crossed midnight)
+                // is treated as "doesn't fit" — same-day windows cannot accommodate it.
+                boolean serviceFits = !serviceEnd.isBefore(candidate) && !serviceEnd.isAfter(end);
+                if (!serviceFits) {
+                    break;
+                }
                 slotCounts.merge(candidate, 1, Integer::sum);
                 candidate = candidate.plusMinutes(slotMinutes);
+                iterations++;
             }
         }
     }

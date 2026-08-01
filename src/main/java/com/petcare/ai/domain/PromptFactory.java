@@ -11,6 +11,9 @@ import java.util.List;
  */
 public final class PromptFactory {
 
+    /** Max prior turns (user+assistant pairs) preserved in multi-turn prompts. */
+    public static final int MAX_HISTORY_TURNS = 10;
+
     private PromptFactory() {
         // prevent instantiation
     }
@@ -18,6 +21,7 @@ public final class PromptFactory {
     /**
      * Builds messages for AI customer service.
      * Structure: system rules → trusted facts → user question.
+     * Backward-compatible single-turn overload; no conversation history.
      */
     public static List<AiProviderMessage> buildCustomerServiceMessages(
             CustomerServiceContext context,
@@ -30,14 +34,68 @@ public final class PromptFactory {
     }
 
     /**
+     * Builds messages for AI customer service with multi-turn history.
+     * Structure: system rules → trusted facts → recent history → current user question.
+     * History items must be ordered oldest-first and contain only user/assistant roles.
+     */
+    public static List<AiProviderMessage> buildCustomerServiceMessages(
+            CustomerServiceContext context,
+            List<AiProviderMessage> history,
+            String userQuestion
+    ) {
+        List<AiProviderMessage> messages = new ArrayList<>();
+        messages.add(new AiProviderMessage("system", buildCustomerServiceSystemPrompt(context)));
+        appendHistory(messages, history);
+        messages.add(new AiProviderMessage("user", userQuestion));
+        return messages;
+    }
+
+    /**
      * Builds messages for AI pet chat companion.
      * Structure: system rules (no diagnosis, no prescriptions) → user message.
+     * Backward-compatible single-turn overload.
      */
     public static List<AiProviderMessage> buildPetChatMessages(String userMessage) {
         List<AiProviderMessage> messages = new ArrayList<>();
         messages.add(new AiProviderMessage("system", PET_CHAT_SYSTEM_PROMPT));
         messages.add(new AiProviderMessage("user", userMessage));
         return messages;
+    }
+
+    /**
+     * Builds messages for AI pet chat companion with multi-turn history.
+     * Structure: system rules → recent history → current user message.
+     */
+    public static List<AiProviderMessage> buildPetChatMessages(
+            List<AiProviderMessage> history,
+            String userMessage
+    ) {
+        List<AiProviderMessage> messages = new ArrayList<>();
+        messages.add(new AiProviderMessage("system", PET_CHAT_SYSTEM_PROMPT));
+        appendHistory(messages, history);
+        messages.add(new AiProviderMessage("user", userMessage));
+        return messages;
+    }
+
+    /**
+     * Appends up to {@link #MAX_HISTORY_TURNS} * 2 most recent history messages,
+     * skipping any non user/assistant roles (e.g. legacy "system" rows).
+     */
+    private static void appendHistory(List<AiProviderMessage> target, List<AiProviderMessage> history) {
+        if (history == null || history.isEmpty()) {
+            return;
+        }
+        List<AiProviderMessage> filtered = new ArrayList<>();
+        for (AiProviderMessage m : history) {
+            if (m != null && ("user".equals(m.role()) || "assistant".equals(m.role()))) {
+                filtered.add(m);
+            }
+        }
+        int cap = MAX_HISTORY_TURNS * 2;
+        int from = Math.max(0, filtered.size() - cap);
+        for (int i = from; i < filtered.size(); i++) {
+            target.add(filtered.get(i));
+        }
     }
 
     /**

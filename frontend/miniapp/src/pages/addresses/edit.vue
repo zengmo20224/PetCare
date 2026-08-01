@@ -27,20 +27,6 @@
         <input class="pc-input" type="text" v-model="form.detailAddress" placeholder="街道、门牌号等" />
       </PcFormField>
 
-      <!-- Map Location Picker -->
-      <PcFormField label="地图定位（上门服务需要）">
-        <view class="addr-edit__location" @tap="openMapPicker">
-          <view v-if="hasCoordinates" class="addr-edit__location-info">
-            <text class="addr-edit__location-coord">经度 {{ form.longitude }}</text>
-            <text class="addr-edit__location-coord">纬度 {{ form.latitude }}</text>
-          </view>
-          <view v-else>
-            <text class="addr-edit__location-hint">点击选择位置</text>
-          </view>
-          <text class="addr-edit__location-btn">{{ hasCoordinates ? '重新选择' : '选择位置' }}</text>
-        </view>
-      </PcFormField>
-
       <PcFormField label="设为默认地址">
         <view class="addr-edit__toggle" @tap="form.isDefault = !form.isDefault">
           <text :class="form.isDefault ? 'addr-edit__toggle--on' : ''">{{ form.isDefault ? '✓' : '' }}</text>
@@ -59,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcFormField from '@/components/PcFormField.vue'
@@ -78,12 +64,8 @@ const form = reactive({
   city: '',
   district: '',
   detailAddress: '',
-  longitude: '' as string,
-  latitude: '' as string,
   isDefault: false,
 })
-
-const hasCoordinates = computed(() => form.longitude !== '' && form.latitude !== '')
 
 function buildPayload() {
   return {
@@ -93,8 +75,6 @@ function buildPayload() {
     city: form.city,
     district: form.district || undefined,
     detailAddress: form.detailAddress,
-    longitude: form.longitude !== '' ? Number(form.longitude) : undefined,
-    latitude: form.latitude !== '' ? Number(form.latitude) : undefined,
     isDefault: form.isDefault,
   }
 }
@@ -110,24 +90,8 @@ async function loadAddress(id: string) {
       form.city = addr.city ?? ''
       form.district = addr.district ?? ''
       form.detailAddress = addr.detailAddress ?? ''
-      form.longitude = addr.longitude != null ? String(addr.longitude) : ''
-      form.latitude = addr.latitude != null ? String(addr.latitude) : ''
       form.isDefault = addr.isDefault
     }
-  }
-}
-
-function openMapPicker() {
-  uni.navigateTo({ url: '/pages/map-picker/index' })
-}
-
-function handleMapPicked(loc: { latitude: number; longitude: number; poiAddress: string; poiName: string }) {
-  form.longitude = String(loc.longitude)
-  form.latitude = String(loc.latitude)
-
-  // Try to auto-fill address fields from the picked location
-  if (loc.poiAddress && !form.detailAddress) {
-    form.detailAddress = loc.poiName || loc.poiAddress
   }
 }
 
@@ -168,10 +132,6 @@ async function handleDelete() {
   })
 }
 
-onMounted(() => {
-  uni.$on('map-picked', handleMapPicked)
-})
-
 onLoad((query) => {
   const id = normalizeRouteParam(query?.id)
   if (id) {
@@ -179,10 +139,6 @@ onLoad((query) => {
     editId.value = id
     loadAddress(id)
   }
-})
-
-onUnmounted(() => {
-  uni.$off('map-picked', handleMapPicked)
 })
 </script>
 
@@ -224,41 +180,6 @@ onUnmounted(() => {
   font-size: 16px;
   color: #11796F;
   font-weight: 700;
-}
-
-.addr-edit__location {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  height: 48px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  background: #fff;
-}
-
-.addr-edit__location-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.addr-edit__location-coord {
-  font-size: 11px;
-  color: #71817D;
-}
-
-.addr-edit__location-hint {
-  font-size: 14px;
-  color: #71817D;
-}
-
-.addr-edit__location-btn {
-  font-size: 14px;
-  color: #11796F;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .pc-input {

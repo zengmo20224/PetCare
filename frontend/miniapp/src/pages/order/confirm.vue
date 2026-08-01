@@ -45,6 +45,36 @@
           </view>
         </view>
 
+        <!-- Payment method switch (CR-20260718-003) -->
+        <view class="confirm-section">
+          <text class="confirm-label">支付方式</text>
+          <view class="confirm-delivery">
+            <view
+              class="confirm-delivery__opt"
+              :class="{ 'confirm-delivery__opt--on': paymentMethod === 'OFFLINE_STORE' }"
+              @tap="paymentMethod = 'OFFLINE_STORE'"
+            >
+              <text>到店支付</text>
+            </view>
+            <view
+              class="confirm-delivery__opt"
+              :class="{ 'confirm-delivery__opt--on': paymentMethod === 'WALLET' }"
+              @tap="paymentMethod = 'WALLET'"
+            >
+              <text>钱包余额</text>
+            </view>
+          </view>
+          <view v-if="paymentMethod === 'WALLET'" class="confirm-wallet">
+            <text class="confirm-wallet__label">钱包余额</text>
+            <text
+              class="confirm-wallet__balance"
+              :class="{ 'confirm-wallet__balance--low': walletInsufficient }"
+            >
+              ¥{{ walletBalanceText }}
+            </text>
+          </view>
+        </view>
+
         <!-- Pickup: store selection -->
         <view v-if="deliveryMethod === 'PICKUP'" class="confirm-section">
           <text class="confirm-label">自提门店</text>
@@ -113,6 +143,7 @@ import { getCartItems } from '@/api/cart'
 import { createOrder } from '@/api/order'
 import { getStores } from '@/api/store'
 import { getMyAddresses, type AddressItem } from '@/api/user'
+import { getMyWallet } from '@/api/wallet'
 import { useUserStore } from '@/store/user'
 import type { CartItem } from '@/types/product'
 import type { StoreItem } from '@/types/store'
@@ -133,9 +164,17 @@ const stores = ref<StoreItem[]>([])
 const selectedStore = ref<StoreItem | null>(null)
 const selectedAddress = ref<AddressItem | null>(null)
 
+// Payment (CR-20260718-003): OFFLINE_STORE (default) or WALLET.
+const paymentMethod = ref<'OFFLINE_STORE' | 'WALLET'>('OFFLINE_STORE')
+const walletBalance = ref(0)
+
 const checkedItems = computed(() => cartItems.value.filter(i => i.checked))
 const totalAmount = computed(() =>
   checkedItems.value.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2)
+)
+const walletBalanceText = computed(() => walletBalance.value.toFixed(2))
+const walletInsufficient = computed(
+  () => paymentMethod.value === 'WALLET' && walletBalance.value < Number(totalAmount.value)
 )
 
 function fullUrl(url: string | null): string {
@@ -174,6 +213,15 @@ async function loadStores() {
     if (stores.value.length > 0 && !selectedStore.value) {
       selectedStore.value = stores.value[0]
     }
+  }
+}
+
+/** Load the user's wallet balance for the wallet-payment option display.
+ *  Failures are non-fatal: balance stays 0 and the user can still pay offline. */
+async function loadWalletBalance() {
+  const res = await getMyWallet()
+  if (res.success && res.data) {
+    walletBalance.value = res.data.balance
   }
 }
 
@@ -217,6 +265,13 @@ async function handleSubmit() {
     uni.showToast({ title: '请选择收货地址', icon: 'none' })
     return
   }
+  if (paymentMethod.value === 'WALLET' && walletInsufficient.value) {
+    uni.showToast({
+      title: `钱包余额不足（¥${walletBalanceText.value}），请选择到店支付或充值`,
+      icon: 'none',
+    })
+    return
+  }
 
   submitting.value = true
   const res = await createOrder({
@@ -226,11 +281,13 @@ async function handleSubmit() {
     contactName: contactName.value,
     contactPhone: contactPhone.value,
     remark: remark.value || undefined,
+    paymentMethod: paymentMethod.value,
   })
   submitting.value = false
 
   if (res.success && res.data) {
-    uni.showToast({ title: '下单成功', icon: 'success' })
+    const payHint = paymentMethod.value === 'WALLET' ? '下单成功，已从钱包扣款' : '下单成功'
+    uni.showToast({ title: payHint, icon: 'success' })
     setTimeout(() => {
       uni.redirectTo({ url: `/pages/order/detail?id=${res.data!.id}` })
     }, 1000)
@@ -240,6 +297,7 @@ async function handleSubmit() {
 onMounted(() => {
   loadCart()
   loadStores()
+  loadWalletBalance()
   uni.$on('address-selected', onAddressSelected)
 })
 
@@ -250,6 +308,8 @@ onUnmounted(() => {
 // Reload when re-shown (e.g. navigating back then forward with different checked items)
 onShow(() => {
   if (pageStatus.value !== 'loading') loadCart()
+  // Refresh wallet balance too (it may have changed after a recharge or payment).
+  loadWalletBalance()
 })
 </script>
 
@@ -370,6 +430,32 @@ onShow(() => {
 .confirm-delivery__opt text {
   font-size: 14px;
   color: #19322E;
+}
+
+/* Wallet balance hint under the payment switch */
+.confirm-wallet {
+  margin-top: 10px;
+  background: #FAF8F3;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confirm-wallet__label {
+  font-size: 12px;
+  color: #71817D;
+}
+
+.confirm-wallet__balance {
+  font-size: 14px;
+  font-weight: 700;
+  color: #11796F;
+}
+
+.confirm-wallet__balance--low {
+  color: #E85D4E;
 }
 
 /* Pickup / address selector */

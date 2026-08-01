@@ -13,6 +13,7 @@ public record StoreResponse(
         String address,
         String phone,
         String businessHours,
-        String description
+        String description,
+        String status
 ) {
 }

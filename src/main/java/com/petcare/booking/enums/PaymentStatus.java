@@ -10,6 +10,7 @@ import lombok.Getter;
 public enum PaymentStatus {
     UNPAID("UNPAID"),
     OFFLINE_PAID("OFFLINE_PAID"),
+    WALLET_PAID("WALLET_PAID"),
     REFUNDED("REFUNDED");
 
     private final String code;

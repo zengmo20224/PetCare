@@ -11,6 +11,7 @@ import com.petcare.community.dto.CommentResponse;
 import com.petcare.community.dto.PostCreateRequest;
 import com.petcare.community.dto.PostDetailResponse;
 import com.petcare.community.dto.PostResponse;
+import com.petcare.community.dto.PublicCommentFlatResponse;
 import com.petcare.community.dto.TopicResponse;
 import com.petcare.community.entity.Post;
 import com.petcare.community.entity.PostComment;
@@ -25,7 +26,9 @@ import com.petcare.moderation.dto.ContentReviewResult;
 import com.petcare.moderation.service.ContentModerationService;
 import com.petcare.notification.service.NotificationService;
 import com.petcare.user.entity.Pet;
+import com.petcare.user.entity.User;
 import com.petcare.user.mapper.PetMapper;
+import com.petcare.user.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +78,9 @@ class CommunityPostApplicationServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private CommunityPostApplicationService service;
@@ -549,5 +556,94 @@ class CommunityPostApplicationServiceTest {
             post.setId(assignedId);
             return 1;
         });
+    }
+
+    // ==================== Flat Comment List ====================
+
+    @Nested
+    @DisplayName("listPublicCommentsFlat")
+    class ListPublicCommentsFlatTests {
+
+        @Test
+        @DisplayName("Returns flat list with authorName and replyToName for nested replies")
+        void returnsFlatListWithAuthorAndReplyTo() {
+            // Arrange — post exists
+            when(postMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+
+            // C1: top-level comment by USER_ID (1001)
+            // C2: reply to C1 by 1002
+            // C3: reply to C2 by 1001 (reply-to-reply, invisible in tree but visible here)
+            PostComment c1 = buildComment(5001L, POST_ID, USER_ID, null, "一楼", 0);
+            PostComment c2 = buildComment(5002L, POST_ID, 1002L, 5001L, "回复一楼", 1);
+            PostComment c3 = buildComment(5003L, POST_ID, USER_ID, 5002L, "回复二楼的回复", 0);
+
+            when(commentMapper.selectList(any(LambdaQueryWrapper.class)))
+                    .thenReturn(List.of(c1, c2, c3));
+
+            // Authors: 1001 -> "爱猫人", 1002 -> "狗主人"
+            User u1 = buildUser(USER_ID, "爱猫人");
+            User u2 = buildUser(1002L, "狗主人");
+            when(userService.listByIds(any())).thenReturn(List.of(u1, u2));
+
+            // Act
+            List<PublicCommentFlatResponse> result = service.listPublicCommentsFlat(POST_ID);
+
+            // Assert — all three visible (no depth cap)
+            assertThat(result).hasSize(3);
+            // C1: top-level, no replyTo
+            assertThat(result.get(0).content()).isEqualTo("一楼");
+            assertThat(result.get(0).authorName()).isEqualTo("爱猫人");
+            assertThat(result.get(0).replyToName()).isNull();
+            // C2: reply to C1, replyToName = C1 author
+            assertThat(result.get(1).content()).isEqualTo("回复一楼");
+            assertThat(result.get(1).authorName()).isEqualTo("狗主人");
+            assertThat(result.get(1).replyToName()).isEqualTo("爱猫人");
+            // C3: reply to C2 (reply-to-reply), replyToName = C2 author — this is the bug scenario
+            assertThat(result.get(2).content()).isEqualTo("回复二楼的回复");
+            assertThat(result.get(2).authorName()).isEqualTo("爱猫人");
+            assertThat(result.get(2).replyToName()).isEqualTo("狗主人");
+        }
+
+        @Test
+        @DisplayName("Throws COMMUNITY_POST_NOT_FOUND when post does not exist")
+        void throwsWhenPostNotFound() {
+            when(postMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+            assertThatThrownBy(() -> service.listPublicCommentsFlat(9999L))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("code").isEqualTo(ErrorCode.COMMUNITY_POST_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("Returns empty list when post has no comments")
+        void returnsEmptyWhenNoComments() {
+            when(postMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+            when(commentMapper.selectList(any(LambdaQueryWrapper.class)))
+                    .thenReturn(Collections.emptyList());
+
+            List<PublicCommentFlatResponse> result = service.listPublicCommentsFlat(POST_ID);
+            assertThat(result).isEmpty();
+        }
+
+        private PostComment buildComment(Long id, Long postId, Long userId,
+                                          Long parentId, String content, int likeCount) {
+            PostComment c = new PostComment();
+            c.setId(id);
+            c.setPostId(postId);
+            c.setUserId(userId);
+            c.setParentId(parentId);
+            c.setContent(content);
+            c.setStatus("PUBLISHED");
+            c.setLikeCount(likeCount);
+            c.setCreateTime(LocalDateTime.of(2026, 6, 1, 10, 0));
+            return c;
+        }
+
+        private User buildUser(Long id, String nickname) {
+            User u = new User();
+            u.setId(id);
+            u.setNickname(nickname);
+            return u;
+        }
     }
 }

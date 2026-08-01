@@ -45,8 +45,10 @@ describe('Booking page shared component integration', () => {
     expect(source).toMatch(/DetailDrawer/)
   })
 
-  it('imports and uses ActionConfirmDialog component', () => {
-    expect(source).toMatch(/ActionConfirmDialog/)
+  it('uses independent el-dialog for booking actions (replaced ActionConfirmDialog)', () => {
+    // a5a8810 起，预约页改用独立 el-dialog 避免 emit 时序问题，不再用 ActionConfirmDialog
+    expect(source).toMatch(/el-dialog/)
+    expect(source).not.toMatch(/import.*ActionConfirmDialog/)
   })
 })
 
@@ -127,8 +129,11 @@ describe('Booking page permission checks', () => {
     expect(source).toMatch(/booking:booking:start/)
   })
 
-  it('has permission checks on reject action', () => {
-    expect(source).toMatch(/booking:booking:reject/)
+  it('merges reject into cancel (no standalone reject button)', () => {
+    // 拒绝与取消已合并为单一"取消"入口，页面不再暴露独立 reject 按钮/权限码。
+    // 后端 reject 接口仍保留，仅前端入口移除。
+    expect(source).not.toMatch(/openRejectDialog/)
+    expect(source).not.toMatch(/rejectBooking/)
   })
 
   it('has permission checks on cancel action', () => {
