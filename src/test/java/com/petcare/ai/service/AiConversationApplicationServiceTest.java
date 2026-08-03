@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.List;
 
@@ -46,9 +47,14 @@ class AiConversationApplicationServiceTest {
         mockProvider = new MockAiProviderClient();
         contextBuilder = mock(CustomerServiceContextBuilder.class);
 
+        // V1 路径：ObjectProvider 返回 null（rag-enabled=false，走全量塞降级）
+        @SuppressWarnings("unchecked")
+        ObjectProvider<com.petcare.ai.rag.RagRetrievalService> nullRagProvider = mock(ObjectProvider.class);
+        when(nullRagProvider.getIfUnique()).thenReturn(null);
+
         service = new AiConversationApplicationServiceImpl(
                 conversationMapper, messageMapper, usageLogMapper,
-                mockProvider, contextBuilder
+                mockProvider, contextBuilder, nullRagProvider
         );
     }
 
@@ -267,5 +273,78 @@ class AiConversationApplicationServiceTest {
         conv.setUserId(userId);
         conv.setConversationType(type);
         when(conversationMapper.selectById(id)).thenReturn(conv);
+    }
+
+    /**
+     * M8.1：RAG 路径测试——验证 rag-enabled 时 RagRetrievalService 被调用且召回注入 prompt。
+     */
+    @Nested
+    @DisplayName("M8.1 RAG path")
+    class RagPathTest {
+
+        @Test
+        @DisplayName("RAG 启用时：retrieveRelevant 被调用，召回结果进入 prompt")
+        void ragEnabled_retrievalCalledAndResultsInjected() {
+            // 用带 mock RagRetrievalService 的 ObjectProvider 重建 service
+            com.petcare.ai.rag.RagRetrievalService ragService = mock(com.petcare.ai.rag.RagRetrievalService.class);
+            when(ragService.retrieveRelevant("你们几点开门")).thenReturn(List.of(
+                    new com.petcare.ai.rag.KnowledgeSource.RetrievedKnowledge(
+                            "营业时间是每天 9:00-21:00", 0.92, java.util.Map.of("sourceType", "FAQ"))
+            ));
+            @SuppressWarnings("unchecked")
+            ObjectProvider<com.petcare.ai.rag.RagRetrievalService> ragProvider = mock(ObjectProvider.class);
+            when(ragProvider.getIfUnique()).thenReturn(ragService);
+
+            AiConversationApplicationServiceImpl ragService2 = new AiConversationApplicationServiceImpl(
+                    conversationMapper, messageMapper, usageLogMapper,
+                    mockProvider, contextBuilder, ragProvider);
+
+            // 准备 context（无实时数据，但 RAG 有召回 → 不应走 fallback）
+            when(contextBuilder.build()).thenReturn(CustomerServiceContext.empty());
+            setupConversation(1L, 100L, "CUSTOMER_SERVICE");
+            mockProvider.withSuccess("营业时间是每天 9:00 到 21:00。");
+
+            AiMessageCreateRequest req = new AiMessageCreateRequest("你们几点开门");
+            AiMessageResponse resp = ragService2.sendMessage(100L, 1L, req);
+
+            assertNotNull(resp);
+            // 验证 RAG 检索确实被调用
+            verify(ragService).retrieveRelevant("你们几点开门");
+            // 验证 provider 收到的 prompt 含 RAG 召回内容（通过 captured request 断言）
+            assertNotNull(mockProvider.getLastCapturedRequest());
+            String systemMsg = mockProvider.getLastCapturedRequest().messages().stream()
+                    .filter(m -> "system".equals(m.role()))
+                    .map(m -> m.content())
+                    .findFirst().orElse("");
+            assertTrue(systemMsg.contains("营业时间是每天 9:00-21:00"),
+                    "RAG 召回内容应注入 system prompt");
+        }
+
+        @Test
+        @DisplayName("RAG 检索失败时降级：不阻塞，仍可用 V1 context 回答")
+        void ragRetrievalFails_fallsBackToV1Context() {
+            com.petcare.ai.rag.RagRetrievalService ragService = mock(com.petcare.ai.rag.RagRetrievalService.class);
+            when(ragService.retrieveRelevant(anyString())).thenThrow(new RuntimeException("PG down"));
+            @SuppressWarnings("unchecked")
+            ObjectProvider<com.petcare.ai.rag.RagRetrievalService> ragProvider = mock(ObjectProvider.class);
+            when(ragProvider.getIfUnique()).thenReturn(ragService);
+
+            AiConversationApplicationServiceImpl ragSvc = new AiConversationApplicationServiceImpl(
+                    conversationMapper, messageMapper, usageLogMapper,
+                    mockProvider, contextBuilder, ragProvider);
+
+            // V1 context 有数据 → 即使 RAG 挂，仍可回答
+            CustomerServiceContext ctx = new CustomerServiceContext(
+                    "萌宠店", "xx路", "9:00-21:00", "110", "5km", "提前4h",
+                    List.of(), List.of(), List.of(), true);
+            when(contextBuilder.build()).thenReturn(ctx);
+            setupConversation(1L, 100L, "CUSTOMER_SERVICE");
+            mockProvider.withSuccess("营业时间是 9:00-21:00。");
+
+            AiMessageResponse resp = ragSvc.sendMessage(100L, 1L, new AiMessageCreateRequest("几点开门"));
+            assertNotNull(resp);
+            // RAG 挂了但没抛异常给用户，正常返回
+            assertEquals("营业时间是 9:00-21:00。", resp.content());
+        }
     }
 }

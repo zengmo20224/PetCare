@@ -13,11 +13,14 @@ import com.petcare.ai.mapper.AiMessageMapper;
 import com.petcare.ai.mapper.AiUsageLogMapper;
 import com.petcare.ai.provider.*;
 import com.petcare.ai.service.AiConversationApplicationService;
+import com.petcare.ai.rag.KnowledgeSource.RetrievedKnowledge;
+import com.petcare.ai.rag.RagRetrievalService;
 import com.petcare.common.exception.BusinessException;
 import com.petcare.common.exception.ErrorCode;
 import com.petcare.common.pagination.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,18 +41,23 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
     private final AiUsageLogMapper usageLogMapper;
     private final AiProviderClient providerClient;
     private final CustomerServiceContextBuilder contextBuilder;
+    /** M8.1：RAG 检索服务（可选，rag-enabled=false 时为 null，走 V1 全量塞降级路径）。 */
+    private final RagRetrievalService ragRetrievalService;
 
     public AiConversationApplicationServiceImpl(
             AiConversationMapper conversationMapper,
             AiMessageMapper messageMapper,
             AiUsageLogMapper usageLogMapper,
             AiProviderClient providerClient,
-            CustomerServiceContextBuilder contextBuilder) {
+            CustomerServiceContextBuilder contextBuilder,
+            ObjectProvider<RagRetrievalService> ragRetrievalServiceProvider) {
         this.conversationMapper = conversationMapper;
         this.messageMapper = messageMapper;
         this.usageLogMapper = usageLogMapper;
         this.providerClient = providerClient;
         this.contextBuilder = contextBuilder;
+        // M8.1：ObjectProvider 可选注入，rag-enabled=false 时 getIfUnique 返回 null
+        this.ragRetrievalService = ragRetrievalServiceProvider.getIfUnique();
     }
 
     @Override
@@ -158,16 +166,38 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
 
     /**
      * Handles customer service message with context grounding and multi-turn history.
+     * <p>
+     * M8.1：若 {@link #ragRetrievalService} 非空（rag-enabled=true），走 RAG 路径——
+     * 向量检索 top-K 相关知识 + V1 实时数据并存注入 prompt；否则走 V1 全量塞路径（降级）。
+     * 三层护栏（grounding 检测 / 输出安全）在两条路径都保留。
      */
     private String handleCustomerService(Long currentUserId, List<AiProviderMessage> history, String userQuestion) {
         CustomerServiceContext context = contextBuilder.build();
 
-        // If no trusted context and question requires grounding, return fallback
-        if (!context.hasData() && CustomerServiceGroundingPolicy.requiresGrounding(userQuestion)) {
+        // M8.1：RAG 路径——向量检索相关知识
+        List<RetrievedKnowledge> ragResults = List.of();
+        boolean ragEnabled = ragRetrievalService != null;
+        if (ragEnabled) {
+            try {
+                ragResults = ragRetrievalService.retrieveRelevant(userQuestion);
+                log.debug("[AI] RAG retrieved {} segments for question: {}", ragResults.size(), userQuestion);
+            } catch (Exception e) {
+                // RAG 检索失败不阻塞对话，降级为空召回（仍可用 V1 context 回答）
+                log.warn("[AI] RAG retrieval failed, falling back to V1 context only: {}", e.getMessage());
+                ragResults = List.of();
+            }
+        }
+
+        // Fallback 判定：无实时数据 && 无 RAG 召回 && 需 grounding → 兜底
+        boolean hasAnyContext = context.hasData() || !ragResults.isEmpty();
+        if (!hasAnyContext && CustomerServiceGroundingPolicy.requiresGrounding(userQuestion)) {
             return CustomerServiceGroundingPolicy.getNoContextFallback();
         }
 
-        List<AiProviderMessage> messages = PromptFactory.buildCustomerServiceMessages(context, history, userQuestion);
+        // M8.1：按 RAG 是否启用选 prompt 构建方式
+        List<AiProviderMessage> messages = ragEnabled
+                ? PromptFactory.buildCustomerServiceMessagesWithRag(context, ragResults, history, userQuestion)
+                : PromptFactory.buildCustomerServiceMessages(context, history, userQuestion);
 
         try {
             AiProviderResponse response = providerClient.complete(

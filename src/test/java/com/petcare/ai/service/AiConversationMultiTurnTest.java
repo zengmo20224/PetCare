@@ -44,9 +44,15 @@ class AiConversationMultiTurnTest {
         mockProvider = new MockAiProviderClient();
         contextBuilder = mock(CustomerServiceContextBuilder.class);
 
+        // V1 路径：ObjectProvider 返回 null（无 RAG，走全量塞）
+        @SuppressWarnings("unchecked")
+        org.springframework.beans.factory.ObjectProvider<com.petcare.ai.rag.RagRetrievalService> nullRagProvider =
+                org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
+        org.mockito.Mockito.when(nullRagProvider.getIfUnique()).thenReturn(null);
+
         service = new AiConversationApplicationServiceImpl(
                 conversationMapper, messageMapper, usageLogMapper,
-                mockProvider, contextBuilder
+                mockProvider, contextBuilder, nullRagProvider
         );
     }
 
