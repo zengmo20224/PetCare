@@ -11,8 +11,9 @@ spring:
     driver-class-name: org.h2.Driver
   sql:
     init:
-      mode: always
-      schema-locations: classpath:schema-h2.sql
+      # tc-pgvector 测试业务 Service 全 @MockBean，不需要业务表初始化；
+      # 禁用脚本初始化避免 Spring 把 PgVector DataSource 误当主库跑 MySQL 方言 schema-h2.sql
+      mode: never
 
 petcare:
   security:

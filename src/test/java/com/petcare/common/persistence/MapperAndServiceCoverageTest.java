@@ -32,7 +32,7 @@ class MapperAndServiceCoverageTest {
      */
     private static final Set<Class<?>> ENTITIES_WITHOUT_ISERVICE = Set.of(
             AiConversation.class, AiMessage.class, AiUsageLog.class,
-            AiAnalysisReport.class, FaqKnowledge.class
+            AiAnalysisReport.class
     );
 
     @Autowired
