@@ -20,7 +20,7 @@ import com.petcare.store.service.StoreService;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
+import dev.langchain4j.model.embedding.onnx.bgesmallzhv15.BgeSmallZhV15EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
@@ -44,16 +44,19 @@ import dev.langchain4j.store.embedding.pgvector.PgVectorEmbeddingStore;
 @ConditionalOnProperty(prefix = "petcare.ai", name = "rag-enabled", havingValue = "true")
 public class RagConfig {
 
-    /** PgVector 维度（与 all-MiniLM-L6-v2 一致，schema-pgvector.sql 的 vector(384) 对应）。 */
-    private static final int EMBEDDING_DIMENSION = 384;
+    /** PgVector 维度（BGE-small-zh-v1.5 = 512 维；换模型需 DROP+重建 ai_embedding 表）。 */
+    private static final int EMBEDDING_DIMENSION = 512;
 
     /**
-     * Embedding 模型（all-MiniLM-L6-v2，ONNX 本地推理，384 维，零外部 API 费用）。
-     * 模型文件打包在 langchain4j-embeddings-all-minilm-l6-v2 JAR 内，无需运行时下载。
+     * Embedding 模型（BGE-small-zh-v1.5，中文优化，ONNX 本地推理，512 维，零外部 API 费用）。
+     * 模型文件打包在 langchain4j-embeddings-bge-small-zh-v15 JAR 内，无需运行时下载。
+     * <p>
+     * 选型理由（M8.1 实测）：原 all-MiniLM-L6-v2 英文模型对中文 query 召回质量差
+     * （问"营业时间"召回"猫咪洗护"），BGE-zh 是中文优化模型，根治语义偏差。
      */
     @Bean
     public EmbeddingModel embeddingModel() {
-        return new AllMiniLmL6V2EmbeddingModel();
+        return new BgeSmallZhV15EmbeddingModel();
     }
 
     /**

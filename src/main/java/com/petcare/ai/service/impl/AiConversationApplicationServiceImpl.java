@@ -180,7 +180,7 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
         if (ragEnabled) {
             try {
                 ragResults = ragRetrievalService.retrieveRelevant(userQuestion);
-                log.debug("[AI] RAG retrieved {} segments for question: {}", ragResults.size(), userQuestion);
+                log.info("[AI] RAG retrieved {} segments for question: {}", ragResults.size(), userQuestion);
             } catch (Exception e) {
                 // RAG 检索失败不阻塞对话，降级为空召回（仍可用 V1 context 回答）
                 log.warn("[AI] RAG retrieval failed, falling back to V1 context only: {}", e.getMessage());

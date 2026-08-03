@@ -157,11 +157,11 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
         </dependency>
-        <!-- Embedding（JAR 内带 all-MiniLM-L6-v2 ONNX 模型，384 维，零运行时下载） -->
-        <!-- 注：embeddings/pgvector 子模块走 -betaXX 版本号（与核心库 1.18.1 对应的是 1.18.1-beta28） -->
+        <!-- Embedding（中文优化：BGE-small-zh-v1.5，JAR 内带 ONNX，512 维，零运行时下载） -->
+        <!-- 原 all-MiniLM-L6-v2 英文模型对中文 query 召回质量差（M8.1 实测），换 BGE-zh 根治 -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
+            <artifactId>langchain4j-embeddings-bge-small-zh-v15</artifactId>
             <version>${langchain4j.version}-beta28</version>
         </dependency>
         <!-- PgVector EmbeddingStore（PG JDBC，不走 MyBatis-Plus，避开 @MapperScan 冲突） -->
