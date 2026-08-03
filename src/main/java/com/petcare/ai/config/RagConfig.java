@@ -1,7 +1,5 @@
 package com.petcare.ai.config;
 
-import javax.sql.DataSource;
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -50,22 +48,6 @@ public class RagConfig {
     private static final int EMBEDDING_DIMENSION = 384;
 
     /**
-     * PgVector 专用数据源（独立 PG 实例，<b>绝不绑定 spring.datasource.*</b>）。
-     * 仅用于 EmbeddingStore，与主 MySQL 业务库物理隔离。
-     */
-    @Bean("pgVectorDataSource")
-    public DataSource pgVectorDataSource(PgVectorProperties properties) {
-        // 用 Spring 的 DriverManagerDataSource（非连接池，单门店规模足够），
-        // 编译期不依赖 postgresql 类（驱动声明为 runtime scope），运行期由 ServiceLoader 加载。
-        DriverManagerDataSource ds = new DriverManagerDataSource();
-        ds.setUrl(properties.jdbcUrl());
-        ds.setUsername(properties.username());
-        ds.setPassword(properties.password());
-        ds.setDriverClassName("org.postgresql.Driver");
-        return ds;
-    }
-
-    /**
      * Embedding 模型（all-MiniLM-L6-v2，ONNX 本地推理，384 维，零外部 API 费用）。
      * 模型文件打包在 langchain4j-embeddings-all-minilm-l6-v2 JAR 内，无需运行时下载。
      */
@@ -82,9 +64,16 @@ public class RagConfig {
      * 表名 {@code ai_embedding} 与 schema-pgvector.sql 设计保持一致命名（结构以 langchain4j 标准为准）。
      */
     @Bean
-    public EmbeddingStore<TextSegment> embeddingStore(DataSource pgVectorDataSource) {
+    public EmbeddingStore<TextSegment> embeddingStore(PgVectorProperties properties) {
+        // DataSource 局部构造（不暴露为 bean），避免干扰 Spring Boot 主 DataSource 自动配置——
+        // 主数据源仍由 profile 提供（MySQL/H2），MyBatis-Plus Mapper 查询不会误打到 PG。
+        DriverManagerDataSource ds = new DriverManagerDataSource();
+        ds.setUrl(properties.jdbcUrl());
+        ds.setUsername(properties.username());
+        ds.setPassword(properties.password());
+        ds.setDriverClassName("org.postgresql.Driver");
         return PgVectorEmbeddingStore.datasourceBuilder()
-                .datasource(pgVectorDataSource)
+                .datasource(ds)
                 .table("ai_embedding")
                 .dimension(EMBEDDING_DIMENSION)
                 .createTable(true)
