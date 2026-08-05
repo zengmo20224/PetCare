@@ -50,9 +50,15 @@ class AiConversationMultiTurnTest {
                 org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
         org.mockito.Mockito.when(nullRagProvider.getIfUnique()).thenReturn(null);
 
+        // V1 路径：ObjectProvider 返回 null（agent-enabled=false，无工具调用）
+        @SuppressWarnings("unchecked")
+        org.springframework.beans.factory.ObjectProvider<com.petcare.ai.agent.CustomerServiceAgent> nullAgentProvider =
+                org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
+        org.mockito.Mockito.when(nullAgentProvider.getIfUnique()).thenReturn(null);
+
         service = new AiConversationApplicationServiceImpl(
                 conversationMapper, messageMapper, usageLogMapper,
-                mockProvider, contextBuilder, nullRagProvider
+                mockProvider, contextBuilder, nullRagProvider, nullAgentProvider
         );
     }
 

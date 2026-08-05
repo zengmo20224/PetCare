@@ -2,6 +2,7 @@ package com.petcare.ai.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.petcare.ai.agent.CustomerServiceAgent;
 import com.petcare.ai.domain.*;
 import com.petcare.ai.dto.*;
 import com.petcare.ai.entity.AiConversation;
@@ -43,6 +44,8 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
     private final CustomerServiceContextBuilder contextBuilder;
     /** M8.1：RAG 检索服务（可选，rag-enabled=false 时为 null，走 V1 全量塞降级路径）。 */
     private final RagRetrievalService ragRetrievalService;
+    /** M8.1：客服 Agent（可选，agent-enabled=false 时为 null，走 V1 同步路径）。 */
+    private final CustomerServiceAgent customerServiceAgent;
 
     public AiConversationApplicationServiceImpl(
             AiConversationMapper conversationMapper,
@@ -50,7 +53,8 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
             AiUsageLogMapper usageLogMapper,
             AiProviderClient providerClient,
             CustomerServiceContextBuilder contextBuilder,
-            ObjectProvider<RagRetrievalService> ragRetrievalServiceProvider) {
+            ObjectProvider<RagRetrievalService> ragRetrievalServiceProvider,
+            ObjectProvider<CustomerServiceAgent> customerServiceAgentProvider) {
         this.conversationMapper = conversationMapper;
         this.messageMapper = messageMapper;
         this.usageLogMapper = usageLogMapper;
@@ -58,6 +62,8 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
         this.contextBuilder = contextBuilder;
         // M8.1：ObjectProvider 可选注入，rag-enabled=false 时 getIfUnique 返回 null
         this.ragRetrievalService = ragRetrievalServiceProvider.getIfUnique();
+        // M8.1：ObjectProvider 可选注入，agent-enabled=false 时 getIfUnique 返回 null
+        this.customerServiceAgent = customerServiceAgentProvider.getIfUnique();
     }
 
     @Override
@@ -172,6 +178,22 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
      * 三层护栏（grounding 检测 / 输出安全）在两条路径都保留。
      */
     private String handleCustomerService(Long currentUserId, List<AiProviderMessage> history, String userQuestion) {
+        // M8.1：Agent 路径（agent-enabled=true 时优先）——RAG + 工具调用 + 护栏由 Agent 统一编排
+        if (customerServiceAgent != null) {
+            try {
+                CustomerServiceAgent.AgentReply reply = customerServiceAgent.handle(currentUserId, history, userQuestion);
+                logSuccessUsage(currentUserId, AiApiType.CUSTOMER_SERVICE, reply.usageResponse());
+                return reply.text();
+            } catch (AiProviderUnavailableException e) {
+                logFailedUsage(currentUserId, AiApiType.CUSTOMER_SERVICE, "provider_unavailable");
+                throw e;
+            } catch (AiProviderException e) {
+                logFailedUsage(currentUserId, AiApiType.CUSTOMER_SERVICE, e.getInternalCode());
+                throw e;
+            }
+        }
+
+        // V1 降级路径（agent-enabled=false）：全量塞 prompt 或纯 RAG，无工具调用
         CustomerServiceContext context = contextBuilder.build();
 
         // M8.1：RAG 路径——向量检索相关知识

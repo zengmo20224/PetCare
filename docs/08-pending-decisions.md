@@ -19,6 +19,7 @@
 | D-011 | 预约并发、订单金额、库存和权限必须由后端强制控制 | 已决定 | 原设计延续 |
 | D-012 | 钱包余额的边界：扣款与扣库存必须同事务；失败必留痕；管理员调整必填理由；本期不做营销赠送 | 已决定 | 2026-07-18（CR-20260718-003） |
 | D-013 | V2 AI Agent 增量：引入 PgVector 向量库做 RAG + langchain4j 作 `AiProviderClient` 实现层 + Agent 受限工具调用；激活社区助手与内容审核；安全边界继承 D-004（不直连 DB / 不诊断 / 建议不改库） | **已决定（设计基线，待实施）** | 2026-08-01 |
+| D-014 | AI 编排路线：继续 Java 内 langchain4j + 自写 Agent，**不引入 Dify 进生产链路**；Dify 仅作开发态 Prompt 调试/对比工具；按 M8.2 → M8.3 → M8.4 顺序推进 | **已决定** | 2026-08-05 |
 
 ## D-010 / D-012 补充说明（2026-07-18）
 
@@ -98,6 +99,31 @@
 - langchain4j 故障：切 V1 DeepSeek 手写 Provider；RAG 退回全量塞 prompt（数据量小可承受）。
 
 **未决子项（不阻塞设计，实施时定）**：embedding 本地 vs 厂商 API（Q-1）、知识入库定时 vs 事件（Q-2）、是否引入 Reranker（Q-3）、图片审核自托管 vs 商用 API（Q-4）。详见 `docs/09` §14。
+
+## D-014 AI 编排路线（2026-08-05）
+
+**决策背景**：用户在开发机加入了 Dify agent 系统，评估是否转向用 Dify 承担 Agent 编排（替代 V2 自写 langchain4j Agent），避免重复造轮子。
+
+**核心决定**：**继续 Java 内 langchain4j + 自写 Agent 推进 M8，不引入 Dify 进生产链路。**
+
+**理由**：
+
+1. **保留架构守卫的代码级强制**：B1-B8 安全边界（`AGENTS.md` §4 + `docs/09` §2）目前由 `AiProviderArchitectureTest`（V1）与 `AiAgentArchitectureTest`（V2）反射强制。Dify 是外部进程，业务数据通过"暴露 REST 给 Dify 当 Tool"实现，守卫测试对 Dify 内编排完全失效，B1-B8 退化为"文档约定"而非"代码强制"。
+2. **三层医疗护栏不可 1:1 复刻**：B2 的 `HighRiskSymptomDetector`（前置）+ `PetMedicalSafetyPolicy`（后处理）+ `AiOutputSafetyPolicy`（通用）+ B8 流式分句护栏，依赖 Java 策略对象语义；Dify workflow 节点（LLM/HTTP/Code）无法等价表达。
+3. **保留已落地投入**：M8.0（langchain4j + PgVector + 5 个只读 Tool + Agent 工具协议 + 审计 + SSE 后端）+ M8.1（客服 RAG 升级 + BGE-zh 中文 embedding）已约 3000-4000 行 Java + 测试 + PgVector schema，全面切 Dify 将浪费。
+4. **与项目定位一致**：P-002 明确项目定位为"展示 AI coding 实力的 demo"——手写 langchain4j Agent 编排 + 工具协议白名单 + 架构守卫 + 三层医疗护栏，本身就是 AI coding 实力叙事的核心组成；Dify 拖拽 workflow 偏向 low-code 运营工具，削弱叙事。
+5. **运维成本**：Dify 完整栈（API + Worker + Web + Redis + 自带 PG + 向量库 + Nginx）10+ 容器约 4GB RAM，与现状（Java 单体 + MySQL + PgVector）4 容器 ~1.5GB RAM 相比翻倍，与 D-009"V1 保持单门店模块化单体"精神冲突；课程 demo 场景部署复杂度直接影响演示可靠性。
+
+**Dify 角色（明确边界）**：
+- ✅ 开发态 Prompt 调试 / 多模型对比 / 灵感工具（不接入业务链路）
+- ❌ 生产链路 Agent 编排、Tool 调用、知识库存储、SSE 输出、审计、护栏
+
+**后续路线**：按 `docs/09` §12 M8 切片顺序推进——M8.2（经营分析 Agent）→ M8.3（社区助手 + 文本审核 Agent）→ M8.4（图片 NSFW 审核）→ M8.5（收口）。每个切片满足 `docs/02` §5 完成定义，复用 M8.0/M8.1 已落地的 Agent 基建（`AgentToolRegistry` + `AgentTool` 契约 + `AiToolCallLog` 审计 + 三层护栏）。
+
+**回退条件**：仅当后续出现以下情况之一，才重新评估本决策：
+- langchain4j 与 Spring Boot 兼容性出现无法修复的阻断；
+- BGE-zh/PgVector 在中文召回质量上持续不达预期且无调优空间；
+- 项目定位从"技术 demo"转向"对外营业产品"且 AI 场景需要持续高频扩展。
 
 ## 未决
 

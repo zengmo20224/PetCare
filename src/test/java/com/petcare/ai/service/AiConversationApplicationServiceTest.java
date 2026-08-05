@@ -52,9 +52,14 @@ class AiConversationApplicationServiceTest {
         ObjectProvider<com.petcare.ai.rag.RagRetrievalService> nullRagProvider = mock(ObjectProvider.class);
         when(nullRagProvider.getIfUnique()).thenReturn(null);
 
+        // V1 路径：ObjectProvider 返回 null（agent-enabled=false，走 V1 同步路径，无工具调用）
+        @SuppressWarnings("unchecked")
+        ObjectProvider<com.petcare.ai.agent.CustomerServiceAgent> nullAgentProvider = mock(ObjectProvider.class);
+        when(nullAgentProvider.getIfUnique()).thenReturn(null);
+
         service = new AiConversationApplicationServiceImpl(
                 conversationMapper, messageMapper, usageLogMapper,
-                mockProvider, contextBuilder, nullRagProvider
+                mockProvider, contextBuilder, nullRagProvider, nullAgentProvider
         );
     }
 
@@ -297,7 +302,7 @@ class AiConversationApplicationServiceTest {
 
             AiConversationApplicationServiceImpl ragService2 = new AiConversationApplicationServiceImpl(
                     conversationMapper, messageMapper, usageLogMapper,
-                    mockProvider, contextBuilder, ragProvider);
+                    mockProvider, contextBuilder, ragProvider, nullAgentProvider());
 
             // 准备 context（无实时数据，但 RAG 有召回 → 不应走 fallback）
             when(contextBuilder.build()).thenReturn(CustomerServiceContext.empty());
@@ -331,7 +336,7 @@ class AiConversationApplicationServiceTest {
 
             AiConversationApplicationServiceImpl ragSvc = new AiConversationApplicationServiceImpl(
                     conversationMapper, messageMapper, usageLogMapper,
-                    mockProvider, contextBuilder, ragProvider);
+                    mockProvider, contextBuilder, ragProvider, nullAgentProvider());
 
             // V1 context 有数据 → 即使 RAG 挂，仍可回答
             CustomerServiceContext ctx = new CustomerServiceContext(
@@ -346,5 +351,13 @@ class AiConversationApplicationServiceTest {
             // RAG 挂了但没抛异常给用户，正常返回
             assertEquals("营业时间是 9:00-21:00。", resp.content());
         }
+    }
+
+    /** 构造一个返回 null 的 Agent ObjectProvider（agent-enabled=false，走 V1 路径）。 */
+    @SuppressWarnings("unchecked")
+    private static ObjectProvider<com.petcare.ai.agent.CustomerServiceAgent> nullAgentProvider() {
+        ObjectProvider<com.petcare.ai.agent.CustomerServiceAgent> p = mock(ObjectProvider.class);
+        when(p.getIfUnique()).thenReturn(null);
+        return p;
     }
 }

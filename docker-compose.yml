@@ -94,6 +94,10 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-petcare-o2o-api}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       AI_PROVIDER_ENABLED: ${AI_PROVIDER_ENABLED:-false}
+      # DeepSeek 连接（D-004 修订）：API Key 由 .env 注入，缺失时调用返回 503
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       # V2 AI Agent（D-013）：Agent / RAG / PgVector 连接，默认关闭，缺值不影响启动
       AI_AGENT_ENABLED: ${AI_AGENT_ENABLED:-false}
       AI_RAG_ENABLED: ${AI_RAG_ENABLED:-false}

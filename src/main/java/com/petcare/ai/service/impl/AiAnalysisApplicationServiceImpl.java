@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.petcare.ai.agent.AnalyticsAgent;
 import com.petcare.ai.analytics.BusinessAnalyticsAggregator;
 import com.petcare.ai.analytics.CommunityAnalyticsAggregator;
 import com.petcare.ai.analytics.SalesAnalyticsAggregator;
@@ -25,6 +26,7 @@ import com.petcare.common.exception.ErrorCode;
 import com.petcare.common.pagination.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,8 @@ public class AiAnalysisApplicationServiceImpl implements AiAnalysisApplicationSe
     private final SalesAnalyticsAggregator salesAnalyticsAggregator;
     private final ActivityAnalyticsAggregator activityAnalyticsAggregator;
     private final ObjectMapper objectMapper;
+    /** M8.2：经营分析 Agent（可选，agent-enabled=false 时为 null，走 V1 全量塞降级路径）。 */
+    private final AnalyticsAgent analyticsAgent;
 
     public AiAnalysisApplicationServiceImpl(
             AiAnalysisReportMapper reportMapper,
@@ -70,7 +74,8 @@ public class AiAnalysisApplicationServiceImpl implements AiAnalysisApplicationSe
             CommunityAnalyticsAggregator communityAnalyticsAggregator,
             SalesAnalyticsAggregator salesAnalyticsAggregator,
             ActivityAnalyticsAggregator activityAnalyticsAggregator,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ObjectProvider<AnalyticsAgent> analyticsAgentProvider) {
         this.reportMapper = reportMapper;
         this.usageLogMapper = usageLogMapper;
         this.adminOperationLogService = adminOperationLogService;
@@ -80,55 +85,73 @@ public class AiAnalysisApplicationServiceImpl implements AiAnalysisApplicationSe
         this.salesAnalyticsAggregator = salesAnalyticsAggregator;
         this.activityAnalyticsAggregator = activityAnalyticsAggregator;
         this.objectMapper = objectMapper;
+        // M8.2：ObjectProvider 可选注入，agent-enabled=false 时 getIfUnique 返回 null
+        this.analyticsAgent = analyticsAgentProvider.getIfUnique();
     }
 
     @Override
     public AiAnalysisReportResponse generateReport(Long adminId, AiAnalysisCreateRequest request) {
         validateDateRange(request.startDate(), request.endDate());
 
-        // Step 1: Aggregate data from backend (read-only parameterized queries, no transaction needed)
-        String aggregatedDataJson = aggregateData(request.reportType(), request.startDate(), request.endDate());
+        // Step 1: Aggregate overview data from backend (read-only parameterized queries, no transaction needed)
+        String overviewDataJson = aggregateData(request.reportType(), request.startDate(), request.endDate());
 
-        if (aggregatedDataJson == null) {
+        if (overviewDataJson == null) {
             throw new BusinessException(ErrorCode.AI_ANALYSIS_DATA_INSUFFICIENT, "数据不足，无法生成分析报告");
         }
 
-        // Step 2: Call AI Provider OUTSIDE any transaction boundary
-        // Provider calls are slow external operations — must not hold a DB transaction open
-        List<AiProviderMessage> messages = PromptFactory.buildAnalysisMessages(
-                request.reportType(), aggregatedDataJson);
-
+        // M8.2：agent-enabled=true 时走 Agent（下钻 + 工具协议），否则走 V1 全量塞 prompt 路径。
+        // 两条路径共用：聚合数据 → 输出护栏 → 持久化 → 审计；差异只在 LLM 调用方式。
+        String output;
         AiProviderResponse response;
-        try {
-            response = providerClient.complete(
-                    new AiProviderRequest(AiApiType.ANALYSIS, messages, null));
-        } catch (AiProviderUnavailableException e) {
-            logFailedUsage(adminId, "provider_unavailable");
-            logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", e.getMessage());
-            throw e;
-        } catch (AiProviderException e) {
-            logFailedUsage(adminId, e.getInternalCode());
-            logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", e.getInternalCode());
-            throw e;
+        if (analyticsAgent != null) {
+            try {
+                AnalyticsAgent.AgentReply reply = analyticsAgent.handle(adminId, request, overviewDataJson);
+                output = reply.text();
+                response = reply.usageResponse();
+            } catch (AiProviderUnavailableException e) {
+                logFailedUsage(adminId, "agent_provider_unavailable");
+                logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", e.getMessage());
+                throw e;
+            } catch (AiProviderException e) {
+                logFailedUsage(adminId, e.getInternalCode());
+                logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", e.getInternalCode());
+                throw e;
+            }
+        } else {
+            // V1 降级路径：全量塞 prompt，无工具调用
+            List<AiProviderMessage> messages = PromptFactory.buildAnalysisMessages(
+                    request.reportType(), overviewDataJson);
+            try {
+                response = providerClient.complete(
+                        new AiProviderRequest(AiApiType.ANALYSIS, messages, null));
+            } catch (AiProviderUnavailableException e) {
+                logFailedUsage(adminId, "provider_unavailable");
+                logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", e.getMessage());
+                throw e;
+            } catch (AiProviderException e) {
+                logFailedUsage(adminId, e.getInternalCode());
+                logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", e.getInternalCode());
+                throw e;
+            }
+            output = response.assistantText();
         }
 
-        String output = response.assistantText();
-
-        // Step 3: Output safety check
+        // Output safety check (Agent 路径已在 Agent 内过一次，V1 路径在此过；双保险)
         if (AiOutputSafetyPolicy.isUnsafe(output)) {
             logFailedUsage(adminId, "output_unsafe");
             logAdminOperation(adminId, "AI分析", "生成报告", "FAIL", "AI输出未通过安全检查");
             throw new BusinessException(ErrorCode.AI_OUTPUT_REJECTED, "AI 输出未通过安全检查");
         }
 
-        // Step 4: Extract suggestions from AI response and persist report in a short transaction
+        // Persist report in a short transaction (slow provider call has already completed)
         String suggestions = extractSuggestions(output);
-        AiAnalysisReportResponse reportResponse = saveReport(adminId, request, aggregatedDataJson, output, suggestions);
+        AiAnalysisReportResponse reportResponse = saveReport(adminId, request, overviewDataJson, output, suggestions);
 
-        // Step 5: Log successful usage with admin attribution
+        // Log successful usage with admin attribution
         logSuccessUsage(adminId, response);
 
-        // Step 6: Log admin operation for audit trail
+        // Log admin operation for audit trail
         logAdminOperation(adminId, "AI分析", "生成报告", "SUCCESS", null);
 
         return reportResponse;
