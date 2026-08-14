@@ -416,6 +416,11 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
                 ProductOrderStatus.OUT_OF_STOCK.getCode());
 
         // OUT_OF_STOCK does NOT restore stock
+
+        // H-3：OUT_OF_STOCK 是终态，取消路径不可达——钱包已付款必须在本次事务内退款，
+        // 否则用户资金永久滞留（D-012：退款与状态翻转同事务，幂等键防重复退）。
+        refundWalletIfPaidByWallet(order);
+
         order.setStatus(ProductOrderStatus.OUT_OF_STOCK.getCode());
         order.setCancelTime(LocalDateTime.now());
         order.setMerchantRemark(reason);

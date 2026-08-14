@@ -173,6 +173,43 @@ class WalletRefundAtomicityIT extends AbstractTcMySqlIT {
         assertThat(currentBalance(userId)).isEqualByComparingTo("100.00");
     }
 
+    @Test
+    @DisplayName("H-3: Mark wallet-paid order OUT_OF_STOCK must refund wallet (terminal state has no other refund path)")
+    void outOfStockWalletPaidOrder_refundsWallet() {
+        // Arrange: place a wallet-paid order (PENDING_CONFIRM, WALLET_PAID).
+        Long userId = createUserWithWallet("100.00");
+        Product product = createProduct("30.00", 10);
+        createCheckedCartItem(userId, product.getId(), 1);
+
+        var order = orderService.createOrder(
+                userId,
+                new ProductOrderCreateRequest(
+                        1L, "PICKUP", null, "测试联系人", "13800000000", null, null, "WALLET"),
+                null);
+
+        // Pre-state: stock deducted to 9, balance deducted to 70.
+        assertThat(productMapper.selectStock(product.getId())).isEqualTo(9);
+        assertThat(currentBalance(userId)).isEqualByComparingTo("70.00");
+
+        // Act: mark out-of-stock (admin action).
+        var outOfStockOrder = orderService.outOfStock(order.getId(), "仓库缺货", 1L);
+
+        // Assert: order in terminal OUT_OF_STOCK state.
+        assertThat(outOfStockOrder.getStatus()).isEqualTo("OUT_OF_STOCK");
+
+        // CRITICAL (H-3): OUT_OF_STOCK is terminal — cancelOrder can no longer refund.
+        // The wallet payment (WALLET_PAID) must be refunded within outOfStock itself.
+        assertThat(currentBalance(userId))
+                .as("Wallet balance must be refunded to 100 when order goes OUT_OF_STOCK")
+                .isEqualByComparingTo("100.00");
+        assertThat(countLedger(userId, "REFUND"))
+                .as("Exactly one REFUND ledger row should exist for OUT_OF_STOCK")
+                .isEqualTo(1);
+
+        // OUT_OF_STOCK 不回补库存（业务约定：缺货说明库存本就不足）
+        assertThat(productMapper.selectStock(product.getId())).isEqualTo(9);
+    }
+
     // ===== Helpers =====
 
     private Long createUserWithWallet(String balance) {

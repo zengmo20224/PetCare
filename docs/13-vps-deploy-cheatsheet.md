@@ -284,11 +284,15 @@ Caddy 会**自动**向 Let's Encrypt 申请证书，首次约 10-30 秒。证书
 
 | 入口 | 地址 | 账号 |
 |---|---|---|
-| 用户端 H5 | `https://petcare-demo.com` | `13800138001` / `user123456`（种子数据） |
-| 管理端 | `https://admin.petcare-demo.com` | `admin` / `admin123456`（种子数据） |
+| 用户端 H5 | `https://petcare-demo.com` | `13800138001` / 部署时自行设置（见下） |
+| 管理端 | `https://admin.petcare-demo.com` | 部署时自行创建，勿用种子数据 |
 | API 健康 | `https://petcare-demo.com/api/v1/system/health` | 无需登录 |
 
-> ⚠️ 演示账号是公开种子数据，**演示结束后立即改密或关停服务**（见 §10）。
+> ⚠️ H-2 安全修复（2026-08-14）：生产部署**不再默认挂载 dev 种子数据**（data-dev.sql 已收敛到
+> `docker-compose.dev.yml`，仅本地开发叠加使用）。旧文档此处的 `admin/admin123456`、
+> `user123456` 是仓库公开的弱口令——生产库若已导入种子，应用会在 prod profile 启动时被
+> `AdminWeakCredentialStartupCheck` 直接拒绝启动。生产账号请在初始化后立即设置强口令，
+> 或通过管理端改密。
 
 ---
 
@@ -362,7 +366,7 @@ sudo ufw deny 443/tcp
 | 数据库备份 | 无（演示数据可重建） | 定时备份 + 异地存档 + 恢复演练 |
 | 监控告警 | 仅 health 探针 | Prometheus + 告警通知 |
 | 密钥管理 | `.env` 文件 | Vault / 云 KMS / docker secret |
-| 种子数据 | 用默认 admin/admin123456 | 移除种子，初始化后强制改密 |
+| 种子数据 | 不挂载（H-2 修复后 compose 默认无种子） | 保持不挂载，初始化后强制改密 |
 | 日志 | 容器本地 | 集中收集 + 保留策略 |
 | HTTPS | Caddy 自动 | nginx + certbot 或 Caddy（皆可） |
 | 高可用 | 单机 | 至少数据库主从、应用多副本 |

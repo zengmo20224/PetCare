@@ -1,0 +1,15 @@
+# PetCare O2O — 开发环境 override（仅本地开发使用，勿用于生产部署）
+#
+# 用途：为 MySQL 补挂 dev 种子数据（data-dev.sql，含演示账号与弱口令超管）。
+# 用法：docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# H-2 安全修复背景：主 docker-compose.yml（prod profile）曾默认挂载 data-dev.sql，
+# 导致按文档部署的生产实例自带弱口令超管 admin/admin123456。种子挂载已收敛到本文件，
+# 且应用层有 AdminWeakCredentialStartupCheck 在 prod profile 下拒绝弱口令超管启动（双保险）。
+#
+# 注意：initdb 脚本仅在 MySQL 数据卷为空（首次初始化）时执行；
+# 已有卷要重置种子：docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+services:
+  mysql:
+    volumes:
+      - ./src/main/resources/data-dev.sql:/docker-entrypoint-initdb.d/02-data-dev.sql:ro

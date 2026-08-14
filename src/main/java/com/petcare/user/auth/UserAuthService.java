@@ -184,6 +184,10 @@ public class UserAuthService {
 
     /**
      * Reset password after verifying security question answers.
+     *
+     * <p>H-1 安全修复：必须答对该用户注册的<b>全部</b>安全问题（提交的 questionId 集合与
+     * 注册集合完全匹配，缺一不可），不再允许只答部分或零作答。错误统一返回
+     * SECURITY_ANSWER_INCORRECT，不区分"问题缺失"与"答案错误"，避免探测。</p>
      */
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
@@ -196,9 +200,43 @@ public class UserAuthService {
             throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "手机号或安全问题验证失败");
         }
 
-        // Verify all answers
+        // H-1：加载该用户注册的全部安全问题，提交集合必须与其完全一致
+        List<UserSecurityQuestion> registered = securityQuestionService.list(
+                new LambdaQueryWrapper<UserSecurityQuestion>()
+                        .eq(UserSecurityQuestion::getUserId, user.getId())
+        );
+        if (registered.isEmpty()) {
+            throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "手机号或安全问题验证失败");
+        }
+
+        Set<Long> registeredIds = new HashSet<>();
+        for (UserSecurityQuestion q : registered) {
+            registeredIds.add(q.getId());
+        }
+
+        // 解析提交的 questionId（非数字视为验证失败，不抛 500）
+        Set<Long> submittedIds = new HashSet<>();
         for (ResetPasswordRequest.AnswerItem answer : request.answers()) {
-            UserSecurityQuestion question = securityQuestionService.getById(Long.parseLong(answer.questionId()));
+            long parsedId;
+            try {
+                parsedId = Long.parseLong(answer.questionId().trim());
+            } catch (NumberFormatException e) {
+                throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "安全问题验证失败");
+            }
+            if (!submittedIds.add(parsedId)) {
+                // 重复提交同一问题视为验证失败
+                throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "安全问题验证失败");
+            }
+        }
+
+        // H-1 核心：提交集合必须与注册集合完全匹配（数量与成员），缺答/多答/答非注册问题都拒绝
+        if (!registeredIds.equals(submittedIds)) {
+            throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "安全问题验证失败");
+        }
+
+        // 逐个验证答案（此时问题必然归属该用户且全部覆盖）
+        for (ResetPasswordRequest.AnswerItem answer : request.answers()) {
+            UserSecurityQuestion question = securityQuestionService.getById(Long.parseLong(answer.questionId().trim()));
             if (question == null || !question.getUserId().equals(user.getId())) {
                 throw new BusinessException(ErrorCode.SECURITY_ANSWER_INCORRECT, "安全问题验证失败");
             }

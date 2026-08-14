@@ -30,9 +30,10 @@ services:
       - --init-connect=SET NAMES utf8mb4
     volumes:
       - mysql-data:/var/lib/mysql
-      # 首次启动自动初始化 schema + 种子数据（仅卷为空时执行）
+      # 首次启动自动初始化 schema（仅卷为空时执行）。
+      # H-2 安全修复：dev 种子数据（含弱口令超管 admin/admin123456）不再默认挂载——
+      # 本地开发需要种子数据时叠加 override：docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./src/main/resources/data-dev.sql:/docker-entrypoint-initdb.d/02-data-dev.sql:ro
     ports:
       # 默认 3317：避开同机其他项目（如 cicd 出差报销系统）对 3307 的占用
       - "127.0.0.1:${MYSQL_PORT:-3317}:3306"

@@ -305,7 +305,7 @@ class UserAuthControllerTest {
     }
 
     @Test
-    @DisplayName("forgot-password reset with correct answers changes password")
+    @DisplayName("forgot-password reset with ALL correct answers changes password")
     void forgotPasswordResetWithCorrectAnswersChangesPassword() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -329,17 +329,20 @@ class UserAuthControllerTest {
                                 """))
                 .andReturn().getResponse().getContentAsString();
 
-        String questionId = extractIdFromJson(questionsJson);
+        String[] questionIds = extractAllIdsFromJson(questionsJson);
 
         mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("""
                                 {
                                     "phone": "13900010000",
-                                    "answers": [{"questionId": "%s", "answer": "豆豆"}],
+                                    "answers": [
+                                        {"questionId": "%s", "answer": "豆豆"},
+                                        {"questionId": "%s", "answer": "火锅"}
+                                    ],
                                     "newPassword": "newpass1"
                                 }
-                                """, questionId)))
+                                """, questionIds[0], questionIds[1])))
                 .andExpect(status().isOk());
 
         // New password works
@@ -363,6 +366,125 @@ class UserAuthControllerTest {
                                 }
                                 """))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("H-1 安全修复：空答案列表必须被拒绝（400），不得重置密码")
+    void forgotPasswordResetWithEmptyAnswersRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900012222",
+                                    "password": "oldpass1",
+                                    "nickname": "空答案攻击",
+                                    "securityQuestions": [
+                                        {"questionIndex": 0, "answer": "豆豆"},
+                                        {"questionIndex": 1, "answer": "火锅"}
+                                    ]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        // 攻击载荷：answers 为空数组，若服务层只逐个校验会零次循环直接重置成功
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900012222",
+                                    "answers": [],
+                                    "newPassword": "hacked123"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        // 密码未被篡改：旧密码仍可登录，攻击者密码登录失败
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900012222",
+                                    "password": "oldpass1"
+                                }
+                                """))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900012222",
+                                    "password": "hacked123"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("H-1 安全修复：只答对部分问题（2 缺 1）必须被拒绝（422），不得重置密码")
+    void forgotPasswordResetWithPartialAnswersRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900013333",
+                                    "password": "oldpass1",
+                                    "nickname": "部分答案攻击",
+                                    "securityQuestions": [
+                                        {"questionIndex": 0, "answer": "豆豆"},
+                                        {"questionIndex": 1, "answer": "火锅"}
+                                    ]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        String questionsJson = mockMvc.perform(post("/api/v1/auth/forgot-password/questions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"phone": "13900013333"}
+                                """))
+                .andReturn().getResponse().getContentAsString();
+
+        String[] questionIds = extractAllIdsFromJson(questionsJson);
+
+        // 攻击载荷：只提交 1 个正确答案（注册了 2 个问题）
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format("""
+                                {
+                                    "phone": "13900013333",
+                                    "answers": [{"questionId": "%s", "answer": "豆豆"}],
+                                    "newPassword": "hacked123"
+                                }
+                                """, questionIds[0])))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("security_answer_incorrect"));
+
+        // 密码未被篡改
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900013333",
+                                    "password": "oldpass1"
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("H-1 附带：questionId 非数字返回 422 而非 500")
+    void forgotPasswordResetWithNonNumericQuestionIdRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "phone": "13900014444",
+                                    "answers": [{"questionId": "abc", "answer": "任意答案"}],
+                                    "newPassword": "newPass123456"
+                                }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("security_answer_incorrect"));
     }
 
     @Test
@@ -450,8 +572,23 @@ class UserAuthControllerTest {
     }
 
     private String extractIdFromJson(String json) {
-        int idStart = json.indexOf("\"id\":\"") + 6;
-        int idEnd = json.indexOf("\"", idStart);
-        return json.substring(idStart, idEnd);
+        return extractAllIdsFromJson(json)[0];
+    }
+
+    /** 提取 questions 响应中的全部问题 ID（重置密码必须全部作答）。 */
+    private String[] extractAllIdsFromJson(String json) {
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        int idx = 0;
+        while (true) {
+            int idStart = json.indexOf("\"id\":\"", idx);
+            if (idStart < 0) {
+                break;
+            }
+            idStart += 6;
+            int idEnd = json.indexOf("\"", idStart);
+            ids.add(json.substring(idStart, idEnd));
+            idx = idEnd;
+        }
+        return ids.toArray(new String[0]);
     }
 }
