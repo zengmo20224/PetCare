@@ -178,11 +178,20 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
      * 三层护栏（grounding 检测 / 输出安全）在两条路径都保留。
      */
     private String handleCustomerService(Long currentUserId, List<AiProviderMessage> history, String userQuestion) {
+        // A2 安全修复（B2，docs/09 §5.1"三层护栏保留"）：客服会话与 PET_CHAT 同样执行
+        // 高危症状前置拦截——用户在客服里描述宠物异常症状时直接给兽医引导，不调 Provider
+        if (HighRiskSymptomDetector.isHighRisk(userQuestion)) {
+            return HighRiskSymptomDetector.getFixedSafetyResponse();
+        }
+
         // M8.1：Agent 路径（agent-enabled=true 时优先）——RAG + 工具调用 + 护栏由 Agent 统一编排
         if (customerServiceAgent != null) {
             try {
                 CustomerServiceAgent.AgentReply reply = customerServiceAgent.handle(currentUserId, history, userQuestion);
-                logSuccessUsage(currentUserId, AiApiType.CUSTOMER_SERVICE, reply.usageResponse());
+                // A2 修复：高危症状前置拦截时 usageResponse 为 null（未调 Provider，无用量可记）
+                if (reply.usageResponse() != null) {
+                    logSuccessUsage(currentUserId, AiApiType.CUSTOMER_SERVICE, reply.usageResponse());
+                }
                 return reply.text();
             } catch (AiProviderUnavailableException e) {
                 logFailedUsage(currentUserId, AiApiType.CUSTOMER_SERVICE, "provider_unavailable");
@@ -226,6 +235,11 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
                     new AiProviderRequest(AiApiType.CUSTOMER_SERVICE, messages, null));
 
             String output = response.assistantText();
+
+            // A2 安全修复（B2）：客服输出后置医疗护栏——拦截家庭疗法/用药建议类内容
+            if (PetMedicalSafetyPolicy.isViolation(output)) {
+                return PetMedicalSafetyPolicy.getSafeFallback();
+            }
 
             // Check for fabricated business facts
             if (CustomerServiceGroundingPolicy.isFabricatedBusinessFact(output, context)) {

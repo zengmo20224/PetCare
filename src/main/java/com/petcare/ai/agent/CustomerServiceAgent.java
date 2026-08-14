@@ -11,6 +11,8 @@ import com.petcare.ai.domain.AiOutputSafetyPolicy;
 import com.petcare.ai.domain.CustomerServiceContext;
 import com.petcare.ai.domain.CustomerServiceContextBuilder;
 import com.petcare.ai.domain.CustomerServiceGroundingPolicy;
+import com.petcare.ai.domain.HighRiskSymptomDetector;
+import com.petcare.ai.domain.PetMedicalSafetyPolicy;
 import com.petcare.ai.provider.AiApiType;
 import com.petcare.ai.provider.AiProviderClient;
 import com.petcare.ai.provider.AiProviderException;
@@ -83,6 +85,12 @@ public class CustomerServiceAgent {
      * @return Agent 最终回复 + usage
      */
     public AgentReply handle(Long currentUserId, List<AiProviderMessage> history, String userQuestion) {
+        // A2 安全修复（B2，docs/09 §5.1"三层护栏保留"）：高危症状前置拦截，
+        // 直接返回固定兽医引导文案，不进入 Agent 编排、不调 Provider
+        if (HighRiskSymptomDetector.isHighRisk(userQuestion)) {
+            return new AgentReply(HighRiskSymptomDetector.getFixedSafetyResponse(), null);
+        }
+
         AgentContext ctx = new AgentContext(currentUserId, AgentType.CUSTOMER_SERVICE, null);
         ctx.requireUser();
 
@@ -130,7 +138,10 @@ public class CustomerServiceAgent {
 
         String finalText = intermediateText;
 
-        // Step 7: 输出护栏（沿用 V1 客服护栏）
+        // Step 7: 输出护栏（A2 修复：医疗护栏优先于 grounding 与通用护栏，B2）
+        if (PetMedicalSafetyPolicy.isViolation(finalText)) {
+            finalText = PetMedicalSafetyPolicy.getSafeFallback();
+        }
         if (CustomerServiceGroundingPolicy.isFabricatedBusinessFact(finalText, context)) {
             finalText = CustomerServiceGroundingPolicy.getNoContextFallback();
         }

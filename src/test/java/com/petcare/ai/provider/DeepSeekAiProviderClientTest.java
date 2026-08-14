@@ -186,4 +186,52 @@ class DeepSeekAiProviderClientTest {
                 java.util.List.of(new AiProviderMessage("user", "hi")),
                 null));
     }
+
+    @Test
+    @DisplayName("A3: 长会话截断永不丢弃 system 消息（护栏/工具协议/RAG 上下文所在）")
+    void payload_truncationAlwaysKeepsSystemMessage() {
+        DeepSeekAiProviderClient client = new DeepSeekAiProviderClient(props("sk-test", "deepseek-chat"), builder);
+
+        // 构造 24 条消息：index 0 = system（护栏指令），后 23 条为对话历史（超出 MAX=20）
+        java.util.List<AiProviderMessage> messages = new java.util.ArrayList<>();
+        messages.add(new AiProviderMessage("system", "你是宠物门店客服，不得诊断疾病"));
+        for (int i = 1; i <= 23; i++) {
+            messages.add(new AiProviderMessage(i % 2 == 1 ? "user" : "assistant", "消息" + i));
+        }
+
+        server.expect(requestTo("https://api.deepseek.com/chat/completions"))
+                .andExpect(jsonPath("$.messages.length()").value(20))
+                // index 0 必须仍是 system（旧实现从头部丢弃会把它裁掉）
+                .andExpect(jsonPath("$.messages[0].role").value("system"))
+                .andExpect(jsonPath("$.messages[0].content").value("你是宠物门店客服，不得诊断疾病"))
+                // 保留的是最近的 19 条历史（消息5..消息23）
+                .andExpect(jsonPath("$.messages[1].content").value("消息5"))
+                .andExpect(jsonPath("$.messages[19].content").value("消息23"))
+                .andRespond(withSuccess(
+                        "{\"id\":\"r1\",\"model\":\"deepseek-chat\",\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"ok\"}}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        MediaType.APPLICATION_JSON));
+
+        client.complete(new AiProviderRequest(AiApiType.CUSTOMER_SERVICE, messages, null));
+    }
+
+    @Test
+    @DisplayName("A3: 无 system 消息时截断行为与旧版一致（保留最近 20 条）")
+    void payload_truncationWithoutSystem() {
+        DeepSeekAiProviderClient client = new DeepSeekAiProviderClient(props("sk-test", "deepseek-chat"), builder);
+
+        java.util.List<AiProviderMessage> messages = new java.util.ArrayList<>();
+        for (int i = 1; i <= 25; i++) {
+            messages.add(new AiProviderMessage(i % 2 == 1 ? "user" : "assistant", "消息" + i));
+        }
+
+        server.expect(requestTo("https://api.deepseek.com/chat/completions"))
+                .andExpect(jsonPath("$.messages.length()").value(20))
+                .andExpect(jsonPath("$.messages[0].content").value("消息6"))
+                .andExpect(jsonPath("$.messages[19].content").value("消息25"))
+                .andRespond(withSuccess(
+                        "{\"id\":\"r1\",\"model\":\"deepseek-chat\",\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"ok\"}}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        MediaType.APPLICATION_JSON));
+
+        client.complete(new AiProviderRequest(AiApiType.CHAT, messages, null));
+    }
 }

@@ -75,7 +75,9 @@ public class AnalyticsAgent {
      * @return Agent 最终报告 + usage
      */
     public AgentReply handle(Long adminId, AiAnalysisCreateRequest request, String overviewDataJson) {
-        AgentContext ctx = new AgentContext(adminId, AgentType.ANALYSIS, null);
+        // A4 修复：管理端 Agent 用 forAdmin 构造——adminId 单独标记审计归属，
+        // ai_tool_call_log 的 admin_id/user_id 字段按此正确分流
+        AgentContext ctx = AgentContext.forAdmin(adminId, AgentType.ANALYSIS);
         ctx.requireUser();
 
         // Step 1+2: 第一轮 Provider 调用（含工具协议 + 概览数据）

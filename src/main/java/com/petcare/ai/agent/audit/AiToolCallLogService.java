@@ -55,8 +55,16 @@ public class AiToolCallLogService {
             entity.setUsageLogId(usageLogId);
             entity.setAgentType(ctx.agentType().name());
             entity.setToolName(toolName);
-            entity.setUserId(ctx.currentUserId());
-            entity.setAdminId(null); // 用户端 Agent，adminId 恒空
+            // A4 修复：admin/user 是独立 ID 空间，按调用方身份分流审计字段——
+            // 管理端 Agent（forAdmin 构造）写 admin_id，用户端 Agent 写 user_id，
+            // 避免管理员 ID 写入 user_id 错误关联到 user 表同 ID 用户
+            if (ctx.isAdminCall()) {
+                entity.setAdminId(ctx.adminId());
+                entity.setUserId(null);
+            } else {
+                entity.setUserId(ctx.currentUserId());
+                entity.setAdminId(null);
+            }
             entity.setArgsSummary(sanitizeArgs(args));
             entity.setResultSummary(result != null && result.success() ? truncate(result.summary(), MAX_RESULT) : null);
             entity.setDurationMs((int) Math.min(durationMs, Integer.MAX_VALUE));

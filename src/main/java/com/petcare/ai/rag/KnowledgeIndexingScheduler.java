@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
  * 默认 cron 由 {@code petcare.ai.knowledge.rebuild-cron} 配置（默认每日 03:00）。
  * 仅当 {@link KnowledgeIndexingService} Bean 存在（rag-enabled）时装配。
  * <p>
- * <b>幂等</b>：rebuildAll 内部按 sourceType 抽取，重复执行不会产生重复向量（M8.1 评估增量更新）。
+ * <b>幂等</b>（A6 修复后为真）：rebuildAll 执行前 {@code removeAll()} 全清旧向量，
+ * 重复执行不产生重复向量；重建期间进程内互斥，与管理员手动触发并发时后者直接拒绝。
  */
 @Component
 @ConditionalOnBean(KnowledgeIndexingService.class)

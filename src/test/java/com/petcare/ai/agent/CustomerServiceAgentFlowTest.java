@@ -110,6 +110,22 @@ class CustomerServiceAgentFlowTest {
     }
 
     @Test
+    @DisplayName("A2 修复：高危症状输入被前置拦截，返回固定兽医文案，Provider 不被调用")
+    void highRiskInput_blockedBeforeProvider() {
+        provider.withSuccess("不该执行到这里");
+        CustomerServiceAgent agent = newAgent(null);
+
+        CustomerServiceAgent.AgentReply reply = agent.handle(100L, List.of(), "我家狗狗误食了巧克力一直抽搐怎么办");
+
+        // 固定兽医引导文案，不含任何家庭疗法
+        assertNotNull(reply.text());
+        assertTrue(reply.text().contains("兽医") || reply.text().contains("就医"),
+                "高危症状必须引导就医，实际返回：" + reply.text());
+        assertEquals(0, provider.getCallCount(), "Provider 不应被调用");
+        assertNull(reply.usageResponse(), "未调 Provider 不应有 usage");
+    }
+
+    @Test
     @DisplayName("Provider 不可用：异常透传（沿用 V1 异常分级）")
     void providerUnavailablePropagates() {
         provider.withUnavailable();

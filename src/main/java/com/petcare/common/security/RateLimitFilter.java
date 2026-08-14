@@ -55,7 +55,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/api/v1/auth/login",
             "/api/v1/admin/auth/login",
             "/api/v1/auth/register",
-            "/api/v1/auth/forgot-password/"
+            "/api/v1/auth/forgot-password/",
+            // C3 修复：微信登录同样可被脚本化批量打（mock 模式下还能无限造号），纳入限流
+            "/api/v1/auth/wechat-login"
     );
 
     /** 默认窗口（秒）：60 秒。 */
@@ -128,16 +130,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 解析客户端真实 IP。优先信任反代头（V1 单门店 nginx 部署），
-     * 取 X-Forwarded-For 第一个；无则用 remoteAddr。
+     * 解析客户端真实 IP（C1 安全修复）。
+     * <p>取 X-Forwarded-For <b>最后一段</b>：本项目 nginx 反代用
+     * {@code $proxy_add_x_forwarded_for}（追加而非覆盖），XFF 尾部是可信 nginx
+     * 追加的真实连接地址；首段攻击者可控（伪造 {@code XFF: 1.2.3.x} 即可每请求
+     * 换桶绕过限流），绝不可用作限流键。无 XFF 时用 remoteAddr。</p>
      */
     private String resolveClientIp(HttpServletRequest request) {
         String xff = request.getHeader("X-Forwarded-For");
         if (xff != null && !xff.isBlank()) {
-            int comma = xff.indexOf(',');
-            String first = comma > 0 ? xff.substring(0, comma).trim() : xff.trim();
-            if (!first.isEmpty()) {
-                return first;
+            int comma = xff.lastIndexOf(',');
+            String last = comma > 0 ? xff.substring(comma + 1).trim() : xff.trim();
+            if (!last.isEmpty()) {
+                return last;
             }
         }
         return request.getRemoteAddr();

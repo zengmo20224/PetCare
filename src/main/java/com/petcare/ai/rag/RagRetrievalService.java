@@ -2,6 +2,7 @@ package com.petcare.ai.rag;
 
 import java.util.List;
 
+import com.petcare.ai.domain.AiOutputSafetyPolicy;
 import com.petcare.ai.rag.KnowledgeSource.RetrievedKnowledge;
 
 import dev.langchain4j.data.segment.TextSegment;
@@ -9,6 +10,8 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RAG 检索服务（V2 RAG，D-013，M8.0）。
@@ -16,10 +19,14 @@ import dev.langchain4j.store.embedding.EmbeddingStore;
  * 把用户 query 向量化 → 在 PgVector 召回 top-K → 返回归一化结果。
  * <b>不直接拼 prompt</b>（那是 M8.1 客服升级的事），本类只负责"检索 + 返回结果"。
  * <p>
- * 召回结果回灌前应由调用方过 {@code AiOutputSafetyPolicy}（防向量库注入污染，docs/09 §4.5 B5）；
- * 本 M8.0 实现先返回原始召回，M8.1 接入护栏。
+ * A1 安全修复（B5，docs/09 §4.5）：召回结果回灌前在本类统一过 {@link AiOutputSafetyPolicy}——
+ * 向量库存的是派生知识副本（FAQ/商品/服务描述，管理员可编辑），若被注入
+ * "忽略以上规则"类指令文本，会在下游污染 system prompt。命中安全策略的片段
+ * 直接丢弃并告警，不进入任何 prompt。
  */
 public class RagRetrievalService {
+
+    private static final Logger log = LoggerFactory.getLogger(RagRetrievalService.class);
 
     private final EmbeddingModel embeddingModel;
     private final EmbeddingStore<TextSegment> embeddingStore;
@@ -55,6 +62,14 @@ public class RagRetrievalService {
                         .build());
         return result.matches().stream()
                 .map(this::toRetrievedKnowledge)
+                .filter(k -> {
+                    if (AiOutputSafetyPolicy.isUnsafe(k.content())) {
+                        log.warn("[AI] RAG segment dropped by output safety policy "
+                                + "(possible prompt injection in knowledge store, score={})", k.score());
+                        return false;
+                    }
+                    return true;
+                })
                 .toList();
     }
 

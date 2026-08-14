@@ -166,13 +166,18 @@ public class DeepSeekAiProviderClient implements AiProviderClient {
     private Map<String, Object> buildPayload(AiProviderRequest request) {
         List<Map<String, String>> upstreamMessages = new ArrayList<>();
         List<AiProviderMessage> source = request.messages();
-        int from = Math.max(0, source.size() - MAX_HISTORY_MESSAGES);
+
+        // A3 安全修复：超限时只截断对话历史，永不丢弃 index 0 的 system 消息——
+        // system 承载护栏指令 / 工具协议 / RAG 上下文（B2/B5/B8），
+        // 旧实现"从头部丢弃"会在长会话（22+ 条）时静默移除全部规则。
+        boolean hasSystem = !source.isEmpty() && "system".equals(source.get(0).role());
+        int budget = MAX_HISTORY_MESSAGES - (hasSystem ? 1 : 0);
+        int from = Math.max(hasSystem ? 1 : 0, source.size() - Math.max(budget, 0));
+        if (hasSystem) {
+            upstreamMessages.add(toEntry(source.get(0)));
+        }
         for (int i = from; i < source.size(); i++) {
-            AiProviderMessage m = source.get(i);
-            Map<String, String> entry = new HashMap<>();
-            entry.put("role", m.role());
-            entry.put("content", m.content());
-            upstreamMessages.add(entry);
+            upstreamMessages.add(toEntry(source.get(i)));
         }
 
         Map<String, Object> payload = new HashMap<>();
@@ -181,6 +186,13 @@ public class DeepSeekAiProviderClient implements AiProviderClient {
         payload.put("stream", false);
         payload.put("max_tokens", maxTokens);
         return payload;
+    }
+
+    private static Map<String, String> toEntry(AiProviderMessage m) {
+        Map<String, String> entry = new HashMap<>();
+        entry.put("role", m.role());
+        entry.put("content", m.content());
+        return entry;
     }
 
     private AiProviderResponse parseResponse(String rawJson) {

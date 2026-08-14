@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -13,6 +14,8 @@ import com.petcare.ai.entity.FaqKnowledge;
 import com.petcare.ai.rag.KnowledgeSource.KnowledgeDocument;
 import com.petcare.ai.rag.KnowledgeSource.SourceType;
 import com.petcare.ai.service.FaqKnowledgeService;
+import com.petcare.common.exception.BusinessException;
+import com.petcare.common.exception.ErrorCode;
 import com.petcare.product.entity.Product;
 import com.petcare.product.service.ProductService;
 import com.petcare.service.entity.ServiceItem;
@@ -34,8 +37,9 @@ import dev.langchain4j.store.embedding.EmbeddingStore;
  * <b>架构边界</b>（{@code AiRagArchitectureTest}）：依赖业务 {@code IService} 接口
  * （FaqKnowledgeService/ProductService/ServiceItemService/StoreService），<b>不依赖任何 Mapper</b>。
  * <p>
- * <b>幂等策略</b>（M8.0 简单实现）：rebuildAll 按 sourceType 先删旧再插新。
- * 文档元数据带 sourceType/sourceId，删除时按元数据过滤。
+ * <b>幂等策略</b>（A6 修复）：rebuildAll 执行前 {@code removeAll()} 全清，
+ * 保证"全清 → 全量重建"的强幂等语义——重复执行不产生重复向量（单门店规模 &lt; 1000 条，
+ * 全清重建成本可接受）。重建期间持有进程内互斥标志，并发触发直接拒绝。
  */
 public class KnowledgeIndexingService {
 
@@ -47,6 +51,9 @@ public class KnowledgeIndexingService {
     private final ProductService productService;
     private final ServiceItemService serviceItemService;
     private final StoreService storeService;
+
+    /** A7 修复：进程内互斥标志——全量重建进行中时拒绝并发触发（定时任务与管理员手动互斥）。 */
+    private final AtomicBoolean rebuilding = new AtomicBoolean(false);
 
     public KnowledgeIndexingService(EmbeddingModel embeddingModel,
                                     EmbeddingStore<TextSegment> embeddingStore,
@@ -63,21 +70,35 @@ public class KnowledgeIndexingService {
     }
 
     /**
-     * 全量重建索引：清空 → 抽取 4 类知识 → embed → 写入。
+     * 全量重建索引：互斥校验 → 全清旧向量 → 抽取 4 类知识 → embed → 写入。
      *
      * @return 入库总条数
+     * @throws BusinessException 已有重建正在进行（并发互斥，A7）
      */
     public int rebuildAll() {
-        long start = System.currentTimeMillis();
-        List<KnowledgeDocument> docs = new ArrayList<>();
-        docs.addAll(loadFaq());
-        docs.addAll(loadProducts());
-        docs.addAll(loadServices());
-        docs.addAll(loadStoreInfo());
+        if (!rebuilding.compareAndSet(false, true)) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "知识库重建正在进行中，请稍后再试");
+        }
+        try {
+            long start = System.currentTimeMillis();
 
-        int count = indexDocuments(docs);
-        log.info("[RAG] 知识库重建完成：入库 {} 条，耗时 {} ms", count, System.currentTimeMillis() - start);
-        return count;
+            // A6 修复：先全清旧向量再重建——旧实现只增不删，定时任务 + 手动重建
+            // 会无限追加重复向量（检索质量劣化、表膨胀）
+            embeddingStore.removeAll();
+
+            List<KnowledgeDocument> docs = new ArrayList<>();
+            docs.addAll(loadFaq());
+            docs.addAll(loadProducts());
+            docs.addAll(loadServices());
+            docs.addAll(loadStoreInfo());
+
+            int count = indexDocuments(docs);
+            log.info("[RAG] 知识库重建完成：清空后重新入库 {} 条，耗时 {} ms",
+                    count, System.currentTimeMillis() - start);
+            return count;
+        } finally {
+            rebuilding.set(false);
+        }
     }
 
     /** 抽取 FAQ（status=ACTIVE）。 */
@@ -186,14 +207,6 @@ public class KnowledgeIndexingService {
             count++;
         }
         return count;
-    }
-
-    /** 按 sourceType 删除该类全部索引（M8.0 幂等重建用；langchain4j EmbeddingStore 无直接按 metadata 删除 API，M8.1 评估换内部 SQL）。 */
-    public void removeBySourceType(SourceType sourceType) {
-        // langchain4j EmbeddingStore 标准接口无 removeByMetadata，M8.0 暂不实现细粒度删除；
-        // rebuildAll 采用"清表重建"时由调用方决定（见 KnowledgeIndexingScheduler/Controller 的策略）。
-        // 保留方法签名供 M8.1 扩展（届时用 PgVector 内部 SQL 或 EmbeddingStore removeAll）。
-        log.warn("[RAG] removeBySourceType({}) 当前为 no-op，M8.1 评估实现", sourceType);
     }
 
     private static String joinNonBlank(String sep, String... parts) {
