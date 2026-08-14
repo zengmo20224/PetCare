@@ -121,7 +121,14 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
-import { createConversation, listMessages, listMyConversations, sendMessage } from '@/api/ai'
+import {
+  AI_STREAM_SUPPORTED,
+  createConversation,
+  listMessages,
+  listMyConversations,
+  sendMessage,
+  sendMessageStream,
+} from '@/api/ai'
 import { renderMarkdown } from '@/utils/markdown'
 import type { AiConversationType, AiMessage } from '@/types/ai'
 
@@ -298,6 +305,31 @@ async function handleSend() {
   scrollToEnd()
   errorMessage.value = ''
 
+  // M8.5：SSE 流式优先（打字机效果）；平台不支持时回退同步发送
+  if (AI_STREAM_SUPPORTED) {
+    beginStreamingPlaceholder()
+    sending.value = true
+    await sendMessageStream(conversationId.value, content, {
+      onChunk: (text) => {
+        if (streamingReply.value) {
+          streamingReply.value.content += text
+          scrollToEnd()
+        }
+      },
+      onDone: () => {
+        finishStreaming()
+      },
+      onError: (msg) => {
+        // 服务端降级文案展示在气泡里（错误事件本身是一段可读文本）
+        if (streamingReply.value && !streamingReply.value.content) {
+          streamingReply.value.content = msg
+        }
+        finishStreaming()
+      },
+    })
+    return
+  }
+
   sending.value = true
   try {
     const res = await sendMessage(conversationId.value, content)
@@ -312,6 +344,26 @@ async function handleSend() {
     sending.value = false
     scrollToEnd()
   }
+}
+
+/** M8.5：流式回复的占位 assistant 消息（发送开始时创建，onChunk 累加）。 */
+const streamingReply = ref<{ id: string; conversationId: string; role: string; content: string } | null>(null)
+
+function beginStreamingPlaceholder() {
+  streamingReply.value = {
+    id: `stream-${Date.now()}`,
+    conversationId: conversationId.value!,
+    role: 'assistant',
+    content: '',
+  }
+  messages.value.push(streamingReply.value as any)
+  scrollToEnd()
+}
+
+function finishStreaming() {
+  streamingReply.value = null
+  sending.value = false
+  scrollToEnd()
 }
 
 function scrollToEnd() {

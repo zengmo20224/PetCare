@@ -122,6 +122,12 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/ai/reports.vue'),
         meta: { title: 'AI 分析报告', icon: 'DataAnalysis', permission: 'ai:analysis:generate' },
       },
+      {
+        path: 'ai/usage',
+        name: 'AiUsage',
+        component: () => import('../views/ai/usage.vue'),
+        meta: { title: 'AI 调用用量', icon: 'TrendCharts', permission: 'ai:usage:read' },
+      },
     ],
   },
   {

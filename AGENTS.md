@@ -28,9 +28,9 @@ git log --oneline -5
 - `frontend/miniapp` 暂时保留目录名，但当前主构建目标是 H5。
 - 微信登录和微信小程序适配延后，不得阻塞 H5 交付。
 - AI 分两个阶段，均**不直连 DB、不做疾病诊断/药物处方/治疗承诺、建议只能作参考不能自动改业务数据**（详见 §4 工程底线）：
-  - **V1（D-004 修订，已激活）**：用户端智能客服对话 + 管理端经营分析报告接入真实 DeepSeek；`AiProviderClient` 端口 + DeepSeek/Disabled 双实现 + 三层医疗护栏 + `AiProviderArchitectureTest` 边界守卫。发帖助手、AI 用量查看页仍关闭（代码已实现但门禁未解除）。
-  - **V2（D-013，设计基线，待实施）**：AI Agent 增量——引入 PgVector 向量库做 RAG、对话升级为 Agent（受限工具调用）、激活社区助手与内容审核。设计详见 `docs/09-ai-agent-design.md`，按 M8 切片落地。
-  - 当前任务接手时，先读 `docs/09` 与 D-004/D-013 确认所处阶段，不要把 V1 关闭态/已激活态/V2 设计态混为一谈。
+  - **V1（D-004 修订，已激活）**：用户端智能客服对话 + 管理端经营分析报告接入真实 DeepSeek；`AiProviderClient` 端口 + DeepSeek/Disabled 双实现 + 三层医疗护栏 + `AiProviderArchitectureTest` 边界守卫。
+  - **V2（D-013，已实施 2026-08-14）**：PgVector RAG + 三类 Agent（客服/经营分析/社区助手，受限只读 Tool 白名单 + RBAC + 审计）+ 文本内容审核（产 `PostReport` 不直接删）+ SSE 流式 + AI 用量查看页。**M8.4 图片 NSFW 审核延后**。设计见 `docs/09-ai-agent-design.md`，安全边界由 `AiProviderArchitectureTest` + `AiAgentArchitectureTest` 强制。
+  - 当前任务接手时，先读 `docs/09` 与 D-004/D-013 确认所处阶段；V2 主体已实施，M8.4 图片审核是唯一待做切片。
 - 商品、购物车和订单必须使用真实后端规则，不能用静态假数据冒充完成。
 - 社区只保留发帖、浏览、点赞、评论和收藏。
 - 营销活动保留基础展示、管理和商品/服务关联，不实现优惠券、复杂定价或 AI 营销。

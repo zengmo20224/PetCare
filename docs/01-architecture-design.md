@@ -68,10 +68,10 @@ Controller 负责协议和输入校验，Service 负责业务规则和事务，M
 
 AI 分两个阶段，边界由 `docs/08-pending-decisions.md` D-004（V1）与 D-013（V2）共同约束：
 
-- **V1（D-004 修订，2026-07-21，已激活）**：用户端智能客服对话 + 管理端经营分析报告接入真实 DeepSeek；`AiProviderClient` 端口 + DeepSeek/Disabled 双实现 + 三层医疗护栏（`HighRiskSymptomDetector`/`PetMedicalSafetyPolicy`/`AiOutputSafetyPolicy`）+ `AiProviderArchitectureTest` 边界守卫（强制 provider 包不依赖 Mapper/DataSource）。发帖助手与 AI 用量查看页仍关闭。
-- **V2（D-013，2026-08-01，设计基线，待实施）**：AI Agent 增量设计——引入 PgVector 向量库做 RAG、对话升级为 Agent（具备受限工具调用能力）、激活社区助手与内容审核。设计详见 `docs/09-ai-agent-design.md`，按 M8 切片落地。
+- **V1（D-004 修订，2026-07-21，已激活）**：用户端智能客服对话 + 管理端经营分析报告接入真实 DeepSeek；`AiProviderClient` 端口 + DeepSeek/Disabled 双实现 + 三层医疗护栏（`HighRiskSymptomDetector`/`PetMedicalSafetyPolicy`/`AiOutputSafetyPolicy`）+ `AiProviderArchitectureTest` 边界守卫（强制 provider 包不依赖 Mapper/DataSource）。
+- **V2（D-013，2026-08-01 设计，M8.0-M8.3/M8.5 已实施 2026-08-14）**：PgVector 向量库 RAG（独立 PG 实例，只存派生知识副本）+ Agent 受限工具调用（`AgentToolRegistry` 白名单 + RBAC 双校验 + `ai_tool_call_log` 审计；客服/经营分析/社区助手三类 Agent）+ 社区助手激活（仅草稿不自动发布）+ 文本内容审核（LLM 分类产 `PostReport` 进人工队列，不直接删）+ SSE 流式（H5 fetch stream）+ AI 用量查看页（管理端）。**M8.4 图片 NSFW 审核延后**。架构详见 `docs/09-ai-agent-design.md`。
 
-两个阶段共用的不可逾越约束：① AI 不得直接访问数据库（V1 由 `AiProviderArchitectureTest` 强制，V2 Agent 访问数据只通过受限 Tool → 业务 Service）；② AI 不得做疾病诊断/药物处方/治疗承诺（三层护栏保留）；③ AI 建议只能作参考，不能自动改业务数据。
+两个阶段共用的不可逾越约束：① AI 不得直接访问数据库（V1 由 `AiProviderArchitectureTest` 强制，V2 由 `AiAgentArchitectureTest` 强制 `ai/agent/` 只依赖业务 Service，Agent 访问数据只通过受限 Tool）；② AI 不得做疾病诊断/药物处方/治疗承诺（三层护栏保留，M8.3 后客服/Agent 路径全覆盖）；③ AI 建议只能作参考，不能自动改业务数据（经营分析 Tool 全只读、审核只产建议记录）。
 
 ## 7. 交付架构原则
 

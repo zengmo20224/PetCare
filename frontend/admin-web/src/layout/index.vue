@@ -101,6 +101,11 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>AI 分析报告</span>
         </el-menu-item>
+
+        <el-menu-item v-if="userStore.hasPermission('ai:usage:read')" index="/ai/usage">
+          <el-icon><TrendCharts /></el-icon>
+          <span>AI 调用用量</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container class="pc-main">
@@ -138,6 +143,7 @@ import {
   Filter,
   Document,
   DataAnalysis,
+  TrendCharts,
   Fold,
   Expand,
   Wallet,

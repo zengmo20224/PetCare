@@ -8,7 +8,7 @@
 - 用户端具备 UniApp H5 构建能力，但核心流程尚未全部真实联调。
 - 商品订单和社区后端能力已有基础，应优先接通，而不是重写。
 - 营销活动有基础数据模型，缺少完整可用流程。
-- AI 代码已实现，V1 部分激活（D-004 修订：客服对话 + 经营分析报告接 DeepSeek），V2 Agent 增量（D-013：PgVector RAG + Agent 工具调用 + 社区/审核）已立设计基线，按 M8 切片落地。
+- AI：V1 已激活（D-004 修订），V2 Agent 增量（D-013）**已实施完成**（M8.0-M8.3/M8.5，2026-08-14；M8.4 图片审核延后）——PgVector RAG + 三类 Agent（客服/经营分析/社区助手）+ 文本审核 + SSE 流式 + 用量页。
 - 当前已知风险：认证过滤器对格式错误的 `Authorization` 请求头可能降级为匿名访问，必须在进入登录后 H5 流程前修复。
 
 ## 2. 交付顺序
@@ -123,12 +123,12 @@
 
 > 目标：把 V1 无状态客服升级为可检索（RAG）+ 可行动（Agent 工具调用）的 AI Agent，并激活社区助手与内容审核。向量库选 PgVector（独立 PG 实例），LLM 框架引入 langchain4j 作为 `AiProviderClient` 端口的实现层。详细设计与边界见 `docs/09-ai-agent-design.md`，选型决策见 D-013。
 
-- M8.0 基建：langchain4j + PgVector + embedding + 知识入库（离线索引）。
-- M8.1 客服 RAG 升级：客服接 RAG + Tool 白名单（只读）+ SSE 流式 + 流式护栏。
-- M8.2 经营分析下钻：AnalyticsAgent + 只读 Tool + 结构化报告。
-- M8.3 社区助手激活：解除 401 + PostAssistantAgent + 文本审核 Agent（产 PostReport 不直接删）。
-- M8.4 图片审核：ONNX Java 原生 nsfw 推理（无 Python sidecar）+ 图片审核 Agent。
-- M8.5 收口：全量回归 + AI 用量查看页 + 文档归档。
+- M8.0 基建：langchain4j + PgVector + embedding + 知识入库（离线索引）。✅ 2026-08-14
+- M8.1 客服 RAG 升级：客服接 RAG + Tool 白名单（只读）+ SSE 流式 + 流式护栏。✅ 2026-08-14（前端 SSE 对接随 M8.5 落地）
+- M8.2 经营分析下钻：AnalyticsAgent + 只读 Tool + 结构化报告。✅ 2026-08-14
+- M8.3 社区助手激活：解除 401 + PostAssistantAgent + 文本审核 Agent（产 PostReport 不直接删）。✅ 2026-08-14
+- M8.4 图片审核：ONNX Java 原生 nsfw 推理（无 Python sidecar）+ 图片审核 Agent。⬜ **延后**（独立切片再启，不阻塞收口）
+- M8.5 收口：全量回归 + AI 用量查看页 + 文档归档。✅ 2026-08-14（回归 1067 默认 + 33 tc-mysql；用量页 + H5 SSE + 文档同步）
 
 ## 4. 任务切片规则
 

@@ -1,6 +1,8 @@
 # AI Agent 增量设计（V2）
 
-> 阶段：**V2 增量设计**｜状态：设计基线（待实现）｜日期：2026-08-01
+> 阶段：**V2 增量设计**｜状态：**已实施（M8.0-M8.3/M8.5，2026-08-14）**——M8.4 图片 NSFW 审核延后｜设计日期：2026-08-01｜实施归档：2026-08-14
+>
+> **实施摘要**：M8.0（langchain4j + PgVector + BGE-zh embedding + 知识入库）/ M8.1（客服 RAG + 5 只读 Tool + SSE）/ M8.2（经营分析 Agent + 4 只读 Tool）/ M8.3（社区助手激活 + PostAssistantAgent + 文本审核 ModerationAgent 产 PostReport）/ M8.5（全量回归 + AI 用量页 + H5 SSE 前端对接 + 文档归档）。实施中同步完成的安全加固见 `docs/08` D-013 补充说明与相关 commit（RAG 召回护栏、客服医疗护栏补齐、审计字段分流、AI 限流、知识库重建幂等）。
 >
 > 关联文档：`docs/00-project-boundary.md` §3、`docs/01-architecture-design.md` §6、`docs/08-pending-decisions.md` D-004 / D-013、`AGENTS.md` §4
 >
