@@ -26,13 +26,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MapperAndServiceCoverageTest {
 
     /**
-     * AI 模块（AGENTS.md §2：禁用占位）的 5 个实体的应用服务直接注入 Mapper，
+     * AI 模块（AGENTS.md §2：禁用占位）的实体的应用服务直接注入 Mapper，
      * 不经过 IService。其空 IService 实现已作为冗余脚手架删除（见 docs/test-archive/），
      * 因此不参与 "每个实体必须有 IService Bean" 的断言。
+     * <p>
+     * M8.1 新增 {@code AiToolCallLog}：审计日志由 {@code AiToolCallLogService} 直接 insert，
+     * 只追加不修改，不经 IService（对标 AiUsageLog 范式）。
      */
     private static final Set<Class<?>> ENTITIES_WITHOUT_ISERVICE = Set.of(
             AiConversation.class, AiMessage.class, AiUsageLog.class,
-            AiAnalysisReport.class
+            AiAnalysisReport.class,
+            com.petcare.ai.agent.audit.AiToolCallLog.class
     );
 
     @Autowired
