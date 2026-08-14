@@ -205,7 +205,11 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
             walletService.lockWalletForUpdate(currentUserId);
         }
 
-        // 5. Atomically deduct stock for each product (in product ID ascending order)
+        // 5. Atomically deduct stock for each product.
+        //    B2 修复（D-012 规则 2 锁序 product(asc)）：lines 原按购物车项顺序构建
+        //    （cart_item 主键序），扣减前必须按 productId 升序排序，
+        //    保证并发下单时 product 行锁获取顺序全局一致，消除行间 AB-BA 死锁。
+        lines.sort(java.util.Comparator.comparing(LineSnapshot::productId));
         for (LineSnapshot line : lines) {
             int rows = productMapper.deductStock(line.productId(), line.quantity());
             if (rows == 0) {
@@ -294,12 +298,13 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
                 ProductOrderStatus.CANCELLED.getCode());
         ProductOrderStateMachine.validateCanCancel(order.getPaymentStatus(), order.getPickupStatus());
 
+        // B1 修复（D-012 规则 2 全局锁序 wallet → product）：退款（锁 wallet 行）必须在
+        // 恢复库存（锁 product 行）之前——与 doCreateOrder 的 W→P 序一致，
+        // 消除"并发取消退款 + 钱包下单扣款"的 AB-BA 死锁窗口。同一事务内原子性不变。
+        refundWalletIfPaidByWallet(order);
+
         // Restore stock
         restoreOrderStock(orderId);
-
-        // Wallet refund: if the order was paid by wallet, refund the original amount back to
-        // the user's wallet in this same transaction (D-012: stock restore + wallet refund atomic).
-        refundWalletIfPaidByWallet(order);
 
         // Update order
         order.setStatus(ProductOrderStatus.CANCELLED.getCode());
@@ -391,11 +396,11 @@ public class ProductOrderTransactionServiceImpl implements ProductOrderTransacti
                 ProductOrderStatus.CANCELLED.getCode());
         ProductOrderStateMachine.validateCanCancel(order.getPaymentStatus(), order.getPickupStatus());
 
+        // B1 修复：退款（锁 wallet）先于恢复库存（锁 product），与用户取消/下单路径锁序一致
+        refundWalletIfPaidByWallet(order);
+
         // Restore stock
         restoreOrderStock(orderId);
-
-        // Wallet refund (same atomic guarantee as user cancel).
-        refundWalletIfPaidByWallet(order);
 
         order.setStatus(ProductOrderStatus.CANCELLED.getCode());
         order.setCancelTime(LocalDateTime.now());

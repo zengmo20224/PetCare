@@ -470,7 +470,8 @@ CREATE TABLE `sensitive_word` (
   `deleted`     TINYINT     NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-正常 1-已删除',
   PRIMARY KEY (`id`),
   KEY `idx_level` (`level`),
-  KEY `idx_status` (`status`)
+  KEY `idx_status` (`status`),
+  UNIQUE KEY `uk_word` (`word`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='敏感词表';
 
 -- 内容审核记录表
@@ -766,8 +767,28 @@ CREATE TABLE `faq_knowledge` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='FAQ 知识库表';
 
--- 注：ai_tool_call_log / ai_chat_memory 表由 M8.1（Agent 编排）引入，届时连同 Entity 一起加，
--- 避免本轮 EntitySchemaMappingContractTest 因"schema 有表无实体"失败（CI-DB-019/020 暂缓）。
+CREATE TABLE `ai_tool_call_log` (
+  `id`              BIGINT       NOT NULL COMMENT '主键，雪花 ID',
+  `usage_log_id`    BIGINT       DEFAULT NULL COMMENT '关联 ai_usage_log.id（同库外键，一次 Agent 编排的 LLM 调用与 Tool 调用关联）',
+  `agent_type`      VARCHAR(32)  NOT NULL COMMENT 'Agent 类型：CUSTOMER_SERVICE / ANALYSIS / POST_ASSISTANT / MODERATION',
+  `tool_name`       VARCHAR(64)  NOT NULL COMMENT 'Tool 唯一名（白名单注册名，如 getProductInfo / getMyOrderStatus）',
+  `user_id`         BIGINT       DEFAULT NULL COMMENT '调用方用户 ID（用户端 Agent）',
+  `admin_id`        BIGINT       DEFAULT NULL COMMENT '调用方管理员 ID（管理端 Agent）',
+  `args_summary`    VARCHAR(500) DEFAULT NULL COMMENT '入参摘要（脱敏后，限长防泄露全量入参；不含敏感字段原值）',
+  `result_summary`  VARCHAR(500) DEFAULT NULL COMMENT '出参摘要（脱敏后，便于排查；Tool 完整结果返回给 Agent 不在此存）',
+  `duration_ms`     INT          DEFAULT NULL COMMENT 'Tool 执行耗时（毫秒）',
+  `success`         TINYINT      NOT NULL DEFAULT 1 COMMENT '是否成功：0-失败 1-成功',
+  `error_message`   VARCHAR(1000) DEFAULT NULL COMMENT '错误信息（脱敏，不含堆栈/SQL/Provider 原始错误，对标 ai_usage_log）',
+  `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_tool_usage_log` (`usage_log_id`),
+  KEY `idx_tool_agent_type` (`agent_type`),
+  KEY `idx_tool_user_id` (`user_id`),
+  KEY `idx_tool_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI Agent Tool 调用审计日志表（与 ai_usage_log 同库 MySQL）';
+
+-- 注：ai_chat_memory 表（phase18, CI-DB-020）由 M8.1 后续 ChatMemory 持久化引入，
+-- 目前 Java 侧无对应 Entity，暂不加入 schema.sql 以保持 EntitySchemaMappingContractTest 一致。
 
 -- ============================================================================
 -- J. 后台管理模块

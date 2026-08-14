@@ -311,11 +311,14 @@ public class CommunityPostApplicationService {
     public CommentResponse createComment(Long currentUserId, Long postId,
                                           CommentCreateRequest request) {
         // Verify post exists and is published
+        // B3 修复：行锁读——commentCount 读-改-写在并发评论下会丢失更新
+        // （范式对齐 CommunityInteractionService.getPublishedPost）
         Post post = postMapper.selectOne(
                 new LambdaQueryWrapper<Post>()
                         .eq(Post::getId, postId)
                         .eq(Post::getStatus, "PUBLISHED")
                         .eq(Post::getDeleted, 0)
+                        .last("FOR UPDATE")
         );
         if (post == null) {
             throw new BusinessException(ErrorCode.COMMUNITY_POST_NOT_FOUND, "帖子不存在或不可评论");
@@ -657,8 +660,13 @@ public class CommunityPostApplicationService {
         }
 
         // Decrement post comment count (count this comment + its replies)
+        // B3 修复：行锁读，与 createComment 的计数路径互斥
         int removedCount = 1 + children.size();
-        Post post = postMapper.selectById(comment.getPostId());
+        Post post = postMapper.selectOne(
+                new LambdaQueryWrapper<Post>()
+                        .eq(Post::getId, comment.getPostId())
+                        .last("FOR UPDATE")
+        );
         if (post != null) {
             post.setCommentCount(Math.max(0, post.getCommentCount() - removedCount));
             postMapper.updateById(post);
@@ -670,11 +678,13 @@ public class CommunityPostApplicationService {
      */
     @Transactional
     public void likeComment(Long currentUserId, Long commentId) {
+        // B3 修复：行锁读——likeCount 读-改-写在并发点赞下会丢失更新
         PostComment comment = commentMapper.selectOne(
                 new LambdaQueryWrapper<PostComment>()
                         .eq(PostComment::getId, commentId)
                         .eq(PostComment::getStatus, "PUBLISHED")
                         .eq(PostComment::getDeleted, 0)
+                        .last("FOR UPDATE")
         );
         if (comment == null) {
             throw new BusinessException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND, "评论不存在");
@@ -707,10 +717,12 @@ public class CommunityPostApplicationService {
      */
     @Transactional
     public void unlikeComment(Long currentUserId, Long commentId) {
+        // B3 修复：行锁读（与 likeComment 对称）
         PostComment comment = commentMapper.selectOne(
                 new LambdaQueryWrapper<PostComment>()
                         .eq(PostComment::getId, commentId)
                         .eq(PostComment::getDeleted, 0)
+                        .last("FOR UPDATE")
         );
         if (comment == null) {
             return;
