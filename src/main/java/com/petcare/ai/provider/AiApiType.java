@@ -8,5 +8,7 @@ public enum AiApiType {
     CUSTOMER_SERVICE,
     CHAT,
     CONTENT_GENERATE,
-    ANALYSIS
+    ANALYSIS,
+    /** M8.3：文本内容审核（ModerationAgent，docs/09 §5.3.2）。 */
+    MODERATION
 }

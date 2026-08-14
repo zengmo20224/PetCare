@@ -7,6 +7,7 @@ import com.petcare.ai.agent.tool.GetBookingFunnelTool;
 import com.petcare.ai.agent.tool.GetCommunityMetricsTool;
 import com.petcare.ai.agent.tool.GetMyBookingStatusTool;
 import com.petcare.ai.agent.tool.GetMyOrderStatusTool;
+import com.petcare.ai.agent.tool.GetMyPetProfileTool;
 import com.petcare.ai.agent.tool.GetProductInfoTool;
 import com.petcare.ai.agent.tool.GetSalesTrendTool;
 import com.petcare.ai.agent.tool.GetServiceInfoTool;
@@ -149,6 +150,46 @@ public class AgentConfig {
             @Qualifier("analyticsToolRegistry") AgentToolRegistry analyticsToolRegistry,
             AiToolCallLogService auditService) {
         return new AnalyticsAgent(providerClient, analyticsToolRegistry, auditService);
+    }
+
+    // ==================== M8.3 社区助手 + 文本审核（对标 docs/09 §5.3）====================
+
+    @Bean
+    public GetMyPetProfileTool getMyPetProfileTool(com.petcare.user.service.PetApplicationService petApplicationService) {
+        return new GetMyPetProfileTool(petApplicationService);
+    }
+
+    @Bean
+    public AgentToolRegistry postAssistantToolRegistry(GetMyPetProfileTool petProfileTool) {
+        return new AgentToolRegistry(List.of(petProfileTool));
+    }
+
+    @Bean
+    public PostAssistantAgent postAssistantAgent(
+            AiProviderClient providerClient,
+            @Qualifier("postAssistantToolRegistry") AgentToolRegistry postAssistantToolRegistry,
+            AiToolCallLogService auditService) {
+        return new PostAssistantAgent(providerClient, postAssistantToolRegistry, auditService);
+    }
+
+    @Bean
+    public ModerationAgent moderationAgent(AiProviderClient providerClient) {
+        return new ModerationAgent(providerClient);
+    }
+
+    /**
+     * M8.3 文本审核异步钩子。阈值 {@code petcare.ai.moderation.violation-threshold}
+     * （默认 0.8）：VIOLATION 且置信度达标才产 PostReport 进人工队列。
+     */
+    @Bean
+    public com.petcare.ai.service.AiModerationReviewService aiModerationReviewService(
+            ModerationAgent moderationAgent,
+            com.petcare.community.service.CommunityInteractionService communityInteractionService,
+            org.springframework.core.env.Environment environment) {
+        double threshold = environment.getProperty(
+                "petcare.ai.moderation.violation-threshold", Double.class, 0.8);
+        return new com.petcare.ai.service.AiModerationReviewService(
+                moderationAgent, communityInteractionService, threshold);
     }
 
     // ==================== Streaming ====================

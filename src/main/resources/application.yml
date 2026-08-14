@@ -69,9 +69,11 @@ petcare:
     # V2 Agent 限流
     agent:
       rate-limit-per-min: ${AI_AGENT_RATE_LIMIT_PER_MIN:20}
-    # V2 内容审核（NSFW 模型渠道 M8.4 决策）
+    # V2 内容审核（M8.3 文本阈值；NSFW 图片模型渠道 M8.4 决策）
     moderation:
       nsfw-threshold: ${AI_MODERATION_NSFW_THRESHOLD:0.8}
+      # M8.3 文本审核：VIOLATION 且置信度 ≥ 阈值才产 PostReport 进人工队列
+      violation-threshold: ${AI_MODERATION_VIOLATION_THRESHOLD:0.8}
     # V2 知识库定时重建
     knowledge:
       rebuild-cron: ${AI_KNOWLEDGE_REBUILD_CRON:0 0 3 * * *}

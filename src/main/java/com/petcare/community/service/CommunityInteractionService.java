@@ -198,6 +198,45 @@ public class CommunityInteractionService {
         }
     }
 
+    /**
+     * M8.3：AI 文本审核产出的系统举报（docs/09 §5.3.2）。
+     * <p>与用户举报的差异：reporterId=0（系统）、reason 带 {@code [AI审核]} 标记、
+     * 不去重（每次审核独立成单）。<b>只产 PostReport 进人工队列，
+     * 不改帖子状态</b>（B4：AI 建议不直接处置），处置由管理员走既有举报处理流程。</p>
+     *
+     * @param postId     被审核帖子 ID
+     * @param reasonType SPAM / ABUSE / ILLEGAL / OTHER（ModerationAgent 分类映射）
+     * @param reason     建议描述（含置信度，已脱敏）
+     */
+    @Transactional
+    public void createSystemAiReport(Long postId, String reasonType, String reason) {
+        PostReport report = new PostReport();
+        report.setPostId(postId);
+        report.setReporterId(0L); // 0 = 系统主体（区别于 user 表任何真实用户）
+        report.setReasonType(reasonType);
+        report.setReason(reason);
+        report.setStatus("PENDING");
+        reportMapper.insert(report);
+    }
+
+    /**
+     * M8.3：分页查询 AI 审核产生的举报（reason 以 {@code [AI审核]} 前缀标记），
+     * 供管理端"AI 审核建议"面板展示（docs/09 §5.3.2：审核结果仅管理端可见）。
+     */
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<PostReport> listAiReports(
+            String status, int page, int size) {
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<PostReport> wrapper =
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<PostReport>()
+                        .eq(PostReport::getReporterId, 0L)
+                        .likeRight(PostReport::getReason, "[AI审核]");
+        if (status != null && !status.isBlank()) {
+            wrapper.eq(PostReport::getStatus, status);
+        }
+        wrapper.orderByDesc(PostReport::getCreateTime);
+        return reportMapper.selectPage(
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size), wrapper);
+    }
+
     // ==================== Private Helpers ====================
 
     private Post getPublishedPost(Long postId, boolean forUpdate) {

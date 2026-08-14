@@ -6,6 +6,7 @@ import com.petcare.ai.agent.tool.GetBookingFunnelTool;
 import com.petcare.ai.agent.tool.GetCommunityMetricsTool;
 import com.petcare.ai.agent.tool.GetMyBookingStatusTool;
 import com.petcare.ai.agent.tool.GetMyOrderStatusTool;
+import com.petcare.ai.agent.tool.GetMyPetProfileTool;
 import com.petcare.ai.agent.tool.GetProductInfoTool;
 import com.petcare.ai.agent.tool.GetSalesTrendTool;
 import com.petcare.ai.agent.tool.GetServiceInfoTool;
@@ -56,7 +57,9 @@ class AiAgentArchitectureTest {
             GetSalesTrendTool.class,
             GetBookingFunnelTool.class,
             GetCommunityMetricsTool.class,
-            GetActivityEffectTool.class
+            GetActivityEffectTool.class,
+            // M8.3 社区助手只读 Tool
+            GetMyPetProfileTool.class
     );
 
     @Test

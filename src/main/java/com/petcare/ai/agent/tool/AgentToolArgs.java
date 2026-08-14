@@ -11,6 +11,19 @@ import java.util.Map;
  */
 public interface AgentToolArgs {
 
+    /** 无参数场景的空载体（如 getMyPetProfile / getStoreInfo 等零参 Tool）。 */
+    AgentToolArgs EMPTY = new AgentToolArgs() {
+        @Override
+        public String get(String key) {
+            return null;
+        }
+
+        @Override
+        public Map<String, String> raw() {
+            return Map.of();
+        }
+    };
+
     /**
      * 按参数名取值（字符串原值，未转换）。
      *

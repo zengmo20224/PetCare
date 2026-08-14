@@ -9,10 +9,10 @@
 --   3. 将管理端权限码绑定到 SUPER_ADMIN / ADMIN / MODERATOR
 --
 -- 权限码清单（docs/09 §6.3）：
---   7055 ai:customer-service:chat   —— 客服对话（用户端，登录即可，不走管理端 RBAC）
---   7056 ai:post-assistant:use      —— 发帖助手（用户端，登录即可，不走管理端 RBAC）
---   7057 ai:moderation:review       —— 查看审核建议（管理端，MODERATOR+）
---   7058 ai:knowledge:rebuild       —— 手动重建知识库（管理端，SUPER_ADMIN）
+--   7055 ai:moderation:review       —— 查看 AI 审核建议（管理端，MODERATOR+）
+--   7056 ai:knowledge:rebuild       —— 手动重建知识库（管理端，SUPER_ADMIN）
+--   注：用户端权限 ai:customer-service:chat / ai:post-assistant:use 不进 admin_permission 表
+--       （运行时由 SecurityContext 校验登录态，docs/09 §6.3）
 --   注：7058 复用 phase7 已有的 7048(ai:analysis:generate) / 7049(ai:usage:read)，此处不重复
 --
 -- 幂等：沿用 phase15 钱包范式（WHERE NOT EXISTS + ON DUPLICATE KEY UPDATE）

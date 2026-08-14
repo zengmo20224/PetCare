@@ -74,6 +74,8 @@ public class CommunityPostApplicationService {
     private final PostFavoriteMapper postFavoriteMapper;
     private final NotificationService notificationService;
     private final UserService userService;
+    /** M8.3：AI 文本审核钩子（可选，agent-enabled=false 时为 null，发帖/评论不受影响）。 */
+    private final com.petcare.ai.service.AiModerationReviewService aiModerationReviewService;
 
     private static final int MAX_TAGS_PER_POST = 3;
 
@@ -89,7 +91,8 @@ public class CommunityPostApplicationService {
                                             PostLikeMapper postLikeMapper,
                                             PostFavoriteMapper postFavoriteMapper,
                                             NotificationService notificationService,
-                                            UserService userService) {
+                                            UserService userService,
+                                            org.springframework.beans.factory.ObjectProvider<com.petcare.ai.service.AiModerationReviewService> aiModerationReviewServiceProvider) {
         this.postMapper = postMapper;
         this.commentMapper = commentMapper;
         this.imageMapper = imageMapper;
@@ -103,6 +106,7 @@ public class CommunityPostApplicationService {
         this.postFavoriteMapper = postFavoriteMapper;
         this.notificationService = notificationService;
         this.userService = userService;
+        this.aiModerationReviewService = aiModerationReviewServiceProvider.getIfUnique();
     }
 
     // ==================== Topic Queries ====================
@@ -199,6 +203,11 @@ public class CommunityPostApplicationService {
         List<String> imageUrls = request.imageUrls();
         if (imageUrls != null && !imageUrls.isEmpty()) {
             savePostImages(post.getId(), imageUrls);
+        }
+
+        // M8.3：AI 文本审核异步钩子（agent-enabled 时 Bean 存在；只产 PostReport 不改状态 B4）
+        if (aiModerationReviewService != null) {
+            aiModerationReviewService.reviewPostAsync(post.getId(), textToCheck);
         }
 
         return toPostResponse(post);
@@ -365,6 +374,11 @@ public class CommunityPostApplicationService {
                     : request.content();
             notificationService.createNotification(post.getUserId(), currentUserId,
                     "COMMENT", postId, comment.getId(), snippet);
+        }
+
+        // M8.3：AI 文本审核异步钩子（帖+评论共用，只产 PostRecord 不改状态 B4）
+        if (aiModerationReviewService != null) {
+            aiModerationReviewService.reviewCommentAsync(postId, comment.getId(), request.content());
         }
 
         return toCommentResponse(comment);

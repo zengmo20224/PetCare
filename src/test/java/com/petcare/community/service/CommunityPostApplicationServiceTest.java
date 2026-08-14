@@ -82,6 +82,10 @@ class CommunityPostApplicationServiceTest {
     @Mock
     private UserService userService;
 
+    /** M8.3：AI 审核钩子的可选注入（mock 的 getIfUnique 默认返回 null = 未启用，符合单测语义）。 */
+    @Mock
+    private org.springframework.beans.factory.ObjectProvider<com.petcare.ai.service.AiModerationReviewService> aiModerationReviewServiceProvider;
+
     @InjectMocks
     private CommunityPostApplicationService service;
 

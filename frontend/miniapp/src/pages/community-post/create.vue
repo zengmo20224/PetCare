@@ -10,6 +10,16 @@
       </PcFormField>
 
       <view class="post-create__content">
+        <view class="post-create__ai-bar">
+          <text class="post-create__ai-hint">没有思路？让 AI 帮你起个草稿（可修改后再发布）</text>
+          <view
+            class="post-create__ai-btn"
+            :class="{ 'post-create__ai-btn--loading': aiGenerating }"
+            @tap="handleAiGenerate"
+          >
+            <text class="post-create__ai-btn-text">{{ aiGenerating ? '生成中...' : 'AI 帮我写' }}</text>
+          </view>
+        </view>
         <textarea
           class="post-create__textarea"
           placeholder="分享你和宠物的故事..."
@@ -40,7 +50,7 @@
       </PcFormField>
 
       <view class="post-create__action">
-        <PcPrimaryButton text="发布" :loading="submitting" @tap="handleSubmit" />
+        <PcPrimaryButton text="发布" :loading="submitting" @press="handleSubmit" />
       </view>
     </view>
   </view>
@@ -54,6 +64,7 @@ import PcPrimaryButton from '@/components/PcPrimaryButton.vue'
 import PcFormField from '@/components/PcFormField.vue'
 import TagInput from '@/components/TagInput.vue'
 import { createPost } from '@/api/community'
+import { generatePostDraft } from '@/api/ai'
 import { uploadFile } from '@/api/user'
 import { useUserStore } from '@/store/user'
 import { assetFullUrl } from '@/utils/asset-url'
@@ -66,6 +77,42 @@ const content = ref('')
 const tags = ref<string[]>([])
 const images = ref<string[]>([])
 const submitting = ref(false)
+const aiGenerating = ref(false)
+
+/** M8.3：AI 发帖助手——输入事件描述生成草稿，仅填入输入框（用户可改，不自动发布）。 */
+function handleAiGenerate() {
+  if (aiGenerating.value) return
+  uni.showModal({
+    title: 'AI 帮我写',
+    editable: true,
+    placeholderText: '简单描述要分享的事，如：豆包今天第一次洗澡特别乖',
+    success: (res) => {
+      if (!res.confirm) return
+      const event = (res.content || '').trim()
+      if (!event) {
+        uni.showToast({ title: '请先描述一下要分享的事', icon: 'none' })
+        return
+      }
+      doGenerate(event)
+    },
+  })
+}
+
+async function doGenerate(event: string) {
+  aiGenerating.value = true
+  const res = await generatePostDraft({
+    event,
+    originalText: content.value.trim() || undefined,
+    tone: '轻松真实',
+  })
+  aiGenerating.value = false
+  if (res.success && res.data?.suggestedText) {
+    content.value = res.data.suggestedText
+    uni.showToast({ title: '草稿已生成，可修改后发布', icon: 'none' })
+  } else {
+    uni.showToast({ title: 'AI 生成失败，请稍后再试', icon: 'none' })
+  }
+}
 
 function chooseImages() {
   const remaining = 9 - images.value.length
@@ -121,26 +168,57 @@ async function handleSubmit() {
 
 <style scoped>
 .post-create {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .post-create__form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 32rpx;
 }
 
 .post-create__content {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
+}
+
+/* AI 助手条（M8.3） */
+.post-create__ai-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.post-create__ai-hint {
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
+  flex: 1;
+}
+
+.post-create__ai-btn {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: rgba(64, 128, 255, 0.12);
+}
+
+.post-create__ai-btn--loading {
+  opacity: 0.5;
+}
+
+.post-create__ai-btn-text {
+  font-size: 24rpx;
+  color: #4080ff;
 }
 
 .post-create__textarea {
   width: 100%;
-  min-height: 200px;
-  font-size: 14px;
-  color: #19322E;
+  min-height: 400rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   line-height: 1.6;
   border: none;
   outline: none;
@@ -151,14 +229,14 @@ async function handleSubmit() {
 .post-create__images {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .post-create__image-item {
   position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 16rpx;
   overflow: hidden;
 }
 
@@ -171,54 +249,54 @@ async function handleSubmit() {
   position: absolute;
   top: 0;
   right: 0;
-  width: 22px;
-  height: 22px;
+  width: 44rpx;
+  height: 44rpx;
   background: rgba(0, 0, 0, 0.6);
-  border-radius: 0 0 0 8px;
+  border-radius: 0 0 0 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .post-create__image-remove-icon {
-  color: #fff;
-  font-size: 14px;
+  color: var(--pc-user-surface);
+  font-size: 28rpx;
   line-height: 1;
 }
 
 .post-create__image-add {
-  width: 80px;
-  height: 80px;
-  border: 2px dashed #E2E9E6;
-  border-radius: 8px;
+  width: 160rpx;
+  height: 160rpx;
+  border: 2px dashed var(--pc-user-line);
+  border-radius: 16rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .post-create__image-add-icon {
-  font-size: 28px;
-  color: #71817D;
+  font-size: 56rpx;
+  color: var(--pc-user-muted);
 }
 
 .post-create__image-add-text {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .post-create__action {
-  margin-top: 8px;
+  margin-top: 16rpx;
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 </style>

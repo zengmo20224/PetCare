@@ -28,10 +28,15 @@ class AiPostAssistantServiceTest {
     private AiPostAssistantServiceImpl service;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
         mockProvider = new MockAiProviderClient();
         usageLogMapper = mock(AiUsageLogMapper.class);
-        service = new AiPostAssistantServiceImpl(mockProvider, usageLogMapper);
+        // ObjectProvider 返回 null → 走 V1 纯 fact-based 路径（agent-enabled=false 语义）
+        org.springframework.beans.factory.ObjectProvider<com.petcare.ai.agent.PostAssistantAgent> agentProvider =
+                mock(org.springframework.beans.factory.ObjectProvider.class);
+        when(agentProvider.getIfUnique()).thenReturn(null);
+        service = new AiPostAssistantServiceImpl(mockProvider, usageLogMapper, agentProvider);
     }
 
     @Nested

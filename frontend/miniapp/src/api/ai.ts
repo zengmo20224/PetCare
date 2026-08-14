@@ -59,3 +59,20 @@ export function listMessages(
     params as Record<string, unknown>,
   )
 }
+
+/**
+ * M8.3 社区发帖助手：生成帖子草稿（仅草稿，用户确认后自行发布）。
+ * 服务端结合用户宠物档案个性化（agent-enabled 时）。
+ */
+export function generatePostDraft(payload: {
+  event: string
+  petName?: string
+  petType?: string
+  tone?: string
+  originalText?: string
+}): Promise<ApiResponse<{ isDraft: boolean; suggestedText: string }>> {
+  return http.post<{ isDraft: boolean; suggestedText: string }>(
+    '/api/v1/ai/post-assistant/generate',
+    payload as any,
+  )
+}
