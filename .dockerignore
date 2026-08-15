@@ -37,8 +37,10 @@ LICENSE
 
 # 本地数据
 *.log
+logs/
 uploads/
 data/
+*.sql.gz
 
 # 操作系统
 .DS_Store

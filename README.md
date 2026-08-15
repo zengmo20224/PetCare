@@ -97,8 +97,8 @@ docker compose up -d --build --wait
 mysql -u root -p < schema.sql
 mysql -u root -p petcare_o2o < src/main/resources/data-dev.sql
 
-# 后端
-mvn spring-boot:run
+# 后端（默认 profile 已改为 prod，本地开发需显式指定 dev）
+$env:SPRING_PROFILES_ACTIVE='dev'; mvn spring-boot:run
 
 # 管理端
 cd frontend/admin-web && npm install && npm run dev

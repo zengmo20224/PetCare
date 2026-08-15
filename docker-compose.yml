@@ -2,6 +2,8 @@
 # 关联文档：docs/07-deployment-guide.md、docs/03-configuration-management-plan.md
 # CI：CI-BS-011
 #
+# 前置：项目根 .env 必须提供 MYSQL_ROOT_PASSWORD / DB_PASSWORD / PGVECTOR_PASSWORD / JWT_SECRET
+#       （${VAR:?} 强制语法，缺失即拒绝启动，杜绝弱口令回退 changeme 静默生效）
 # 启动：docker compose up -d --build --wait
 # 停止：docker compose down
 # 重置：docker compose down -v
@@ -15,11 +17,11 @@ services:
     container_name: petcare-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required in .env}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-petcare_o2o}
       # 自动创建应用用户并授予 MYSQL_DATABASE 全部权限（仅卷为空首次初始化时生效）
       MYSQL_USER: ${DB_USERNAME:-petcare}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-changeme}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required in .env}
       TZ: Asia/Shanghai
     command:
       - --character-set-server=utf8mb4
@@ -38,7 +40,9 @@ services:
       # 默认 3317：避开同机其他项目（如 cicd 出差报销系统）对 3307 的占用
       - "127.0.0.1:${MYSQL_PORT:-3317}:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-changeme}"]
+      # 无凭据探测存活：mysqladmin ping 只要 server 响应即返回 0，凭据无需也不应写入
+      # healthcheck（否则密码经 docker inspect 对所有可访问 docker socket 的账号可见）
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -56,7 +60,7 @@ services:
     environment:
       POSTGRES_DB: ${PGVECTOR_DB:-petcare_ai}
       POSTGRES_USER: ${PGVECTOR_USER:-petcare}
-      POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${PGVECTOR_PASSWORD:?PGVECTOR_PASSWORD is required in .env}
       TZ: Asia/Shanghai
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -90,8 +94,8 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-petcare_o2o}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       DB_USERNAME: ${DB_USERNAME:-petcare}
-      DB_PASSWORD: ${DB_PASSWORD:-changeme}
-      JWT_SECRET: ${JWT_SECRET}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required in .env or environment}
       JWT_ISSUER: ${JWT_ISSUER:-petcare-o2o-api}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       AI_PROVIDER_ENABLED: ${AI_PROVIDER_ENABLED:-false}
@@ -106,7 +110,7 @@ services:
       PGVECTOR_PORT: 5432
       PGVECTOR_DB: ${PGVECTOR_DB:-petcare_ai}
       PGVECTOR_USER: ${PGVECTOR_USER:-petcare}
-      PGVECTOR_PASSWORD: ${PGVECTOR_PASSWORD:-changeme}
+      PGVECTOR_PASSWORD: ${PGVECTOR_PASSWORD:?PGVECTOR_PASSWORD is required in .env}
       TZ: Asia/Shanghai
       JAVA_OPTS: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
     ports:
@@ -134,7 +138,9 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "${ADMIN_WEB_PORT:-8080}:80"
+      # 仅监听本机回环：容器内无 TLS，公网访问统一经宿主机反向代理终止 TLS（docs/13 §6），
+      # 避免管理端口令与 JWT 明文 HTTP 直接暴露公网
+      - "127.0.0.1:${ADMIN_WEB_PORT:-8080}:80"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
       interval: 30s
@@ -156,7 +162,8 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "${H5_PORT:-8081}:80"
+      # 同 admin-web：仅本机回环，对外经 TLS 反向代理（docs/13 §6）
+      - "127.0.0.1:${H5_PORT:-8081}:80"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
       interval: 30s

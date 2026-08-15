@@ -43,12 +43,13 @@ mvn clean test
 # 5. 跑 Testcontainers MySQL 集成测试（需要本地 Docker daemon）
 mvn -P tc-mysql test
 
-# 6. 启动开发服务
-mvn spring-boot:run
+# 6. 启动开发服务（默认 profile 为 prod，本地必须显式指定 dev）
+SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 ```
 
 **Profile 说明**：
-- 默认 `application.yml` → `spring.profiles.active=dev`，连接本地 MySQL。
+- `application.yml` 默认 `spring.profiles.active=prod`（安全默认：生产裸跑不会静默落入 dev）；
+  本地开发需显式 `SPRING_PROFILES_ACTIVE=dev`，连接本地 MySQL。
 - 测试自动激活 `test` profile，使用 H2 内存库。
 - 集成测试通过 `@ActiveProfiles("tc-mysql")` 使用 Testcontainers MySQL 8.0.46。
 

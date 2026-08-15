@@ -109,7 +109,17 @@ pipeline {
         stage('Docker Build') {
             steps {
                 // 构建全部镜像（后端 + 两个前端）
-                bat 'docker compose build'
+                // compose 使用 ${VAR:?} 强制语法（安全加固：去掉 changeme 弱口令回退）。
+                // Jenkins workspace 没有 .env，而 build 阶段不需要这些运行时值——
+                // 注入占位值只为通过插值校验；compose environment 只在容器运行时生效，不会进入镜像
+                withEnv([
+                    'MYSQL_ROOT_PASSWORD=ci-interpolation-placeholder',
+                    'DB_PASSWORD=ci-interpolation-placeholder',
+                    'PGVECTOR_PASSWORD=ci-interpolation-placeholder',
+                    'JWT_SECRET=ci-interpolation-placeholder'
+                ]) {
+                    bat 'docker compose build'
+                }
             }
         }
 
@@ -131,7 +141,7 @@ pipeline {
                         withCredentials([string(credentialsId: "${env.JWT_SECRET_CREDENTIAL_ID}", variable: 'JWT_SECRET')]) {
                             env.HAS_JWT_CREDENTIAL = 'true'
                             bat '''
-                                @powershell -NoProfile -ExecutionPolicy Bypass -Command "$envFile = Join-Path (Get-Location) '.env'; if ([string]::IsNullOrWhiteSpace($env:JWT_SECRET) -or [System.Text.Encoding]::UTF8.GetByteCount($env:JWT_SECRET) -lt 32) { Write-Error 'JWT_SECRET credential petcare-jwt-secret is missing or shorter than 32 bytes'; exit 1 }; if (-not (Test-Path -LiteralPath $envFile)) { Write-Error 'Jenkins workspace .env is missing; DB_PASSWORD must match the existing Docker MySQL volume'; exit 1 }; $dbPassword = (Get-Content -LiteralPath $envFile | Where-Object { $_ -like 'DB_PASSWORD=*' } | Select-Object -First 1); if ([string]::IsNullOrWhiteSpace($dbPassword) -or $dbPassword -eq 'DB_PASSWORD=') { Write-Error 'DB_PASSWORD is missing from Jenkins workspace .env'; exit 1 }"
+                                @powershell -NoProfile -ExecutionPolicy Bypass -Command "$envFile = Join-Path (Get-Location) '.env'; if ([string]::IsNullOrWhiteSpace($env:JWT_SECRET) -or [System.Text.Encoding]::UTF8.GetByteCount($env:JWT_SECRET) -lt 32) { Write-Error 'JWT_SECRET credential petcare-jwt-secret is missing or shorter than 32 bytes'; exit 1 }; if (-not (Test-Path -LiteralPath $envFile)) { Write-Error 'Jenkins workspace .env is missing; DB_PASSWORD must match the existing Docker MySQL volume'; exit 1 }; foreach ($n in @('MYSQL_ROOT_PASSWORD','DB_PASSWORD','PGVECTOR_PASSWORD')) { $line = (Get-Content -LiteralPath $envFile | Where-Object { $_ -like "$n=*" } | Select-Object -First 1); if ([string]::IsNullOrWhiteSpace($line) -or $line -eq "$n=") { Write-Error "$n is missing from Jenkins workspace .env (compose required syntax will reject startup)"; exit 1 } }"
                             '''
                         }
                     } catch (Exception e) {
@@ -237,8 +247,15 @@ pipeline {
                 attachmentsPattern: 'target/site/jacoco/index.html',
                 attachLog: false
             )
-            // 收集容器日志便于排障（失败也无所谓）
-            bat 'docker compose logs --tail=100 2>nul || exit /b 0'
+            // 收集容器日志便于排障（失败也无所谓；withEnv 占位值用于通过 ${VAR:?} 插值校验）
+            withEnv([
+                'MYSQL_ROOT_PASSWORD=ci-interpolation-placeholder',
+                'DB_PASSWORD=ci-interpolation-placeholder',
+                'PGVECTOR_PASSWORD=ci-interpolation-placeholder',
+                'JWT_SECRET=ci-interpolation-placeholder'
+            ]) {
+                bat 'docker compose logs --tail=100 2>nul || exit /b 0'
+            }
         }
     }
 }

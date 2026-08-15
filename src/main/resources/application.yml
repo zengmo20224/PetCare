@@ -2,7 +2,9 @@ spring:
   application:
     name: petcare-o2o-api
   profiles:
-    active: dev
+    # 安全默认 prod：生产裸 java -jar 不会静默落入 dev（dev 的 JWT 密钥回退值是公开的）。
+    # 本地开发必须显式 SPRING_PROFILES_ACTIVE=dev；prod 缺 JWT_SECRET 会拒绝启动
+    active: prod
   servlet:
     multipart:
       # 与 FileUploadController.MAX_FILE_SIZE 保持一致（M1/L7：消除默认 1MB 与代码 10MB 的不一致）

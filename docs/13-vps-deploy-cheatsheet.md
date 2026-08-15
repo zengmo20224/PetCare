@@ -188,9 +188,9 @@ API_PORT=8082
 MYSQL_PORT=3317
 ```
 
-> `docker-compose.yml` 当前 admin-web / h5 端口是 `0.0.0.0:8080/8081`（直接对外）。
-> 演示版建议临时改本地的 `docker-compose.yml`，把这两条改成 `127.0.0.1:${...}:80`，
-> 只留 Caddy 对外。具体见 §6 的覆盖文件。
+> `docker-compose.yml` 已默认把 admin-web / h5 端口绑到 `127.0.0.1`（2026-08-15 安全加固），
+> 无需再改本地文件；对外只留 Caddy。数据库密码等变量已改为 `${VAR:?}` 强制语法，
+> `.env` 缺 `MYSQL_ROOT_PASSWORD / DB_PASSWORD / PGVECTOR_PASSWORD / JWT_SECRET` 会直接拒绝启动。
 
 ---
 
