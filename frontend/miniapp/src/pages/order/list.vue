@@ -7,7 +7,8 @@
     <PcStatePanel
       v-else
       :status="listStatus"
-      empty-text="暂无订单"
+      empty-icon="🧾"
+      empty-text="还没有订单"
       @retry="loadOrders"
     >
       <view class="order-list__items">
@@ -83,19 +84,19 @@ onShow(() => {
 
 <style scoped>
 .order-list {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .order-list__items {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 28rpx;
 }
 
 .order-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
@@ -103,13 +104,13 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 16rpx;
 }
 
 .order-card__no {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .order-card__row {
@@ -119,13 +120,13 @@ onShow(() => {
 }
 
 .order-card__amount {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #F5A623;
+  color: var(--pc-user-accent);
 }
 
 .order-card__time {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 </style>

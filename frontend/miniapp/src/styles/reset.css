@@ -1,18 +1,10 @@
 /**
- * Base style reset for the PetCare H5 user app.
+ * Base style reset for the PetCare user app (H5 + WeChat mini-program).
  */
 
 page {
-  background: #FAF8F3;
-  background:
-    linear-gradient(180deg, rgba(223, 242, 237, 0.45) 0, rgba(250, 248, 243, 0) 220px),
-    #FAF8F3;
-  background:
-    linear-gradient(180deg, rgba(223, 242, 237, 0.45) 0, rgba(250, 248, 243, 0) 220px),
-    #FAF8F3;
-  color: #19322E;
-  color: #19322E;
-  font-size: 14px;
+  background: #F7F7F7;
+  color: var(--pc-user-ink);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -29,7 +21,10 @@ image {
   transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-/* H5 native tab bar polish. The icon artwork itself comes from uni-icons. */
+/* H5-only: native tab bar polish. The mini-program uses its own native tabBar,
+   so these classes (.uni-tabbar-*) never exist there. Gated by #ifdef H5 to
+   keep the WXSS output clean. */
+/* #ifdef H5 */
 .uni-tabbar-bottom .uni-tabbar {
   border-top: 1px solid rgba(226, 233, 230, 0.8);
   background: rgba(255, 255, 255, 0.96) !important;
@@ -58,7 +53,7 @@ image {
   letter-spacing: 0.2px;
 }
 
-/* Responsive: constrain content width on tablet/desktop */
+/* Responsive: constrain content width on tablet/desktop (H5 only). */
 @media (min-width: 768px) {
   page,
   #app,
@@ -67,3 +62,4 @@ image {
     margin: 0 auto;
   }
 }
+/* #endif */

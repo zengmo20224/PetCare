@@ -148,17 +148,17 @@ function serviceModeLabel(mode: string): string {
 
 <style scoped>
 .activity-detail {
-  padding: 20px;
-  padding: 20px;
+  padding: 40rpx;
+  padding: 40rpx;
 }
 
 .activity-detail__cover {
   width: 100%;
-  height: 190px;
-  margin-bottom: 14px;
-  border-radius: 20px;
+  height: 380rpx;
+  margin-bottom: 28rpx;
+  border-radius: 40rpx;
   overflow: hidden;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
 }
 
 .activity-detail__cover-img {
@@ -167,80 +167,80 @@ function serviceModeLabel(mode: string): string {
 }
 
 .activity-detail__card {
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  border-radius: 16px;
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
+  border-radius: 32rpx;
+  border-radius: 32rpx;
+  padding: 40rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
 .activity-detail__title {
   display: block;
-  font-size: 24px;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #19322E;
-  color: #19322E;
-  margin-bottom: 8px;
+  color: var(--pc-user-ink);
+  color: var(--pc-user-ink);
+  margin-bottom: 16rpx;
 }
 
 .activity-detail__time {
   display: block;
-  margin-bottom: 12px;
-  font-size: 12px;
-  color: #11796F;
+  margin-bottom: 24rpx;
+  font-size: 24rpx;
+  color: var(--pc-user-primary);
 }
 
 .activity-detail__desc {
   display: block;
-  font-size: 14px;
-  color: #71817D;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
+  color: var(--pc-user-muted);
   line-height: 1.8;
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .activity-detail__section {
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .activity-detail__section-title {
   display: block;
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
-  color: #19322E;
-  margin-bottom: 8px;
+  color: var(--pc-user-ink);
+  color: var(--pc-user-ink);
+  margin-bottom: 16rpx;
 }
 
 .activity-detail__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .activity-detail__chip {
-  font-size: 11px;
-  color: #11796F;
-  color: #11796F;
-  background: #DFF2ED;
-  background: #DFF2ED;
-  padding: 4px 12px;
-  border-radius: 12px;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
+  color: var(--pc-user-primary);
+  background: var(--pc-user-soft);
+  background: var(--pc-user-soft);
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
 }
 
 .activity-detail__cards {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .activity-detail__related-card {
   display: flex;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid #E2E9E6;
-  border-radius: 14px;
+  gap: 20rpx;
+  padding: 20rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 28rpx;
   background: #F9FCFB;
 }
 
@@ -249,12 +249,12 @@ function serviceModeLabel(mode: string): string {
 }
 
 .activity-detail__related-img {
-  width: 72px;
-  height: 58px;
+  width: 144rpx;
+  height: 116rpx;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: 24rpx;
   overflow: hidden;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
 }
 
 .activity-detail__related-img--placeholder {
@@ -264,9 +264,9 @@ function serviceModeLabel(mode: string): string {
 }
 
 .activity-detail__related-img--placeholder text {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 800;
-  color: #11796F;
+  color: var(--pc-user-primary);
   opacity: 0.38;
 }
 
@@ -276,13 +276,13 @@ function serviceModeLabel(mode: string): string {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .activity-detail__related-title {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -290,13 +290,13 @@ function serviceModeLabel(mode: string): string {
 }
 
 .activity-detail__related-price {
-  font-size: 13px;
+  font-size: 26rpx;
   font-weight: 800;
-  color: #E97951;
+  color: var(--pc-user-coral);
 }
 
 .activity-detail__related-meta {
-  font-size: 12px;
-  color: #71817D;
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
 }
 </style>

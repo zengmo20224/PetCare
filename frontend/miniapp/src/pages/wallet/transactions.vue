@@ -90,19 +90,19 @@ onReachBottom(loadMore)
 
 <style scoped>
 .wallet-tx-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .tx-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .tx-item {
-  background: #fff;
-  border-radius: 10px;
-  padding: 14px 16px;
+  background: var(--pc-user-surface);
+  border-radius: 20rpx;
+  padding: 28rpx 32rpx;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -111,25 +111,25 @@ onReachBottom(loadMore)
 .tx-item__left {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8rpx;
   flex: 1;
   min-width: 0;
 }
 
 .tx-item__title {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .tx-item__time {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .tx-item__reason {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -139,28 +139,28 @@ onReachBottom(loadMore)
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .tx-item__amount {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .tx-item__amount--in {
-  color: #11796F;
+  color: var(--pc-user-primary);
 }
 
 .tx-item__after {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .tx-end {
   text-align: center;
-  padding: 20px;
-  color: #71817D;
-  font-size: 12px;
+  padding: 40rpx;
+  color: var(--pc-user-muted);
+  font-size: 24rpx;
 }
 </style>

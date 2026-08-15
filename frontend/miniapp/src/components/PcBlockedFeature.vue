@@ -21,24 +21,24 @@ withDefaults(defineProps<{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  background: #fff;
-  border-radius: 16px;
-  gap: 8px;
+  padding: 48rpx 32rpx;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  gap: 16rpx;
 }
 
 .pc-blocked-feature__icon {
-  font-size: 28px;
+  font-size: 56rpx;
 }
 
 .pc-blocked-feature__title {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .pc-blocked-feature__reason {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 </style>

@@ -22,54 +22,54 @@ defineProps<{
 .pc-hero-card {
   position: relative;
   overflow: hidden;
-  min-height: 174px;
+  min-height: 348rpx;
   background:
-    radial-gradient(circle at 92% 12%, rgba(255, 218, 138, 0.82) 0 52px, transparent 53px),
-    radial-gradient(circle at 84% 62%, rgba(255, 255, 255, 0.16) 0 82px, transparent 83px),
+    radial-gradient(circle at 92% 12%, rgba(255, 218, 138, 0.82) 0 104rpx, transparent 106rpx),
+    radial-gradient(circle at 84% 62%, rgba(255, 255, 255, 0.16) 0 164rpx, transparent 166rpx),
     linear-gradient(135deg, #16877C, #0B3D39);
   background:
-    radial-gradient(circle at 92% 12%, rgba(245, 166, 35, 0.42) 0 52px, transparent 53px),
-    radial-gradient(circle at 84% 62%, rgba(255, 255, 255, 0.12) 0 82px, transparent 83px),
-    linear-gradient(135deg, #16877c, #0C4D48);
-  border-radius: 26px;
-  padding: 22px 22px 24px;
-  color: #fff;
+    radial-gradient(circle at 92% 12%, rgba(245, 166, 35, 0.42) 0 104rpx, transparent 106rpx),
+    radial-gradient(circle at 84% 62%, rgba(255, 255, 255, 0.12) 0 164rpx, transparent 166rpx),
+    linear-gradient(135deg, #16877c, var(--pc-user-dark));
+  border-radius: 52rpx;
+  padding: 44rpx 44rpx 48rpx;
+  color: var(--pc-user-surface);
   box-shadow: 0 18px 42px rgba(12, 77, 72, 0.24);
   box-shadow: 0 16px 40px rgba(12, 77, 72, 0.16);
 }
 
 .pc-hero-card__eyebrow {
   display: inline-flex;
-  padding: 4px 10px;
-  margin-bottom: 18px;
+  padding: 8rpx 20rpx;
+  margin-bottom: 36rpx;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
+  border-radius: 1998rpx;
   background: rgba(255, 255, 255, 0.1);
 }
 
 .pc-hero-card__eyebrow-text {
-  font-size: 10px;
-  letter-spacing: 1px;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
   color: rgba(255, 255, 255, 0.88);
 }
 
 .pc-hero-card__content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .pc-hero-card__title {
-  max-width: 260px;
-  font-size: 27px;
+  max-width: 520rpx;
+  font-size: 54rpx;
   font-weight: 800;
   line-height: 1.25;
-  color: #fff;
+  color: var(--pc-user-surface);
 }
 
 .pc-hero-card__subtitle {
-  max-width: 280px;
-  font-size: 14px;
+  max-width: 560rpx;
+  font-size: 28rpx;
   color: rgba(255, 255, 255, 0.85);
 }
 </style>

@@ -307,14 +307,14 @@ onLoad((query) => {
 }
 
 .detail-cart-btn {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #DFF2ED;
+  padding: 12rpx 24rpx;
+  border-radius: 1998rpx;
+  background: var(--pc-user-soft);
 }
 
 .detail-cart-btn__text {
-  color: #11796F;
-  font-size: 11px;
+  color: var(--pc-user-primary);
+  font-size: 22rpx;
   font-weight: 700;
 }
 
@@ -327,7 +327,7 @@ onLoad((query) => {
 
 .detail-gallery__swiper {
   width: 100%;
-  height: 320px;
+  height: 640rpx;
 }
 
 .detail-gallery__image {
@@ -338,47 +338,47 @@ onLoad((query) => {
 
 .detail-gallery__count {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
+  right: 24rpx;
+  bottom: 24rpx;
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 12px;
-  padding: 2px 10px;
+  border-radius: 24rpx;
+  padding: 4rpx 20rpx;
 }
 
 .detail-gallery__count text {
-  font-size: 12px;
-  color: #fff;
+  font-size: 24rpx;
+  color: var(--pc-user-surface);
 }
 
 /* Price block */
 .detail-price-block {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 16px 16px 8px;
+  gap: 20rpx;
+  padding: 32rpx 32rpx 16rpx;
 }
 
 .detail-price {
-  font-size: 24px;
-  color: #E97951;
+  font-size: 48rpx;
+  color: var(--pc-user-coral);
   font-weight: 800;
 }
 
 .detail-price__sales {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 /* Title */
 .detail-title {
   display: block;
   width: 100%;
-  padding: 0 16px;
-  font-size: 24px;
+  padding: 0 32rpx;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
   line-height: 1.4;
-  margin-bottom: 12px;
+  margin-bottom: 24rpx;
 }
 
 /* Sub info */
@@ -386,76 +386,76 @@ onLoad((query) => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  margin: 0 16px 16px;
-  border-radius: 20px;
+  gap: 32rpx;
+  padding: 24rpx 32rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
+  margin: 0 32rpx 32rpx;
+  border-radius: 40rpx;
   box-shadow: 0 8px 24px rgba(25, 50, 46, 0.08);
 }
 
 .detail-sub__item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .detail-sub__label {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .detail-sub__value {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
 }
 
 .detail-sub__tag {
   background: rgba(43, 122, 120, 0.1);
-  border-radius: 4px;
-  padding: 2px 8px;
+  border-radius: 8rpx;
+  padding: 4rpx 16rpx;
 }
 
 .detail-sub__tag text {
-  font-size: 11px;
-  color: #11796F;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
   font-weight: 600;
 }
 
 /* Description */
 .detail-desc {
-  padding: 16px;
-  margin: 0 16px 16px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  border-radius: 20px;
+  padding: 32rpx;
+  margin: 0 32rpx 32rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
+  border-radius: 40rpx;
   box-shadow: 0 8px 24px rgba(25, 50, 46, 0.08);
 }
 
 .detail-desc__title {
   display: block;
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 700;
-  color: #19322E;
-  margin-bottom: 10px;
+  color: var(--pc-user-ink);
+  margin-bottom: 20rpx;
 }
 
 .detail-desc__content {
   display: block;
   width: 100%;
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
-  margin-bottom: 12px;
+  margin-bottom: 24rpx;
 }
 
 /* Description image grid (mixed text+image layout) */
 .detail-desc__images {
   display: grid;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .detail-desc__images--single {
@@ -476,14 +476,14 @@ onLoad((query) => {
 
 .detail-desc__image-wrap {
   width: 100%;
-  height: 104px;
-  border-radius: 6px;
+  height: 208rpx;
+  border-radius: 12rpx;
   overflow: hidden;
   background: #f5f5f5;
 }
 
 .detail-desc__images--single .detail-desc__image-wrap {
-  height: 180px;
+  height: 360rpx;
 }
 
 .detail-desc__image {
@@ -494,7 +494,7 @@ onLoad((query) => {
 
 /* Spacer so content isn't hidden behind fixed bar */
 .detail-bottom-spacer {
-  height: 80px;
+  height: 160rpx;
 }
 
 /* Fixed bottom action bar */
@@ -505,10 +505,10 @@ onLoad((query) => {
   bottom: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #fff;
-  border-top: 1px solid #E2E9E6;
+  gap: 24rpx;
+  padding: 20rpx 32rpx;
+  background: var(--pc-user-surface);
+  border-top: 1px solid var(--pc-user-line);
   box-shadow: 0 -2px 8px rgba(25, 50, 46, 0.06);
   z-index: 100;
 }
@@ -516,44 +516,44 @@ onLoad((query) => {
 .detail-qty {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20rpx;
   flex-shrink: 0;
 }
 
 .detail-qty__btn {
-  width: 30px;
-  height: 30px;
+  width: 60rpx;
+  height: 60rpx;
   border-radius: 50%;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .detail-qty__btn text {
-  font-size: 18px;
-  color: #11796F;
+  font-size: 36rpx;
+  color: var(--pc-user-primary);
   line-height: 1;
 }
 
 .detail-qty__val {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
-  min-width: 24px;
+  color: var(--pc-user-ink);
+  min-width: 48rpx;
   text-align: center;
 }
 
 .detail-action-bar__btns {
   flex: 1;
   display: flex;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .detail-action-bar__btn {
   flex: 1;
-  height: 42px;
-  border-radius: 21px;
+  height: 84rpx;
+  border-radius: 42rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -564,18 +564,18 @@ onLoad((query) => {
 }
 
 .detail-action-bar__btn--cart text {
-  color: #11796F;
-  font-size: 14px;
+  color: var(--pc-user-primary);
+  font-size: 28rpx;
   font-weight: 600;
 }
 
 .detail-action-bar__btn--buy {
-  background: #11796F;
+  background: var(--pc-user-primary);
 }
 
 .detail-action-bar__btn--buy text {
-  color: #fff;
-  font-size: 14px;
+  color: var(--pc-user-surface);
+  font-size: 28rpx;
   font-weight: 600;
 }
 

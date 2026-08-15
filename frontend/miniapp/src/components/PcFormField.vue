@@ -15,13 +15,13 @@ defineProps<{
 .pc-form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 12rpx;
+  margin-bottom: 32rpx;
 }
 
 .pc-form-field__label {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 </style>

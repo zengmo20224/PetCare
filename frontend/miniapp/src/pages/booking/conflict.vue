@@ -4,7 +4,7 @@
       <text class="booking-conflict__icon">&#x26A0;</text>
       <text class="booking-conflict__title">需要重新选择时间</text>
       <text class="booking-conflict__hint">您选择的时间段已被预约，请选择其他时间</text>
-      <PcPrimaryButton text="重新选择" @tap="goBack" />
+      <PcPrimaryButton text="重新选择" @press="goBack" />
     </view>
   </view>
 </template>
@@ -19,30 +19,30 @@ function goBack() {
 
 <style scoped>
 .booking-conflict {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .booking-conflict__content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 60px;
-  gap: 12px;
+  padding-top: 120rpx;
+  gap: 24rpx;
 }
 
 .booking-conflict__icon {
-  font-size: 48px;
+  font-size: 96rpx;
 }
 
 .booking-conflict__title {
-  font-size: 24px;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .booking-conflict__hint {
-  font-size: 14px;
-  color: #71817D;
-  margin-bottom: 24px;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
+  margin-bottom: 48rpx;
 }
 </style>

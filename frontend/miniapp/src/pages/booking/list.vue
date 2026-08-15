@@ -10,7 +10,8 @@
     <PcStatePanel
       v-else
       :status="listStatus"
-      empty-text="暂无预约记录"
+      empty-icon="📅"
+      empty-text="还没有预约记录"
       @retry="loadBookings"
     >
       <view class="booking-list__items">
@@ -22,7 +23,7 @@
           :status-label="statusLabels[item.status] || item.status"
           :booking-date="item.bookingDate"
           :time-slot="`${item.startTime}-${item.endTime}`"
-          @tap="goDetail(item.id)"
+          @press="goDetail(item.id)"
         />
       </view>
     </PcStatePanel>
@@ -88,12 +89,12 @@ onShow(() => {
 
 <style scoped>
 .booking-list {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .booking-list__items {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 28rpx;
 }
 </style>

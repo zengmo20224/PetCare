@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetCare 设计规范审核 · 图标/色号/排版</title>
+<style>
+:root {
+  /* —— 主题色（青绿系）—— */
+  --c-primary: #11796F;
+  --c-primary-dark: #0C4D48;
+  --c-primary-light: #4FAFA3;
+  --c-primary-soft: #DFF2ED;
+
+  /* —— 功能色 —— */
+  --c-success: #07C160;
+  --c-warning: #FA9D3B;
+  --c-danger: #FA5151;
+  --c-info: #10AEFF;
+
+  /* —— 中性色阶 —— */
+  --c-ink1: #1A1A1A;
+  --c-ink2: #333333;
+  --c-ink3: #666666;
+  --c-ink4: #999999;
+  --c-ink5: #B2B2B2;
+  --c-line: #E5E5E5;
+  --c-bg: #F7F7F7;
+  --c-card: #FFFFFF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system,"PingFang SC","Helvetica Neue",sans-serif; background:#eef0f2; color:#333; padding:24px; line-height:1.6; }
+h1 { font-size:24px; margin-bottom:8px; color:var(--c-ink1); }
+.subtitle { color:var(--c-ink4); font-size:14px; margin-bottom:32px; }
+h2 { font-size:18px; margin:40px 0 16px; padding-bottom:8px; border-bottom:2px solid var(--c-primary); color:var(--c-primary); display:inline-block; }
+h3 { font-size:15px; color:var(--c-ink1); margin:24px 0 12px; }
+.container { max-width:920px; margin:0 auto; }
+
+/* —— 区块卡片 —— */
+.panel { background:#fff; border-radius:12px; padding:24px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+.panel__desc { font-size:13px; color:var(--c-ink4); margin-bottom:16px; }
+
+/* —— 色卡 —— */
+.color-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
+.color-card { border-radius:8px; overflow:hidden; border:1px solid var(--c-line); }
+.color-card__swatch { height:72px; display:flex; align-items:flex-end; padding:8px; color:#fff; font-size:11px; font-weight:600; letter-spacing:0.5px; text-shadow:0 1px 2px rgba(0,0,0,0.2); }
+.color-card__info { padding:8px 10px; }
+.color-card__name { font-size:12px; color:var(--c-ink2); font-weight:600; }
+.color-card__use { font-size:11px; color:var(--c-ink4); margin-top:2px; }
+
+/* —— 图标对比表 —— */
+.icon-table { width:100%; border-collapse:collapse; font-size:13px; }
+.icon-table th { background:var(--c-bg); padding:12px; text-align:left; font-size:12px; color:var(--c-ink3); font-weight:600; border-bottom:2px solid var(--c-line); }
+.icon-table th:not(:first-child) { text-align:center; }
+.icon-table td { padding:14px 12px; border-bottom:1px solid var(--c-line); vertical-align:middle; }
+.icon-table td:not(:first-child) { text-align:center; }
+.icon-table tr:hover { background:#fafbfc; }
+.icon-cell { width:56px; height:56px; display:inline-flex; align-items:center; justify-content:center; background:var(--c-bg); border-radius:8px; }
+.func-name { font-weight:600; color:var(--c-ink1); }
+.func-scene { font-size:11px; color:var(--c-ink4); margin-top:2px; }
+
+/* —— 排版规范 —— */
+.type-list { display:flex; flex-direction:column; gap:10px; }
+.type-row { display:flex; align-items:baseline; gap:16px; padding:12px; background:var(--c-bg); border-radius:8px; }
+.type-row__sample { flex:0 0 auto; }
+.type-row__meta { font-size:11px; color:var(--c-ink4); }
+.type-row__meta strong { color:var(--c-ink2); font-size:12px; }
+
+/* —— 间距/圆角 —— */
+.spec-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.spec-item { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--c-bg); border-radius:8px; }
+.spec-box { background:var(--c-primary); border-radius:4px; flex-shrink:0; }
+.spec-label { font-size:13px; }
+.spec-value { font-size:11px; color:var(--c-ink4); margin-left:auto; font-family:monospace; }
+
+.note { font-size:12px; color:var(--c-warning); background:#FFF8E8; border-left:3px solid var(--c-warning); padding:10px 14px; border-radius:0 6px 6px 0; margin-top:12px; }
+
+/* SVG 图标基类 */
+.ico { width:28px; height:28px; color:var(--c-ink2); }
+.ico-w { color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- ============ SVG 图标库（1.5px 和 1.8px 两版）============ -->
+<svg style="display:none" aria-hidden="true">
+  <!-- 1.8px 版（标准）-->
+  <symbol id="a18-bath" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h16a0 0 0 0 1 0 0v1a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-1a0 0 0 0 1 0 0z"/><path d="M6 13V7a2 2 0 0 1 2-2c.6 0 1 .4 1 1M6 19l-1 2M19 19l1 2"/><circle cx="10" cy="9" r="0.6" fill="currentColor"/></symbol>
+  <symbol id="a18-scissors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M8.2 7.8L20 17M8.2 16.2L20 7"/></symbol>
+  <symbol id="a18-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="a18-paw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="11" r="1.6"/><circle cx="9.5" cy="7" r="1.6"/><circle cx="14.5" cy="7" r="1.6"/><circle cx="18.5" cy="11" r="1.6"/><path d="M12 12c-2.5 0-4.5 2-4.5 4.5 0 1.4 1.2 2.5 2.7 2.5.8 0 1.2-.4 1.8-.4s1 .4 1.8.4c1.5 0 2.7-1.1 2.7-2.5 0-2.5-2-4.5-4.5-4.5z"/></symbol>
+  <symbol id="a18-bone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2.5 2.5 0 1 0-2.5 2.5 2.5 2.5 0 1 0 2.5 2.5l8 8a2.5 2.5 0 1 0 2.5-2.5 2.5 2.5 0 1 0-2.5-2.5z"/></symbol>
+  <symbol id="a18-ball" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 12c3.5-2.5 13.5-2.5 17 0M12 3.5c-2.5 3.5-2.5 13.5 0 17"/></symbol>
+  <symbol id="a18-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/></symbol>
+  <symbol id="a18-bottle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4v3l1 2v13a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V7l1-2V2z"/><path d="M9 12h6"/></symbol>
+  <symbol id="a18-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="a18-shop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1-5h14l1 5M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9z"/><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0M10 20v-6h4v6"/></symbol>
+  <symbol id="a18-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.4a1 1 0 0 0 1 .8h9.4a1 1 0 0 0 1-.8L21 7H6.5"/></symbol>
+  <symbol id="a18-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h12v3M3 7v12a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3M3 7h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/><circle cx="16.5" cy="13.5" r="1"/></symbol>
+  <symbol id="a18-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="a18-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2v20l2-1.2L9 22l2-1.2 2 1.2 2-1.2 2 1.2 2-1.2 2 1.2V2L19 3.2 17 2 15 3.2 13 2 11 3.2 9 2 7 3.2z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+  <symbol id="a18-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.5 21a2 2 0 0 1-3 0"/></symbol>
+  <symbol id="a18-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 0 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="a18-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8 8 0 0 1-11.5 7.2L3 21l2.3-6.5A8 8 0 1 1 21 11.5z"/></symbol>
+  <symbol id="a18-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="a18-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="a18-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
+  <symbol id="a18-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="a18-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="a18-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="a18-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="a18-robot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="14" r="1" fill="currentColor"/><circle cx="15" cy="14" r="1" fill="currentColor"/><path d="M2 13v2M22 13v2"/></symbol>
+  <symbol id="a18-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8a4 4 0 0 1 0 8M18 5a8 8 0 0 1 0 14"/></symbol>
+  <symbol id="a18-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+
+  <!-- 1.5px 版（精致细线，复制同路径）-->
+  <symbol id="a15-bath" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h16a0 0 0 0 1 0 0v1a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-1a0 0 0 0 1 0 0z"/><path d="M6 13V7a2 2 0 0 1 2-2c.6 0 1 .4 1 1M6 19l-1 2M19 19l1 2"/><circle cx="10" cy="9" r="0.6" fill="currentColor"/></symbol>
+  <symbol id="a15-scissors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M8.2 7.8L20 17M8.2 16.2L20 7"/></symbol>
+  <symbol id="a15-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="a15-paw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="11" r="1.6"/><circle cx="9.5" cy="7" r="1.6"/><circle cx="14.5" cy="7" r="1.6"/><circle cx="18.5" cy="11" r="1.6"/><path d="M12 12c-2.5 0-4.5 2-4.5 4.5 0 1.4 1.2 2.5 2.7 2.5.8 0 1.2-.4 1.8-.4s1 .4 1.8.4c1.5 0 2.7-1.1 2.7-2.5 0-2.5-2-4.5-4.5-4.5z"/></symbol>
+  <symbol id="a15-bone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2.5 2.5 0 1 0-2.5 2.5 2.5 2.5 0 1 0 2.5 2.5l8 8a2.5 2.5 0 1 0 2.5-2.5 2.5 2.5 0 1 0-2.5-2.5z"/></symbol>
+  <symbol id="a15-ball" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 12c3.5-2.5 13.5-2.5 17 0M12 3.5c-2.5 3.5-2.5 13.5 0 17"/></symbol>
+  <symbol id="a15-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/></symbol>
+  <symbol id="a15-bottle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4v3l1 2v13a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V7l1-2V2z"/><path d="M9 12h6"/></symbol>
+  <symbol id="a15-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="a15-shop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1-5h14l1 5M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9z"/><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0M10 20v-6h4v6"/></symbol>
+  <symbol id="a15-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.4a1 1 0 0 0 1 .8h9.4a1 1 0 0 0 1-.8L21 7H6.5"/></symbol>
+  <symbol id="a15-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h12v3M3 7v12a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3M3 7h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/><circle cx="16.5" cy="13.5" r="1"/></symbol>
+  <symbol id="a15-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="a15-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2v20l2-1.2L9 22l2-1.2 2 1.2 2-1.2 2 1.2 2-1.2 2 1.2V2L19 3.2 17 2 15 3.2 13 2 11 3.2 9 2 7 3.2z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+  <symbol id="a15-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.5 21a2 2 0 0 1-3 0"/></symbol>
+  <symbol id="a15-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 0 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="a15-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8 8 0 0 1-11.5 7.2L3 21l2.3-6.5A8 8 0 1 1 21 11.5z"/></symbol>
+  <symbol id="a15-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="a15-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="a15-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
+  <symbol id="a15-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="a15-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="a15-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="a15-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="a15-robot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="14" r="1" fill="currentColor"/><circle cx="15" cy="14" r="1" fill="currentColor"/><path d="M2 13v2M22 13v2"/></symbol>
+  <symbol id="a15-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8a4 4 0 0 1 0 8M18 5a8 8 0 0 1 0 14"/></symbol>
+  <symbol id="a15-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+</svg>
+
+<div class="container">
+  <h1>PetCare 设计规范审核稿</h1>
+  <p class="subtitle">主题色 · 完整色阶 · 线性图标（1.5 vs 1.8 双版对比）· 图标语义映射 · 排版规范 —— 请逐项审核</p>
+
+  <!-- ============ 1. 主题色 ============ -->
+  <h2>一、主题色（青绿 #11796F，保留品牌）</h2>
+  <div class="panel">
+    <div class="panel__desc">下方色块即该色号在屏幕上的实际显示。主色青绿用于：主按钮 / tab 选中 / 关键链接 / 导航栏底色。</div>
+    <div class="color-grid">
+      <div class="color-card"><div class="color-card__swatch" style="background:#11796F">#11796F</div><div class="color-card__info"><div class="color-card__name">主色 Primary</div><div class="color-card__use">按钮·选中·链接</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#0C4D48">#0C4D48</div><div class="color-card__info"><div class="color-card__name">主色深 Dark</div><div class="color-card__use">按下态·深色文字</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#4FAFA3;color:#fff">#4FAFA3</div><div class="color-card__info"><div class="color-card__name">主色亮 Light</div><div class="color-card__use">悬停·浅色按钮</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#DFF2ED;color:#0C4D48;text-shadow:none">#DFF2ED</div><div class="color-card__info"><div class="color-card__name">主色浅底 Soft</div><div class="color-card__use">选中底·tag浅底</div></div></div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 功能色 ============ -->
+  <h2>二、功能色</h2>
+  <div class="panel">
+    <div class="panel__desc">成功/警告/危险/信息四色，严格对齐微信原生语义色。</div>
+    <div class="color-grid">
+      <div class="color-card"><div class="color-card__swatch" style="background:#07C160">#07C160</div><div class="color-card__info"><div class="color-card__name">成功 Success</div><div class="color-card__use">营业中·支付成功</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#FA9D3B">#FA9D3B</div><div class="color-card__info"><div class="color-card__name">警告 Warning</div><div class="color-card__use">库存紧张·待确认</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#FA5151">#FA5151</div><div class="color-card__info"><div class="color-card__name">危险 Danger</div><div class="color-card__use">价格·删除·红点</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#10AEFF">#10AEFF</div><div class="color-card__info"><div class="color-card__name">信息 Info</div><div class="color-card__use">进行中·辅助链接</div></div></div>
+    </div>
+  </div>
+
+  <!-- ============ 3. 中性色阶 ============ -->
+  <h2>三、中性色阶（贴近微信原生灰阶）</h2>
+  <div class="panel">
+    <div class="panel__desc">文字与背景的全部灰阶。注意：价格红用 Danger #FA5151，不用主色。</div>
+    <div class="color-grid">
+      <div class="color-card"><div class="color-card__swatch" style="background:#1A1A1A">#1A1A1A</div><div class="color-card__info"><div class="color-card__name">标题 Ink-1</div><div class="color-card__use">一级标题·商品名</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#333333">#333333</div><div class="color-card__info"><div class="color-card__name">正文 Ink-2</div><div class="color-card__use">正文·列表主文</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#666666">#666666</div><div class="color-card__info"><div class="color-card__name">次要 Ink-3</div><div class="color-card__use">描述·副标题</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#999999">#999999</div><div class="color-card__info"><div class="color-card__name">辅助 Ink-4</div><div class="color-card__use">时间·备注</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#B2B2B2;color:#fff">#B2B2B2</div><div class="color-card__info"><div class="color-card__name">占位 Ink-5</div><div class="color-card__use">禁用·空状态</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#E5E5E5;color:#666;text-shadow:none">#E5E5E5</div><div class="color-card__info"><div class="color-card__name">分隔线 Line</div><div class="color-card__use">1rpx 细线</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#F7F7F7;color:#666;text-shadow:none">#F7F7F7</div><div class="color-card__info"><div class="color-card__name">页面底 Bg</div><div class="color-card__use">全局背景</div></div></div>
+      <div class="color-card"><div class="color-card__swatch" style="background:#FFFFFF;color:#666;text-shadow:none;border-bottom:1px solid #eee">#FFFFFF</div><div class="color-card__info"><div class="color-card__name">卡片 Card</div><div class="color-card__use">卡片·单元格</div></div></div>
+    </div>
+  </div>
+
+  <!-- ============ 4. 图标对比表（核心）============ -->
+  <h2>四、图标语义映射 · 1.5px vs 1.8px 双版对比</h2>
+  <div class="panel">
+    <div class="panel__desc">左列是功能场景，中间是 <strong>1.8px 标准版</strong>（推荐，Vant/TDesign 默认），右列是 <strong>1.5px 精致版</strong>（更轻盈，金融/高密度风格）。请对比后选一个粗细。图标颜色：默认 Ink-3 #666，可随场景染色。</div>
+    <table class="icon-table">
+      <thead><tr><th>功能 / 场景</th><th>1.8px 标准版</th><th>1.5px 精致版</th></tr></thead>
+      <tbody>
+        <tr><td><div class="func-name">洗护服务</div><div class="func-scene">首页宫格·服务卡片</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-bath"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-bath"/></svg></span></td></tr>
+        <tr><td><div class="func-name">美容服务</div><div class="func-scene">首页宫格·服务卡片</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-scissors"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-scissors"/></svg></span></td></tr>
+        <tr><td><div class="func-name">上门照护</div><div class="func-scene">首页宫格·服务卡片</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-home"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-home"/></svg></span></td></tr>
+        <tr><td><div class="func-name">安心寄养 / 宠物</div><div class="func-scene">首页宫格·宠物档案</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-paw"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-paw"/></svg></span></td></tr>
+        <tr><td><div class="func-name">宠物零食</div><div class="func-scene">商品分类·商品卡</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-bone"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-bone"/></svg></span></td></tr>
+        <tr><td><div class="func-name">宠物玩具</div><div class="func-scene">商品分类·商品卡</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-ball"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-ball"/></svg></span></td></tr>
+        <tr><td><div class="func-name">宠物用品 / 主粮</div><div class="func-scene">商品分类·商品卡</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-box"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-box"/></svg></span></td></tr>
+        <tr><td><div class="func-name">护理液 / 药浴</div><div class="func-scene">商品分类·服务</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-bottle"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-bottle"/></svg></span></td></tr>
+        <tr><td><div class="func-name">服务时长</div><div class="func-scene">服务卡属性</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-clock"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-clock"/></svg></span></td></tr>
+        <tr><td><div class="func-name">到店服务</div><div class="func-scene">服务卡属性</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-shop"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-shop"/></svg></span></td></tr>
+        <tr><td><div class="func-name">购物车</div><div class="func-scene">导航栏·商品页</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-cart"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-cart"/></svg></span></td></tr>
+        <tr><td><div class="func-name">我的钱包</div><div class="func-scene">个人中心菜单</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-wallet"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-wallet"/></svg></span></td></tr>
+        <tr><td><div class="func-name">我的预约</div><div class="func-scene">个人中心菜单·tabBar</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-calendar"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-calendar"/></svg></span></td></tr>
+        <tr><td><div class="func-name">我的订单</div><div class="func-scene">个人中心菜单</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-receipt"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-receipt"/></svg></span></td></tr>
+        <tr><td><div class="func-name">消息通知</div><div class="func-scene">个人中心菜单</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-bell"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-bell"/></svg></span></td></tr>
+        <tr><td><div class="func-name">我的地址</div><div class="func-scene">个人中心菜单</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-pin"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-pin"/></svg></span></td></tr>
+        <tr><td><div class="func-name">我的社区 / 评论</div><div class="func-scene">个人中心·帖子互动·tabBar</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-chat"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-chat"/></svg></span></td></tr>
+        <tr><td><div class="func-name">密保管理</div><div class="func-scene">个人中心·安全</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-shield"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-shield"/></svg></span></td></tr>
+        <tr><td><div class="func-name">修改密码</div><div class="func-scene">个人中心·安全</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-lock"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-lock"/></svg></span></td></tr>
+        <tr><td><div class="func-name">个人中心 / 头像</div><div class="func-scene">tabBar·个人页</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-user"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-user"/></svg></span></td></tr>
+        <tr><td><div class="func-name">搜索</div><div class="func-scene">社区·商品搜索框</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-search"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-search"/></svg></span></td></tr>
+        <tr><td><div class="func-name">发帖 / 编辑</div><div class="func-scene">社区 FAB 按钮</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-edit"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-edit"/></svg></span></td></tr>
+        <tr><td><div class="func-name">点赞（情感）</div><div class="func-scene">社区帖子互动</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-heart"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-heart"/></svg></span></td></tr>
+        <tr><td><div class="func-name">收藏（情感）</div><div class="func-scene">社区帖子互动</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-bookmark"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-bookmark"/></svg></span></td></tr>
+        <tr><td><div class="func-name">AI 智能客服</div><div class="func-scene">首页入口·AI页</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-robot"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-robot"/></svg></span></td></tr>
+        <tr><td><div class="func-name">公告 / 通知</div><div class="func-scene">首页公告条</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-megaphone"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-megaphone"/></svg></span></td></tr>
+        <tr><td><div class="func-name">箭头（跳转）</div><div class="func-scene">所有"更多/进入"</div></td><td><span class="icon-cell"><svg class="ico"><use href="#a18-arrow"/></svg></span></td><td><span class="icon-cell"><svg class="ico"><use href="#a15-arrow"/></svg></span></td></tr>
+      </tbody>
+    </table>
+    <div class="note">📌 请选定一列（1.8 标准版 或 1.5 精致版），我会据此统一应用到全部页面。也可对单个图标提出替换（如"洗澡图标换成淋浴喷头造型"）。</div>
+  </div>
+
+  <!-- ============ 5. 排版规范 ============ -->
+  <h2>五、排版规范（字号 / 间距 / 圆角）</h2>
+  <div class="panel">
+    <h3>字号层级（对齐微信原生 rpx）</h3>
+    <div class="type-list">
+      <div class="type-row"><div class="type-row__sample" style="font-size:20px;font-weight:600;color:var(--c-ink1)">钱包余额 ¥128.50</div><div class="type-row__meta"><strong>40rpx / 600</strong> · 特大标题 · 钱包余额·Hero数字</div></div>
+      <div class="type-row"><div class="type-row__sample" style="font-size:16px;font-weight:600;color:var(--c-ink1)">常用服务</div><div class="type-row__meta"><strong>32rpx / 600</strong> · 页面标题 · 章节标题·卡片标题·商品名</div></div>
+      <div class="type-row"><div class="type-row__sample" style="font-size:15px;font-weight:600;color:var(--c-ink1)">基础洗护 ¥58起</div><div class="type-row__meta"><strong>30rpx / 600</strong> · 副标题 · 列表项标题·价格</div></div>
+      <div class="type-row"><div class="type-row__sample" style="font-size:14px;color:var(--c-ink2)">洗澡的时候一直乖乖坐着，分享几个小技巧...</div><div class="type-row__meta"><strong>28rpx / 400</strong> · 正文 · 描述·按钮文字</div></div>
+      <div class="type-row"><div class="type-row__sample" style="font-size:12px;color:var(--c-ink4)">营业中 · 3小时前</div><div class="type-row__meta"><strong>24rpx / 400</strong> · 辅助 · 标签·提示·时间</div></div>
+    </div>
+
+    <h3 style="margin-top:24px">间距系统（8 的倍数网格）</h3>
+    <div class="spec-grid">
+      <div class="spec-item"><div class="spec-box" style="width:4px;height:24px"></div><div class="spec-label">xs</div><div class="spec-value">8rpx · 图标文字间隙</div></div>
+      <div class="spec-item"><div class="spec-box" style="width:8px;height:24px"></div><div class="spec-label">sm</div><div class="spec-value">16rpx · 卡片内元素</div></div>
+      <div class="spec-item"><div class="spec-box" style="width:12px;height:24px"></div><div class="spec-label">md</div><div class="spec-value">24rpx · 卡片内边距</div></div>
+      <div class="spec-item"><div class="spec-box" style="width:16px;height:24px"></div><div class="spec-label">lg</div><div class="spec-value">32rpx · 页面左右边距</div></div>
+    </div>
+
+    <h3 style="margin-top:24px">圆角规范（大幅收紧，回归微信克制）</h3>
+    <div class="spec-grid">
+      <div class="spec-item"><div class="spec-box" style="width:28px;height:28px;border-radius:4px"></div><div class="spec-label">sm 8rpx</div><div class="spec-value">按钮·tag</div></div>
+      <div class="spec-item"><div class="spec-box" style="width:28px;height:28px;border-radius:6px"></div><div class="spec-label">md 12rpx</div><div class="spec-value">输入框·picker</div></div>
+      <div class="spec-item"><div class="spec-box" style="width:28px;height:28px;border-radius:8px"></div><div class="spec-label">lg 16rpx</div><div class="spec-value">卡片·单元格组</div></div>
+      <div class="spec-item"><div class="spec-box" style="width:28px;height:28px;border-radius:14px"></div><div class="spec-label">pill 999rpx</div><div class="spec-value">胶囊·FAB·pill tab</div></div>
+    </div>
+    <div class="note">与当前 H5 的差异：当前卡片圆角 32-44rpx（偏胖），本方案收紧到 16rpx，更利落；页面左右边距从 40rpx 收到 32rpx（微信标准）。</div>
+  </div>
+
+  <div style="text-align:center;color:var(--c-ink4);font-size:12px;margin-top:40px;padding:20px">
+    —— 审核完成后，请告诉我：① 选 1.8 还是 1.5 粗细 ② 哪些图标要替换 ③ 色号是否 OK ——
+  </div>
+</div>
+
+</body>
+</html>

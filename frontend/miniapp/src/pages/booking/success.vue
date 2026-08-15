@@ -4,7 +4,7 @@
       <text class="booking-success__icon">&#x2705;</text>
       <text class="booking-success__title">预约提交成功</text>
       <text class="booking-success__hint">我们将尽快确认您的预约</text>
-      <PcPrimaryButton text="查看我的预约" @tap="goMyBookings" />
+      <PcPrimaryButton text="查看我的预约" @press="goMyBookings" />
     </view>
   </view>
 </template>
@@ -19,30 +19,30 @@ function goMyBookings() {
 
 <style scoped>
 .booking-success {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .booking-success__content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 60px;
-  gap: 12px;
+  padding-top: 120rpx;
+  gap: 24rpx;
 }
 
 .booking-success__icon {
-  font-size: 48px;
+  font-size: 96rpx;
 }
 
 .booking-success__title {
-  font-size: 24px;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .booking-success__hint {
-  font-size: 14px;
-  color: #71817D;
-  margin-bottom: 24px;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
+  margin-bottom: 48rpx;
 }
 </style>

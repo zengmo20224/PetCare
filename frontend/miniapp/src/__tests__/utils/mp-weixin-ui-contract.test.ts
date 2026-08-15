@@ -65,7 +65,7 @@ describe('mp-weixin UI page contracts', () => {
     expect(bottomNav).toContain('if (!isWeixin)')
     expect(pagesJson.tabBar.list).toHaveLength(5)
     expect(pagesJson.tabBar.color).toBe('#314D48')
-    expect(pagesJson.tabBar.selectedColor).toBe('#00796B')
+    expect(pagesJson.tabBar.selectedColor).toBe('#11796F')
     expect(pagesJson.tabBar.list.map((tab: { iconPath: string }) => tab.iconPath)).toEqual([
       'static/icons/home.png',
       'static/icons/booking.png',
@@ -86,6 +86,9 @@ describe('mp-weixin UI page contracts', () => {
   })
 
   it('avoids fragile mp-weixin CSS in critical tab surfaces', () => {
+    // CSS custom properties (var(--pc-...)) ARE supported on libVersion 2.x+ and the
+    // project pins libVersion to 3.17.0, so they are no longer forbidden. We keep
+    // forbidding features that remain unstable in the mini-program runtime.
     const criticalStyleFiles = [
       heroCard,
       statePanel,
@@ -100,7 +103,6 @@ describe('mp-weixin UI page contracts', () => {
     ]
 
     for (const file of criticalStyleFiles) {
-      expect(file).not.toContain('var(--pc')
       expect(file).not.toContain('env(')
       expect(file).not.toContain('backdrop-filter')
       expect(file).not.toContain('aspect-ratio')
@@ -111,14 +113,15 @@ describe('mp-weixin UI page contracts', () => {
       expect(file).not.toMatch(/\.[A-Za-z0-9_-]+(?:--[A-Za-z0-9_-]+)?(?:\s+\.[A-Za-z0-9_-]+)*\s+text\b/)
     }
 
-    expect(communityPage).toContain('right: 20px')
-    expect(communityPage).toContain('bottom: 96px')
+    // Sizing values were migrated px → rpx (×2) for cross-device scaling.
+    expect(communityPage).toContain('right: 40rpx')
+    expect(communityPage).toContain('bottom: 192rpx')
     expect(productsPage).toContain('products-cart-fab')
-    expect(productsPage).toContain('right: 20px')
-    expect(productsPage).toContain('bottom: 96px')
+    expect(productsPage).toContain('right: 40rpx')
+    expect(productsPage).toContain('bottom: 192rpx')
     expect(productsPage).not.toContain('products-fab')
     expect(productsPage).not.toContain('products-cart-entry')
-    expect(productCard).toContain('height: 138px')
+    expect(productCard).toContain('height: 276rpx')
   })
 
   it('loads tab page data from lifecycle hooks instead of setup side effects', () => {
@@ -138,7 +141,8 @@ describe('mp-weixin UI page contracts', () => {
     expect(ensureMpWeixinStaticScript).toContain('assertNoForbiddenMpReferences')
     expect(ensureMpWeixinStaticScript).toContain('nutui-uniapp')
     expect(ensureMpWeixinStaticScript).toContain('node-modules')
-    expect(ensureMpWeixinStaticScript).toContain('var\\(--pc')
+    // var(--pc-*) is now allowed (libVersion 3.17.0 supports CSS custom properties),
+    // so it was removed from the forbidden list; the script still forbids the rest.
     expect(ensureMpWeixinStaticScript).toContain('backdrop-filter')
     expect(ensureMpWeixinStaticScript).toContain('aspect-ratio')
     expect(ensureMpWeixinStaticScript).toContain('&gt;')
@@ -173,12 +177,14 @@ describe('mp-weixin UI page contracts', () => {
     }
   })
 
-  it('keeps mini-program critical buttons visibly styled without relying only on CSS variables', () => {
-    expect(primaryButton).toContain('background: #11796F')
+  it('keeps mini-program critical buttons visibly styled via brand tokens', () => {
+    // Brand color is now expressed through the design token (var(--pc-user-primary))
+    // rather than a literal hex, so wot components and custom elements stay aligned.
+    expect(primaryButton).toContain('var(--pc-user-primary)')
     expect(primaryButton).toContain('loading?: boolean')
     expect(serviceCard).toContain('pc-service-card__action')
     expect(serviceCard).toContain("priceFrom ? '选体型预约' : '立即预约'")
-    expect(serviceCard).toContain('background: #11796F')
+    expect(serviceCard).toContain('var(--pc-user-primary)')
     expect(profilePage).toContain('PcPrimaryButton text="手机号登录"')
     expect(profilePage).toContain('profile-login-card')
     expect(loginPage).toContain('PcPrimaryButton text="登录"')
@@ -188,14 +194,14 @@ describe('mp-weixin UI page contracts', () => {
   it('keeps the restored service, community and product visual shells in mp-weixin', () => {
     expect(heroCard).toContain('linear-gradient(135deg, #16877C, #0B3D39)')
     expect(servicesPage).toContain('services-categories__track')
-    expect(servicesPage).toContain('linear-gradient(135deg, #F4FFFB 0%, #FFFFFF 46%, #E7F6F1 100%)')
+    expect(servicesPage).toContain('linear-gradient(135deg, #F4FFFB 0%, var(--pc-user-surface) 46%, #E7F6F1 100%)')
     expect(communityPage).toContain('community-tags__track')
     expect(communityPage).toContain('community-fab__icon')
-    expect(communityPage).toContain('background: #11796F')
+    expect(communityPage).toContain('background: var(--pc-user-primary)')
     expect(productsPage).toContain('products-tabs__track')
     expect(productsPage).toContain('products-cart-fab__icon')
     expect(productsPage).toContain('🛒')
-    expect(productsPage).toContain('background: #11796F')
+    expect(productsPage).toContain('background: var(--pc-user-primary)')
   })
 
   it('keeps marketing activity pages tolerant of missing association arrays', () => {

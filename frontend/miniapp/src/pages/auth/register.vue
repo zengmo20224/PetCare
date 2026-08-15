@@ -60,7 +60,7 @@
         </PcFormField>
       </view>
 
-      <PcPrimaryButton text="注册" :loading="loading" @tap="handleRegister" />
+      <PcPrimaryButton text="注册" :loading="loading" @press="handleRegister" />
       <view class="auth-back">
         <wd-button type="text" size="small" @click="goLogin">已有账号？去登录</wd-button>
       </view>
@@ -230,78 +230,78 @@ function goLogin() {
 
 <style scoped>
 .auth-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .auth-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 24px;
-  padding: 24px 20px;
-  border-radius: 24px;
-  background: #FFFFFF;
+  gap: 32rpx;
+  margin-top: 48rpx;
+  padding: 48rpx 40rpx;
+  border-radius: 48rpx;
+  background: var(--pc-user-surface);
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
 .auth-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .auth-brand__title {
-  font-size: 22px;
+  font-size: 44rpx;
   font-weight: 800;
-  color: #0C4D48;
+  color: var(--pc-user-dark);
 }
 
 .auth-brand__subtitle {
-  font-size: 13px;
-  color: #71817D;
+  font-size: 26rpx;
+  color: var(--pc-user-muted);
 }
 
 .auth-form {
-  border-radius: 16px;
+  border-radius: 32rpx;
   overflow: hidden;
 }
 
 .auth-section-title {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 700;
-  color: #19322E;
-  margin-top: 4px;
+  color: var(--pc-user-ink);
+  margin-top: 8rpx;
 }
 
 .auth-sq-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #FAF8F3;
-  border-radius: 16px;
-  padding: 12px;
+  gap: 16rpx;
+  background: var(--pc-user-cream);
+  border-radius: 32rpx;
+  padding: 24rpx;
 }
 
 .auth-back {
   display: flex;
   justify-content: center;
-  padding-top: 4px;
+  padding-top: 8rpx;
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 
 .pc-field-hint {
-  font-size: 11px;
-  color: #71817D;
-  margin-top: 4px;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
+  margin-top: 8rpx;
 }
 
 .pc-select-wrap {
@@ -310,13 +310,13 @@ function goLogin() {
 
 .pc-select {
   width: 100%;
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
   box-sizing: border-box;
 }
 
@@ -331,7 +331,7 @@ function goLogin() {
 }
 
 .pc-select--placeholder {
-  color: #71817D;
+  color: var(--pc-user-muted);
 }
 
 .pc-select__text {
@@ -343,7 +343,7 @@ function goLogin() {
 }
 
 .pc-select__arrow {
-  margin-left: 8px;
-  color: #71817D;
+  margin-left: 16rpx;
+  color: var(--pc-user-muted);
 }
 </style>

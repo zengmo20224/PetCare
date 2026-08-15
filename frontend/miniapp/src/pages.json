@@ -159,11 +159,17 @@
       "pages": [
         { "path": "detail", "style": { "navigationBarTitleText": "公告详情" } }
       ]
+    },
+    {
+      "root": "pages/design-demo",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "小程序 UI Demo" } }
+      ]
     }
   ],
   "tabBar": {
-    "color": "#314D48",
-    "selectedColor": "#00796B",
+    "color": "#999999",
+    "selectedColor": "#11796F",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "height": "70px",
@@ -207,7 +213,7 @@
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "PetCare",
     "navigationBarBackgroundColor": "#11796F",
-    "backgroundColor": "#FAF8F3"
+    "backgroundColor": "#F7F7F7"
   },
   "easycom": {
     "autoscan": true,

@@ -49,7 +49,7 @@
         </view>
 
         <view v-if="canCancel" class="order-detail__action">
-          <PcPrimaryButton text="取消订单" :loading="cancelling" @tap="handleCancel" />
+          <PcPrimaryButton text="取消订单" :loading="cancelling" @press="handleCancel" />
         </view>
       </template>
     </PcStatePanel>
@@ -130,13 +130,13 @@ onLoad((query) => {
 
 <style scoped>
 .order-detail {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .order-detail__card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 40rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
@@ -144,22 +144,22 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .order-detail__no {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .order-detail__items {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #E2E9E6;
-  margin-bottom: 12px;
+  gap: 16rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1px solid var(--pc-user-line);
+  margin-bottom: 24rpx;
 }
 
 .order-detail__item {
@@ -168,39 +168,39 @@ onLoad((query) => {
 }
 
 .order-detail__item-name {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
 }
 
 .order-detail__item-price {
-  font-size: 14px;
-  color: #F5A623;
+  font-size: 28rpx;
+  color: var(--pc-user-accent);
 }
 
 .order-detail__row {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
+  padding: 12rpx 0;
 }
 
 .order-detail__label {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .order-detail__value {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   font-weight: 500;
 }
 
 .order-detail__value--accent {
-  color: #F5A623;
+  color: var(--pc-user-accent);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 32rpx;
 }
 
 .order-detail__action {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 </style>

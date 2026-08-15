@@ -26,30 +26,30 @@ import PcBlockedFeature from '@/components/PcBlockedFeature.vue'
 
 <style scoped>
 .ai-status {
-  padding: 20px;
-  padding-top: 60px;
+  padding: 40rpx;
+  padding-top: 120rpx;
 }
 
 .wot-demo {
-  margin-top: 28px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 16px;
+  margin-top: 56rpx;
+  padding: 40rpx;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
   box-shadow: 0 8px 24px rgba(25, 50, 46, 0.08);
 }
 
 .wot-demo__title {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #19322e;
-  margin-bottom: 16px;
+  color: var(--pc-user-ink);
+  margin-bottom: 32rpx;
 }
 
 .wot-demo__row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
   flex-wrap: wrap;
 }
 </style>

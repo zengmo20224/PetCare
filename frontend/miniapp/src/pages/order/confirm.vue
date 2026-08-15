@@ -309,40 +309,40 @@ onShow(() => {
 
 <style scoped>
 .order-confirm {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .confirm-section {
-  margin-bottom: 20px;
+  margin-bottom: 40rpx;
 }
 
 .confirm-label {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
-  margin-bottom: 10px;
+  color: var(--pc-user-ink);
+  margin-bottom: 20rpx;
   display: block;
 }
 
 .confirm-items {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .confirm-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #fff;
-  border-radius: 10px;
-  padding: 12px;
+  gap: 24rpx;
+  background: var(--pc-user-surface);
+  border-radius: 20rpx;
+  padding: 24rpx;
 }
 
 .confirm-item__img-wrap {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 16rpx;
   overflow: hidden;
   background: #fafafa;
   flex-shrink: 0;
@@ -357,13 +357,13 @@ onShow(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8rpx;
   min-width: 0;
 }
 
 .confirm-item__name {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   font-weight: 600;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -374,22 +374,22 @@ onShow(() => {
 .confirm-item__row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .confirm-item__price {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .confirm-item__qty {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .confirm-item__subtotal {
-  font-size: 14px;
-  color: #F5A623;
+  font-size: 28rpx;
+  color: var(--pc-user-accent);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -397,55 +397,55 @@ onShow(() => {
 /* Delivery method switch */
 .confirm-delivery {
   display: flex;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .confirm-delivery__opt {
   flex: 1;
-  height: 42px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
+  height: 84rpx;
+  border-radius: 16rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .confirm-delivery__opt--on {
-  background: #11796F;
-  border-color: #11796F;
+  background: var(--pc-user-primary);
+  border-color: var(--pc-user-primary);
 }
 
 .confirm-delivery__opt--on text {
-  color: #fff;
+  color: var(--pc-user-surface);
   font-weight: 600;
 }
 
 .confirm-delivery__opt text {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
 }
 
 /* Wallet balance hint under the payment switch */
 .confirm-wallet {
-  margin-top: 10px;
-  background: #FAF8F3;
-  border-radius: 8px;
-  padding: 10px 14px;
+  margin-top: 20rpx;
+  background: var(--pc-user-cream);
+  border-radius: 16rpx;
+  padding: 20rpx 28rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .confirm-wallet__label {
-  font-size: 12px;
-  color: #71817D;
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
 }
 
 .confirm-wallet__balance {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 700;
-  color: #11796F;
+  color: var(--pc-user-primary);
 }
 
 .confirm-wallet__balance--low {
@@ -454,52 +454,52 @@ onShow(() => {
 
 /* Pickup / address selector */
 .confirm-pick {
-  background: #fff;
-  border-radius: 10px;
-  padding: 14px 16px;
+  background: var(--pc-user-surface);
+  border-radius: 20rpx;
+  padding: 28rpx 32rpx;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .confirm-pick__placeholder {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .confirm-pick__text {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .confirm-pick__addr {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 /* Form fields (plain inputs, NOT PcFormField) */
 .confirm-field {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #fff;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  gap: 24rpx;
+  background: var(--pc-user-surface);
+  border-radius: 20rpx;
+  padding: 24rpx 32rpx;
+  margin-bottom: 16rpx;
 }
 
 .confirm-field__label {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
   flex-shrink: 0;
-  width: 36px;
+  width: 72rpx;
 }
 
 .confirm-field__input {
   flex: 1;
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   border: none;
   outline: none;
   background: transparent;
@@ -513,38 +513,38 @@ onShow(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
-  border-top: 1px solid #E2E9E6;
+  padding: 32rpx 0;
+  border-top: 1px solid var(--pc-user-line);
 }
 
 .confirm-total__label {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .confirm-total__amount {
-  font-size: 20px;
+  font-size: 40rpx;
   font-weight: 700;
-  color: #F5A623;
+  color: var(--pc-user-accent);
 }
 
 .confirm-action {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 
 .confirm-submit-btn {
   width: 100%;
-  height: 46px;
-  border-radius: 23px;
-  background: #11796F;
+  height: 92rpx;
+  border-radius: 46rpx;
+  background: var(--pc-user-primary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .confirm-submit-btn text {
-  color: #fff;
-  font-size: 16px;
+  color: var(--pc-user-surface);
+  font-size: 32rpx;
   font-weight: 600;
 }
 

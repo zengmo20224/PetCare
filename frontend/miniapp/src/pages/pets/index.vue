@@ -32,7 +32,7 @@
     </PcStatePanel>
 
     <view class="pets-action">
-      <PcPrimaryButton text="添加宠物" @tap="goAdd" />
+      <PcPrimaryButton text="添加宠物" @press="goAdd" />
     </view>
   </view>
 </template>
@@ -96,30 +96,30 @@ onShow(() => {
 
 <style scoped>
 .pets-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .pets-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 28rpx;
 }
 
 .pet-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
+  gap: 24rpx;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
 .pet-card__avatar {
-  width: 48px;
-  height: 48px;
+  width: 96rpx;
+  height: 96rpx;
   border-radius: 50%;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,49 +127,49 @@ onShow(() => {
 }
 
 .pet-card__avatar-text {
-  font-size: 20px;
+  font-size: 40rpx;
   font-weight: 700;
-  color: #11796F;
+  color: var(--pc-user-primary);
 }
 
 .pet-card__info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .pet-card__name {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .pet-card__detail {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .pet-card__tags {
   display: flex;
-  gap: 6px;
+  gap: 12rpx;
   flex-wrap: wrap;
 }
 
 .pet-card__tag {
-  font-size: 11px;
-  color: #71817D;
-  background: #FAF8F3;
-  padding: 2px 8px;
-  border-radius: 8px;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
+  background: var(--pc-user-cream);
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
 }
 
 .pet-card__arrow {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .pets-action {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 </style>

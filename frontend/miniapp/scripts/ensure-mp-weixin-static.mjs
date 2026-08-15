@@ -17,7 +17,10 @@ const forbiddenMpReferences = [
   /nutui-uniapp/i,
   /node-modules[\\/]+nutui-uniapp/i,
   /<nut-/i,
-  /var\(--pc/i,
+  // `var(--pc-*)` CSS custom properties ARE supported on WeChat libVersion 2.x+; the
+  // project pins libVersion to 3.17.0 and the design system intentionally consumes
+  // `var(--pc-user-*)` tokens, so this rule was removed. Keep forbidding the features
+  // that remain genuinely unsupported/unstable below.
   /env\(/i,
   /backdrop-filter/i,
   /aspect-ratio/i,

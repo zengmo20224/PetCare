@@ -93,34 +93,34 @@ loadActivities()
 
 <style scoped>
 .activity-page {
-  padding: 20px;
-  padding: 20px;
+  padding: 40rpx;
+  padding: 40rpx;
 }
 
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 28rpx;
 }
 
 .activity-card {
   display: flex;
-  gap: 12px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  border-radius: 16px;
-  border-radius: 16px;
-  padding: 12px;
+  gap: 24rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
+  border-radius: 32rpx;
+  border-radius: 32rpx;
+  padding: 24rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
 .activity-card__cover {
-  width: 108px;
-  height: 88px;
+  width: 216rpx;
+  height: 176rpx;
   flex-shrink: 0;
-  border-radius: 14px;
+  border-radius: 28rpx;
   overflow: hidden;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
 }
 
 .activity-card__cover--placeholder {
@@ -130,9 +130,9 @@ loadActivities()
 }
 
 .activity-card__cover--placeholder text {
-  font-size: 20px;
+  font-size: 40rpx;
   font-weight: 800;
-  color: #11796F;
+  color: var(--pc-user-primary);
   opacity: 0.34;
 }
 
@@ -143,27 +143,27 @@ loadActivities()
 
 .activity-card__title {
   display: block;
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
-  color: #19322E;
-  margin-bottom: 6px;
+  color: var(--pc-user-ink);
+  color: var(--pc-user-ink);
+  margin-bottom: 12rpx;
 }
 
 .activity-card__time {
   display: block;
-  font-size: 11px;
-  color: #11796F;
-  margin-bottom: 6px;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
+  margin-bottom: 12rpx;
 }
 
 .activity-card__desc {
   display: -webkit-box;
-  font-size: 14px;
-  color: #71817D;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
+  color: var(--pc-user-muted);
   line-height: 1.6;
-  margin-bottom: 8px;
+  margin-bottom: 16rpx;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -171,16 +171,16 @@ loadActivities()
 
 .activity-card__tags {
   display: flex;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .activity-card__tag {
-  font-size: 11px;
-  color: #11796F;
-  color: #11796F;
-  background: #DFF2ED;
-  background: #DFF2ED;
-  padding: 2px 8px;
-  border-radius: 8px;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
+  color: var(--pc-user-primary);
+  background: var(--pc-user-soft);
+  background: var(--pc-user-soft);
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
 }
 </style>

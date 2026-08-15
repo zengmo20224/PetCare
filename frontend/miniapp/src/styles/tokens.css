@@ -1,11 +1,15 @@
 /**
- * PetCare H5 User App Design Tokens
+ * PetCare User App Design Tokens
  *
- * Source of truth for the user-facing H5 palette.
+ * Source of truth for the user-facing palette (H5 + WeChat mini-program).
  * User-facing color palette differs from admin-web.
+ *
+ * Hosted on `page` (not `:root`) so the variables resolve in the WeChat
+ * mini-program runtime, where `:root` does not exist. uni-app's H5 build
+ * treats `page` equivalently to `:root`, so this is cross-platform safe.
  */
 
-:root {
+page {
   /* ─── User Color Palette ─── */
 
   --pc-user-primary: #11796F;
@@ -22,6 +26,16 @@
   --pc-user-surface-soft: #F3F7F5;
   --pc-user-coral: #E97951;
   --pc-user-lavender: #EDE9F7;
+
+  /* ─── Demo 别名（ui-demo 微信原生风，供迁移期组件复用）─── */
+  --pc-demo-ink-1: #1A1A1A;   /* 标题墨色 */
+  --pc-demo-ink-2: #333333;   /* 正文墨色 */
+  --pc-demo-ink-4: #999999;   /* 辅助灰 */
+  --pc-demo-line: #E5E5E5;    /* 分隔线 */
+  --pc-demo-price: #FA5151;   /* 商品价钱红（微信原生风） */
+  --pc-demo-img-bg: #F5F5F5;  /* 网易严选风图片统一灰底 */
+  --pc-demo-success: #07C160; /* 营业状态绿 */
+  --pc-demo-warning: #FA9D3B; /* 营业状态橙 */
 
   /* ─── Spacing ─── */
 

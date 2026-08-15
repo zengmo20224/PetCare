@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetCare 品牌温暖文案 Demo</title>
+<style>
+:root {
+  --c-primary: #11796F;
+  --c-primary-dark: #0C4D48;
+  --c-primary-light: #4FAFA3;
+  --c-primary-soft: #DFF2ED;
+  --c-primary-mist: #F4FFFB;
+  --c-accent: #F5A623;
+  --c-coral: #E97951;
+  --c-ink1: #1A1A1A;
+  --c-ink2: #333;
+  --c-ink3: #666;
+  --c-ink4: #999;
+  --c-bg: #F7F7F7;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system,"PingFang SC","Helvetica Neue",sans-serif; background:#e8eaed; color:var(--c-ink2); padding:20px; line-height:1.6; }
+h1 { font-size:22px; text-align:center; margin-bottom:4px; color:var(--c-primary); }
+.subtitle { text-align:center; color:var(--c-ink4); font-size:13px; margin-bottom:24px; }
+h2 { font-size:15px; color:var(--c-primary); margin:32px 0 12px; padding-left:12px; border-left:3px solid var(--c-primary); }
+.note { font-size:12px; color:var(--c-ink4); margin-bottom:14px; padding-left:15px; }
+.row { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+
+/* 手机框 */
+.phone { width:375px; background:var(--c-bg); border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.12); flex-shrink:0; }
+.nav { height:44px; background:var(--c-primary); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; font-weight:600; }
+
+/* ====== 样式 A：深青绿渐变 Hero（首页，品牌主视觉）====== */
+.hero-deep { position:relative; overflow:hidden; background:linear-gradient(135deg,#16877C,#0B3D39); padding:28px 24px 30px; color:#fff; }
+.hero-deep::before { content:''; position:absolute; top:-30px; right:-20px; width:160px; height:160px; border-radius:50%; background:radial-gradient(circle,rgba(245,166,35,0.35),transparent 70%); }
+.hero-deep::after { content:''; position:absolute; bottom:-40px; left:-30px; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,0.1),transparent 70%); }
+.hero-deep__eyebrow { display:inline-block; padding:4px 12px; border:1px solid rgba(255,255,255,0.25); border-radius:999px; font-size:11px; letter-spacing:1.5px; color:rgba(255,255,255,0.9); margin-bottom:16px; position:relative; z-index:1; }
+.hero-deep__title { font-size:24px; font-weight:700; line-height:1.4; position:relative; z-index:1; text-shadow:0 2px 8px rgba(0,0,0,0.15); }
+.hero-deep__title em { font-style:normal; color:#FFD9A0; }
+.hero-deep__desc { font-size:13px; color:rgba(255,255,255,0.8); margin-top:10px; position:relative; z-index:1; }
+.hero-deep__cta { display:inline-flex; align-items:center; gap:4px; margin-top:18px; padding:10px 22px; background:rgba(255,255,255,0.95); color:var(--c-primary-dark); border-radius:999px; font-size:13px; font-weight:600; position:relative; z-index:1; }
+
+/* ====== 样式 B：浅青底 banner（服务页，温柔克制）====== */
+.hero-soft { background:linear-gradient(135deg,#F4FFFB,#DFF2ED); padding:22px 24px; border-bottom:1px solid #E5E5E5; position:relative; overflow:hidden; }
+.hero-soft::before { content:''; position:absolute; right:20px; top:50%; transform:translateY(-50%); width:70px; height:70px; border-radius:50%; background:rgba(17,121,111,0.06); }
+.hero-soft__title { font-size:17px; font-weight:600; color:var(--c-primary-dark); line-height:1.5; position:relative; }
+.hero-soft__desc { font-size:12px; color:var(--c-primary); margin-top:6px; line-height:1.6; position:relative; }
+
+/* ====== 样式 C：纯白留白 + 品牌色点缀（社区页，文艺）====== */
+.hero-clean { background:#fff; padding:26px 24px; text-align:center; }
+.hero-clean__mark { display:inline-block; width:36px; height:2px; background:var(--c-primary); margin-bottom:14px; }
+.hero-clean__title { font-size:18px; font-weight:600; color:var(--c-ink1); line-height:1.5; }
+.hero-clean__title span { color:var(--c-primary); }
+.hero-clean__desc { font-size:12px; color:var(--c-ink4); margin-top:8px; }
+
+/* ====== 样式 D：渐变胶囊 tag 横排（商品页，轻巧）====== */
+.hero-tagbar { background:linear-gradient(90deg,var(--c-primary),var(--c-primary-light)); padding:14px 20px; display:flex; align-items:center; gap:10px; }
+.hero-tagbar__icon { width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; flex-shrink:0; }
+.hero-tagbar__text { color:#fff; }
+.hero-tagbar__title { font-size:15px; font-weight:600; }
+.hero-tagbar__desc { font-size:11px; color:rgba(255,255,255,0.8); margin-top:2px; }
+
+/* ====== 样式 E：暖色卡片（钱包/活动，温馨）====== */
+.hero-warm { background:linear-gradient(135deg,#FFF7E8,#FFE8D0); padding:20px 22px; margin:12px 16px; border-radius:12px; position:relative; overflow:hidden; }
+.hero-warm::before { content:'🐾'; position:absolute; right:14px; bottom:-6px; font-size:48px; opacity:0.15; }
+.hero-warm__title { font-size:16px; font-weight:600; color:#8B5A1A; position:relative; }
+.hero-warm__desc { font-size:12px; color:#B8862E; margin-top:6px; position:relative; line-height:1.6; }
+
+/* ====== 样式 F：欢迎页全屏（登录/引导）====== */
+.hero-welcome { background:linear-gradient(180deg,var(--c-primary) 0%,var(--c-primary-dark) 60%,#062E2A 100%); padding:48px 28px 40px; text-align:center; color:#fff; position:relative; overflow:hidden; min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.hero-welcome::before { content:''; position:absolute; top:20px; left:50%; transform:translateX(-50%); width:200px; height:200px; border-radius:50%; background:radial-gradient(circle,rgba(245,166,35,0.18),transparent 60%); }
+.hero-welcome__logo { width:64px; height:64px; border-radius:20px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:20px; position:relative; z-index:1; }
+.hero-welcome__title { font-size:26px; font-weight:700; position:relative; z-index:1; letter-spacing:1px; }
+.hero-welcome__slogan { font-size:14px; color:rgba(255,255,255,0.85); margin-top:12px; position:relative; z-index:1; line-height:1.8; }
+.hero-welcome__slogan em { font-style:normal; color:#FFD9A0; }
+
+/* ====== 样式 G：底部固定情感条（通用）====== */
+.hero-strip { background:var(--c-primary-soft); padding:12px 20px; display:flex; align-items:center; gap:10px; }
+.hero-strip__dot { width:6px; height:6px; border-radius:50%; background:var(--c-primary); flex-shrink:0; }
+.hero-strip__text { font-size:12px; color:var(--c-primary-dark); }
+
+/* 内容占位 */
+.placeholder { padding:16px; }
+.ph-block { height:60px; background:#fff; border-radius:8px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; color:var(--c-ink4); font-size:12px; }
+
+.caption { text-align:center; font-size:11px; color:var(--c-ink4); margin-top:10px; margin-bottom:24px; }
+.caption strong { color:var(--c-primary); }
+</style>
+</head>
+<body>
+
+<h1>🐾 PetCare 品牌温暖文案 Demo</h1>
+<p class="subtitle">每个页面的宣传语 + 多种视觉呈现样式 · 375px 手机视口预览</p>
+
+<!-- ============ 样式 A：首页深青绿 Hero ============ -->
+<h2>样式 A · 首页品牌主视觉（深青绿渐变）</h2>
+<p class="note">用于首页顶部，品牌色大面积铺陈 + 光斑装饰 + CTA 按钮，建立第一印象。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="nav">PetCare</div>
+      <div class="hero-deep">
+        <span class="hero-deep__eyebrow">专业护理 · 安心陪伴</span>
+        <div class="hero-deep__title">把每一份<em>牵挂</em>，<br>都妥帖安放在这里</div>
+        <div class="hero-deep__desc">洗护 · 美容 · 上门照护 · 安心寄养，萌宠的每一刻都有人温柔以待。</div>
+        <div class="hero-deep__cta">立即预约 ›</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">常用服务宫格</div><div class="ph-block">精选好物 · 门店活动</div></div>
+    </div>
+    <div class="caption">文案：<strong>把每一份牵挂，都妥帖安放在这里</strong><br>副标：萌宠的每一刻都有人温柔以待</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="nav">PetCare</div>
+      <div class="hero-deep">
+        <span class="hero-deep__eyebrow">萌宠家园 · 你身边的一站式宠物管家</span>
+        <div class="hero-deep__title">在这里，<br>每一只<em>毛孩子</em>都是家人</div>
+        <div class="hero-deep__desc">从洗护美容到日常照护，我们用专业和爱心，守护它的每一天。</div>
+        <div class="hero-deep__cta">探索服务 ›</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">常用服务宫格</div><div class="ph-block">精选好物 · 门店活动</div></div>
+    </div>
+    <div class="caption">备选文案：<strong>在这里，每一只毛孩子都是家人</strong><br>副标：我们用专业和爱心，守护它的每一天</div>
+  </div>
+</div>
+
+<!-- ============ 样式 B：服务页浅青 banner ============ -->
+<h2>样式 B · 服务页温柔 banner（浅青底）</h2>
+<p class="note">服务页顶部，浅青渐变背景，文案温柔克制，不抢服务列表的注意力。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="nav">服务</div>
+      <div class="hero-soft">
+        <div class="hero-soft__title">把每一次暂时离开，<br>都变成它被温柔照顾的时光</div>
+        <div class="hero-soft__desc">洗护、美容、上门照护与寄养，让每一次托付都有安心回应。</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">分类 pill · 服务双列网格</div></div>
+    </div>
+    <div class="caption">文案：<strong>把每一次暂时离开，都变成它被温柔照顾的时光</strong></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="nav">服务</div>
+      <div class="hero-soft">
+        <div class="hero-soft__title">你放心去忙，<br>它的日常，我们来守护</div>
+        <div class="hero-soft__desc">到店洗护 · 上门照护 · 全天寄养，总有一种适合你们的节奏。</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">分类 pill · 服务双列网格</div></div>
+    </div>
+    <div class="caption">备选文案：<strong>你放心去忙，它的日常，我们来守护</strong></div>
+  </div>
+</div>
+
+<!-- ============ 样式 C：社区页文艺留白 ============ -->
+<h2>样式 C · 社区页文艺留白（纯白居中）</h2>
+<p class="note">社区页顶部，纯白背景 + 短分割线 + 居中文案，文艺感，引导用户分享。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="nav">社区</div>
+      <div class="hero-clean">
+        <div class="hero-clean__mark"></div>
+        <div class="hero-clean__title">把它的小小日常，<br>分享成<span>彼此温暖</span>的陪伴</div>
+        <div class="hero-clean__desc">记录成长 · 交换经验 · 让每一份爱宠心意被看见</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">搜索 · 标签</div><div class="ph-block">帖子信息流</div></div>
+    </div>
+    <div class="caption">文案：<strong>把它的小小日常，分享成彼此温暖的陪伴</strong></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="nav">社区</div>
+      <div class="hero-clean">
+        <div class="hero-clean__mark"></div>
+        <div class="hero-clean__title">每一只<span>毛孩子</span>的故事，<br>都值得被记录</div>
+        <div class="hero-clean__desc">来分享你家宝贝的日常，遇见更多爱宠的人。</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">搜索 · 标签</div><div class="ph-block">帖子信息流</div></div>
+    </div>
+    <div class="caption">备选文案：<strong>每一只毛孩子的故事，都值得被记录</strong></div>
+  </div>
+</div>
+
+<!-- ============ 样式 D：商品页轻巧渐变条 ============ -->
+<h2>样式 D · 商品页轻巧渐变条（横向）</h2>
+<p class="note">商品页顶部，品牌色渐变横条 + 图标，轻量不占地，突出"精选"。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="nav">商品</div>
+      <div class="hero-tagbar">
+        <div class="hero-tagbar__icon">🛍️</div>
+        <div class="hero-tagbar__text">
+          <div class="hero-tagbar__title">严选好物，只为它的健康</div>
+          <div class="hero-tagbar__desc">主粮 · 零食 · 玩具 · 用品，店长亲测推荐</div>
+        </div>
+      </div>
+      <div class="placeholder"><div class="ph-block">分类 pill</div><div class="ph-block">商品双列网格</div></div>
+    </div>
+    <div class="caption">文案：<strong>严选好物，只为它的健康</strong></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="nav">商品</div>
+      <div class="hero-tagbar">
+        <div class="hero-tagbar__icon">✨</div>
+        <div class="hero-tagbar__text">
+          <div class="hero-tagbar__title">每一件，都是给它的心意</div>
+          <div class="hero-tagbar__desc">店长亲选 · 品质安心 · 用心推荐</div>
+        </div>
+      </div>
+      <div class="placeholder"><div class="ph-block">分类 pill</div><div class="ph-block">商品双列网格</div></div>
+    </div>
+    <div class="caption">备选文案：<strong>每一件，都是给它的心意</strong></div>
+  </div>
+</div>
+
+<!-- ============ 样式 E：钱包/活动暖色卡片 ============ -->
+<h2>样式 E · 钱包/活动温馨卡片（暖色）</h2>
+<p class="note">钱包页余额区或活动卡片，暖橙色调，传递"温暖回馈"。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="nav">我的钱包</div>
+      <div class="hero-warm">
+        <div class="hero-warm__title">每一笔，都是给它的安心储备</div>
+        <div class="hero-warm__desc">余额可用于服务预约与商品购买，让爱不间断。</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">余额 ¥128.50</div><div class="ph-block">交易明细</div></div>
+    </div>
+    <div class="caption">钱包文案：<strong>每一笔，都是给它的安心储备</strong></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="nav">优惠活动</div>
+      <div class="hero-warm">
+        <div class="hero-warm__title">把省下的钱，变成更多陪伴</div>
+        <div class="hero-warm__desc">本周精选优惠，让宠爱更轻松一点。</div>
+      </div>
+      <div class="placeholder"><div class="ph-block">活动列表</div></div>
+    </div>
+    <div class="caption">活动文案：<strong>把省下的钱，变成更多陪伴</strong></div>
+  </div>
+</div>
+
+<!-- ============ 样式 F：登录/引导全屏欢迎 ============ -->
+<h2>样式 F · 登录/引导全屏欢迎页</h2>
+<p class="note">登录页或首次打开的引导页，全屏深青绿 + 品牌主张，建立情感连接。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="hero-welcome">
+        <div class="hero-welcome__logo">🐾</div>
+        <div class="hero-welcome__title">萌宠家园</div>
+        <div class="hero-welcome__slogan">让每一只<em>毛孩子</em>，<br>都被这个世界温柔以待</div>
+      </div>
+      <div class="placeholder" style="padding-top:24px"><div class="ph-block">手机号登录</div><div class="ph-block">微信一键登录</div></div>
+    </div>
+    <div class="caption">品牌主张：<strong>让每一只毛孩子，都被这个世界温柔以待</strong></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="hero-welcome">
+        <div class="hero-welcome__logo">🐾</div>
+        <div class="hero-welcome__title">萌宠家园</div>
+        <div class="hero-welcome__slogan">在这里，<em>爱它</em>的人<br>从不是一个人</div>
+      </div>
+      <div class="placeholder" style="padding-top:24px"><div class="ph-block">手机号登录</div><div class="ph-block">微信一键登录</div></div>
+    </div>
+    <div class="caption">备选：<strong>在这里，爱它的人从不是一个人</strong></div>
+  </div>
+</div>
+
+<!-- ============ 样式 G：底部情感条 ============ -->
+<h2>样式 G · 底部固定情感条（通用点缀）</h2>
+<p class="note">可放在任意页面底部（tabBar 上方），作为持续的品牌情感暗示。</p>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="nav">首页</div>
+      <div class="placeholder" style="padding-bottom:0"><div class="ph-block">页面内容...</div><div class="ph-block">页面内容...</div></div>
+      <div class="hero-strip">
+        <div class="hero-strip__dot"></div>
+        <div class="hero-strip__text">我们相信，善待每一只小生命，是这世界上最温柔的事。</div>
+      </div>
+    </div>
+    <div class="caption">情感条：<strong>善待每一只小生命，是最温柔的事</strong></div>
+  </div>
+</div>
+
+<div style="text-align:center;margin:40px 0 20px;color:var(--c-ink4);font-size:12px;line-height:2">
+  —— 请告诉我：① 每个页面选哪种样式 ② 文案选 A 还是 B（或自定义） ——<br>
+  选中后我会应用到完整 demo 的对应页面
+</div>
+
+</body>
+</html>

@@ -1,22 +1,25 @@
 <template>
   <view class="pc-page community-page">
-    <PcPageHeader title="社区" />
+    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
+    <PcHeroStrip
+      title="把每一份日常，都分享成温暖的陪伴"
+      highlight="日常"
+      desc="记录成长 · 交换经验 · 让爱宠心意被看见。"
+    />
 
-    <view class="community-intro">
-      <text class="community-intro__kicker">SHARE THE MOMENTS</text>
-      <text class="community-intro__title">把它的小小日常，分享成彼此温暖的陪伴</text>
-      <text class="community-intro__desc">记录成长、交换经验，也让每一份爱宠心意被看见。</text>
-    </view>
-
-    <!-- Search Bar -->
+    <!-- 搜索栏（demo search-bar） -->
     <view class="community-search">
-      <input
-        class="community-search__input"
-        type="text"
-        v-model="keyword"
-        placeholder="搜索帖子标题或内容"
-        @confirm="handleSearch"
-      />
+      <view class="community-search__input">
+        <PcIcon name="search" :size="16" color="#B2B2B2" />
+        <input
+          class="community-search__field"
+          type="text"
+          v-model="keyword"
+          placeholder="搜索帖子标题或内容"
+          placeholder-class="community-search__ph"
+          @confirm="handleSearch"
+        />
+      </view>
       <view class="community-search__btn" @tap="handleSearch">
         <text class="community-search__btn-text">搜索</text>
       </view>
@@ -47,9 +50,16 @@
     <!-- Single-column feed (酷安 style) -->
     <PcStatePanel
       :status="listStatus"
-      empty-text="暂无社区内容"
+      :empty-icon="emptyIcon"
+      :empty-text="emptyText"
+      :empty-hint="emptyHint"
       @retry="loadPosts"
     >
+      <template v-if="!hasFilter" #empty-action>
+        <view class="community-empty-cta" @tap="goCreatePost">
+          <text class="community-empty-cta__text">发第一篇帖子</text>
+        </view>
+      </template>
       <view class="feed-list">
         <view
           v-for="post in posts"
@@ -99,32 +109,39 @@
             </view>
           </view>
 
-          <!-- Footer actions -->
+          <!-- 分割线（demo feed-divider） -->
+          <view class="feed-card__divider" />
+
+          <!-- Footer actions（demo：PcIcon heart/chat/bookmark） -->
           <view class="feed-card__footer">
             <view class="feed-card__action">
-              <text>❤ {{ post.likeCount }}</text>
+              <PcIcon name="heart" :size="16" color="#999999" />
+              <text class="feed-card__action-count">{{ post.likeCount }}</text>
             </view>
             <view class="feed-card__action">
-              <text>💬 {{ post.commentCount }}</text>
+              <PcIcon name="chat" :size="16" color="#999999" />
+              <text class="feed-card__action-count">{{ post.commentCount }}</text>
             </view>
             <view class="feed-card__action">
-              <text>🔖 {{ post.favoriteCount }}</text>
+              <PcIcon name="bookmark" :size="16" color="#999999" />
+              <text class="feed-card__action-count">{{ post.favoriteCount }}</text>
             </view>
           </view>
         </view>
       </view>
     </PcStatePanel>
-    <view class="community-fab" aria-label="发布帖子" @tap="goCreatePost">
-      <text class="community-fab__icon">+</text>
-    </view>
+    <!-- 发帖 FAB（demo 风格：右下角浮动按钮） -->
+    <PcFab icon="edit" @press="goCreatePost" />
     <PcBottomNav current-path="pages/community/index" />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import PcPageHeader from '@/components/PcPageHeader.vue'
+import PcHeroStrip from '@/components/PcHeroStrip.vue'
+import PcIcon from '@/components/PcIcon.vue'
+import PcFab from '@/components/PcFab.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
 import { getPosts, getPopularTags } from '@/api/community'
@@ -138,6 +155,17 @@ const posts = ref<PostItem[]>([])
 const popularTags = ref<TagItem[]>([])
 const activeTag = ref('')
 const keyword = ref('')
+
+/** Whether the user is filtering by tag or keyword — affects empty-state copy. */
+const hasFilter = computed(() => !!activeTag.value || !!keyword.value.trim())
+
+const emptyIcon = computed(() => hasFilter.value ? '🔍' : '🐾')
+const emptyText = computed(() => hasFilter.value ? '没有找到相关内容' : '还没有人发帖')
+const emptyHint = computed(() =>
+  hasFilter.value
+    ? '换个关键词或标签试试'
+    : '来分享第一篇萌宠日常吧'
+)
 
 /** Cap displayed images at 6; the 6th slot shows a "+N" overlay when there are more. */
 function displayImages(urls: string[]): string[] {
@@ -233,185 +261,130 @@ onShow(() => {
 
 <style scoped>
 .community-page {
-  min-height: 100vh;
-  padding: 20px 20px 96px;
-  background: #FAF8F3;
+  /* hero/搜索/标签 通栏贴边；feed 由下方规则补留白 */
+  padding: 0 0;
 }
 
-.community-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 18px;
-  min-height: 118px;
-  padding: 21px 20px;
-  border: 1px solid rgba(17, 121, 111, 0.16);
-  border-radius: 22px;
-  background:
-    radial-gradient(circle at 92% 18%, rgba(255, 218, 138, 0.82) 0 38px, transparent 39px),
-    linear-gradient(135deg, #F5FFFC 0%, #FFFFFF 46%, #E7F6F1 100%);
-  background:
-    radial-gradient(circle at 92% 18%, rgba(245, 166, 35, 0.3) 0 38px, transparent 39px),
-    linear-gradient(135deg, #fff, #DFF2ED);
-  box-shadow: 0 12px 30px rgba(25, 50, 46, 0.08);
+/* 底部留白：H5 端 fixed PcBottomNav；小程序端用原生 tabBar */
+/* #ifdef H5 */
+.community-page {
+  padding-bottom: 192rpx;
 }
-
-.community-intro__kicker {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  color: #E97951;
-  color: #E97951;
+/* #endif */
+/* #ifdef MP-WEIXIN */
+.community-page {
+  padding-bottom: 32rpx;
 }
+/* #endif */
 
-.community-intro__title {
-  max-width: 300px;
-  font-size: 20px;
-  line-height: 1.35;
-  font-weight: 800;
-  color: #19322E;
-  color: #0C4D48;
-}
-
-.community-intro__desc {
-  max-width: 310px;
-  font-size: 11px;
-  color: #5F746F;
-  color: #71817D;
-}
-
-.community-fab {
-  position: fixed;
-  right: 20px;
-  bottom: 96px;
-  z-index: 880;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  background: #11796F;
-  background: linear-gradient(145deg, #16877C, #0B3D39);
-  background: linear-gradient(145deg, #16877c, #0C4D48);
-  border: 3px solid rgba(255, 255, 255, 0.92);
-  border-radius: 50%;
-  box-shadow: 0 12px 28px rgba(12, 77, 72, 0.3);
-}
-
-.community-fab:active {
-  transform: scale(0.93);
-}
-
-.community-fab__icon {
-  color: #fff;
-  font-size: 34px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-/* Search Bar */
+/* ─── 搜索栏（demo search-bar）─── */
 .community-search {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
 }
 
 .community-search__input {
   flex: 1;
-  height: 40px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
-  padding: 0 16px;
-  font-size: 14px;
-  color: #19322E;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 14rpx 24rpx;
+}
+
+.community-search__field {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.community-search__ph {
+  color: #B2B2B2;
+  font-size: 26rpx;
 }
 
 .community-search__btn {
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 20px;
   background: #11796F;
-  background: #11796F;
-  display: flex;
-  align-items: center;
+  border-radius: 8rpx;
+  padding: 14rpx 32rpx;
+  flex-shrink: 0;
+}
+
+.community-search__btn:active {
+  opacity: 0.85;
 }
 
 .community-search__btn-text {
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
+  color: #FFFFFF;
+  font-size: 26rpx;
 }
 
-/* Tag Tabs */
+/* ─── 标签 pills（demo tag-pills：胶囊 active 浅青底）─── */
 .community-tags {
-  margin-bottom: 12px;
   white-space: nowrap;
   width: 100%;
+  padding: 0 32rpx 24rpx;
+  box-sizing: border-box;
 }
 
 .community-tags__track {
   display: inline-flex;
-  gap: 8px;
-  min-width: 100%;
-  padding-right: 20px;
-  box-sizing: border-box;
+  gap: 16rpx;
 }
 
 .community-tag {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  padding: 6px 16px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
+  padding: 8rpx 24rpx;
+  border-radius: 999rpx;
+  background: #FFFFFF;
   flex-shrink: 0;
 }
 
+.community-tag text {
+  color: #666666;
+  font-size: 24rpx;
+  font-weight: 400;
+}
+
+/* demo active：浅青底 #DFF2ED + 青绿字 #11796F（不是实心底） */
 .community-tag--active {
-  background: #11796F;
-  background: #11796F;
-  border-color: #11796F;
-  border-color: #11796F;
+  background: #DFF2ED;
 }
 
 .community-tag--active text {
-  color: #fff;
+  color: #11796F;
 }
 
-.community-tag text {
-  font-size: 14px;
-  color: #5F746F;
-  color: #71817D;
-}
-
-/* Single-column feed (酷安 style) */
+/* ─── 帖子信息流（demo feed：左右 32rpx 留白）─── */
 .feed-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20rpx;
+  padding: 0 32rpx;
 }
 
+/* 帖子卡（demo feed-item：8px 圆角、无阴影） */
 .feed-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 28rpx;
 }
 
-/* Author row */
+/* 作者行（demo feed-head） */
 .feed-card__author {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
 }
 
 .feed-card__avatar {
-  width: 32px;
-  height: 32px;
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
   background: #DFF2ED;
   overflow: hidden;
@@ -427,42 +400,42 @@ onShow(() => {
 }
 
 .feed-card__avatar-initial {
-  font-size: 14px;
+  font-size: 28rpx;
   color: #11796F;
   font-weight: 600;
 }
 
 .feed-card__author-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #19322E;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333333;
   flex: 1;
 }
 
 .feed-card__time {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: #999999;
 }
 
-/* Title */
+/* 标题（demo feed-title：15px/600） */
 .feed-card__title {
   display: block;
   width: 100%;
-  font-size: 16px;
-  font-weight: 700;
-  color: #19322E;
-  margin-bottom: 6px;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 8rpx;
   line-height: 1.4;
 }
 
-/* Content */
+/* 内容（demo feed-content：13px/3行省略） */
 .feed-card__content {
   display: block;
   width: 100%;
-  font-size: 14px;
-  color: #19322E;
+  font-size: 26rpx;
+  color: #666666;
   line-height: 1.6;
-  margin-bottom: 8px;
+  margin-bottom: 16rpx;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -471,29 +444,30 @@ onShow(() => {
   word-break: break-word;
 }
 
-/* Tags */
+/* 标签（demo pill-tag--soft：999rpx 胶囊 浅青底） */
 .feed-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
 }
 
 .feed-card__tag {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  background: #DFF2ED;
   color: #11796F;
-  background: rgba(43, 122, 120, 0.08);
-  padding: 3px 8px;
-  border-radius: 4px;
+  font-size: 22rpx;
 }
 
-/* Adaptive image grid */
+/* 图片网格（保留自适应规则） */
 .feed-card__images {
-  margin-bottom: 10px;
-  gap: 4px;
+  margin-bottom: 20rpx;
+  gap: 8rpx;
 }
 
-/* 1 image: large single image */
 .feed-card__images--single {
   display: flex;
 }
@@ -502,19 +476,16 @@ onShow(() => {
   width: 65%;
 }
 
-/* 2 images: side by side */
 .feed-card__images--double {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
 
-/* 4 images: 2x2 */
 .feed-card__images--four {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
 
-/* 3/5/6 images: 3-column grid */
 .feed-card__images--grid3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -523,14 +494,14 @@ onShow(() => {
 .feed-card__image-wrap {
   position: relative;
   width: 100%;
-  height: 104px;
-  border-radius: 6px;
+  height: 208rpx;
+  border-radius: 8rpx;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #F5F5F5;
 }
 
 .feed-card__images--single .feed-card__image-wrap {
-  height: 156px;
+  height: 312rpx;
 }
 
 .feed-card__image {
@@ -545,26 +516,52 @@ onShow(() => {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-size: 18px;
+  color: #FFFFFF;
+  font-size: 36rpx;
   font-weight: 700;
 }
 
-/* Footer actions */
+/* 分割线（demo feed-divider：独立 1px 线） */
+.feed-card__divider {
+  height: 1rpx;
+  background: #E5E5E5;
+  margin: 20rpx 0;
+}
+
+/* 操作行（demo feed-actions：三等分间距 + PcIcon 图标） */
 .feed-card__footer {
   display: flex;
-  gap: 20px;
-  padding-top: 6px;
-  border-top: 1px solid #E2E9E6;
+  justify-content: space-around;
+  padding-top: 0;
 }
 
 .feed-card__action {
   display: flex;
   align-items: center;
+  gap: 8rpx;
 }
 
-.feed-card__action text {
-  font-size: 11px;
-  color: #71817D;
+.feed-card__action-count {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+/* ─── 空状态引导按钮 ─── */
+.community-empty-cta {
+  margin-top: 8rpx;
+  padding: 16rpx 40rpx;
+  border-radius: 999rpx;
+  background: #11796F;
+  box-shadow: 0 8px 20px rgba(17, 121, 111, 0.18);
+}
+
+.community-empty-cta:active {
+  opacity: 0.85;
+}
+
+.community-empty-cta__text {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #FFFFFF;
 }
 </style>

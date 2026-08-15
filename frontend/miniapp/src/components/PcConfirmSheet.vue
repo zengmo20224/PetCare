@@ -46,48 +46,48 @@ defineEmits<{
 
 .pc-confirm-sheet__panel {
   width: 100%;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
-  padding: 24px 20px;
-  padding-bottom: 34px;
+  background: var(--pc-user-surface);
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 48rpx 40rpx;
+  padding-bottom: 68rpx;
 }
 
 .pc-confirm-sheet__title {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
-  margin-bottom: 8px;
+  color: var(--pc-user-ink);
+  margin-bottom: 16rpx;
 }
 
 .pc-confirm-sheet__message {
-  font-size: 14px;
-  color: #71817D;
-  margin-bottom: 20px;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
+  margin-bottom: 40rpx;
 }
 
 .pc-confirm-sheet__actions {
   display: flex;
-  gap: 12px;
+  gap: 24rpx;
 }
 
 .pc-confirm-sheet__btn {
   flex: 1;
-  height: 44px;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  font-size: 14px;
+  border-radius: 32rpx;
+  font-size: 28rpx;
   font-weight: 600;
 }
 
 .pc-confirm-sheet__btn--cancel {
-  background: #FAF8F3;
-  color: #71817D;
+  background: var(--pc-user-cream);
+  color: var(--pc-user-muted);
 }
 
 .pc-confirm-sheet__btn--confirm {
-  background: #11796F;
-  color: #fff;
+  background: var(--pc-user-primary);
+  color: var(--pc-user-surface);
 }
 </style>

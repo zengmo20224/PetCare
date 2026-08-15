@@ -33,7 +33,7 @@
         <wd-button type="text" size="small" @click="goForgotPassword">忘记密码</wd-button>
       </view>
 
-      <PcPrimaryButton text="登录" :loading="loginLoading" @tap="handleLogin" />
+      <PcPrimaryButton text="登录" :loading="loginLoading" @press="handleLogin" />
 
       <!-- WeChat one-tap login. Mini-program only — H5 has no WeChat provider. -->
       <!-- #ifdef MP-WEIXIN -->
@@ -45,7 +45,6 @@
       <button
         class="auth-wx-btn"
         :disabled="wxLoginLoading"
-        open-type="getUserInfo"
         @tap="handleWxLogin"
       >
         <text class="auth-wx-btn__text">{{ wxLoginLoading ? '登录中...' : '微信一键登录' }}</text>
@@ -128,39 +127,39 @@ function goForgotPassword() {
 
 <style scoped>
 .auth-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .auth-card {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-top: 24px;
-  padding: 24px 20px;
-  border-radius: 24px;
-  background: #FFFFFF;
+  gap: 40rpx;
+  margin-top: 48rpx;
+  padding: 48rpx 40rpx;
+  border-radius: 48rpx;
+  background: var(--pc-user-surface);
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
 .auth-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .auth-brand__title {
-  font-size: 22px;
+  font-size: 44rpx;
   font-weight: 800;
-  color: #0C4D48;
+  color: var(--pc-user-dark);
 }
 
 .auth-brand__subtitle {
-  font-size: 13px;
-  color: #71817D;
+  font-size: 26rpx;
+  color: var(--pc-user-muted);
 }
 
 .auth-form {
-  border-radius: 16px;
+  border-radius: 32rpx;
   overflow: hidden;
 }
 
@@ -173,28 +172,28 @@ function goForgotPassword() {
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin: 4px 0;
+  gap: 32rpx;
+  margin: 8rpx 0;
 }
 
 .auth-divider__line {
   flex: 1;
-  height: 1px;
-  background: #e2e9e6;
+  height: 2rpx;
+  background: var(--pc-user-line);
 }
 
 .auth-divider__text {
-  font-size: 12px;
-  color: #71817d;
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
 }
 
 .auth-wx-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 48px;
+  height: 96rpx;
   background: #07c160;
-  border-radius: 24px;
+  border-radius: 48rpx;
   border: none;
   padding: 0;
   margin: 0;
@@ -206,12 +205,12 @@ function goForgotPassword() {
 
 .auth-wx-btn[disabled] {
   background: #9ad8b6;
-  color: #ffffff;
+  color: var(--pc-user-surface);
 }
 
 .auth-wx-btn__text {
-  color: #ffffff;
-  font-size: 16px;
+  color: var(--pc-user-surface);
+  font-size: 32rpx;
   font-weight: 600;
 }
 </style>

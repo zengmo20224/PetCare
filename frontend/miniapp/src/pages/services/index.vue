@@ -1,11 +1,28 @@
 <template>
   <view class="pc-page services-page">
-    <PcPageHeader title="服务" />
+    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
+    <PcHeroStrip
+      title="把每一次托付，都交给温柔专业的人"
+      highlight="托付"
+      desc="洗护、美容、上门照护与寄养，让陪伴始终如一。"
+    />
 
-    <view class="services-intro">
-      <text class="services-intro__kicker">CARE WITH LOVE</text>
-      <text class="services-intro__title">把每一次暂时离开，都变成它被温柔照顾的时光</text>
-      <text class="services-intro__desc">洗护、美容、上门照护与寄养，让每一次托付都有安心回应。</text>
+    <!-- 搜索栏（demo search-bar） -->
+    <view class="svc-search-bar">
+      <view class="svc-search-bar__input">
+        <PcIcon name="search" :size="16" color="#B2B2B2" />
+        <input
+          v-model="searchKeyword"
+          class="svc-search-bar__field"
+          type="text"
+          confirm-type="search"
+          placeholder="搜索服务名称"
+          placeholder-class="svc-search-bar__ph"
+        />
+      </view>
+      <view class="svc-search-bar__btn" @tap="handleSearch">
+        <text>搜索</text>
+      </view>
     </view>
 
     <scroll-view class="services-categories" scroll-x>
@@ -45,8 +62,9 @@
     <!-- Service List -->
     <PcStatePanel
       :status="listStatus"
-      empty-text="暂无可用服务"
-      error-message=""
+      empty-icon="🐾"
+      :empty-text="emptyText"
+      :empty-hint="emptyHint"
       @retry="loadServices"
     >
       <view class="services-list">
@@ -60,7 +78,7 @@
             :price="item.minPrice"
             :price-from="true"
             :image-url="item.coverUrl || undefined"
-            @tap="openSizePicker(item)"
+            @press="openSizePicker(item)"
           />
 
           <!-- Normal single card -->
@@ -71,7 +89,7 @@
             :duration-minutes="item.durationMinutes"
             :price="item.price"
             :image-url="item.coverUrl || undefined"
-            @tap="goDetail(item.firstId)"
+            @press="goDetail(item.firstId)"
           />
         </template>
       </view>
@@ -108,9 +126,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import PcPageHeader from '@/components/PcPageHeader.vue'
+import PcHeroStrip from '@/components/PcHeroStrip.vue'
+import PcIcon from '@/components/PcIcon.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcServiceCard from '@/components/PcServiceCard.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
@@ -128,6 +147,12 @@ const petTypeTabs: { label: string; value: PetTypeFilter }[] = [
 const activePetType = ref<PetTypeFilter>('ALL')
 const categories = ref<ServiceCategory[]>([])
 const activeCategoryId = ref('')
+
+// 搜索关键字（纯视觉，暂不接过滤逻辑）
+const searchKeyword = ref('')
+function handleSearch() {
+  // 预留：后续接搜索过滤
+}
 
 // ---- Size labels with weight hints ----
 const sizeLabels: Record<string, { label: string; hint: string }> = {
@@ -154,6 +179,13 @@ interface DisplayItem {
 const listStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 const rawServices = ref<ServiceItem[]>([])
 const displayItems = ref<DisplayItem[]>([])
+
+/** Whether the user is filtering by category or pet type — affects empty-state copy. */
+const hasFilter = computed(() => !!activeCategoryId.value || activePetType.value !== 'ALL')
+const emptyText = computed(() => hasFilter.value ? '没有找到相关服务' : '暂无可用服务')
+const emptyHint = computed(() =>
+  hasFilter.value ? '换个分类或宠物类型试试' : '新服务上线后会在这里展示'
+)
 
 // Size picker state
 const sizePickerVisible = ref(false)
@@ -307,131 +339,152 @@ onShow(loadCatalog)
 
 <style scoped>
 .services-page {
-  /* 底部留白避开 fixed PcBottomNav（64px 高 + 安全余量），与 community/products/profile 一致 */
-  padding: 20px 20px 96px;
+  /* hero/搜索/pills/tabs 通栏贴边；服务网格由下方规则补左右留白 */
+  padding: 0 0;
 }
 
-.services-intro {
+/* 服务网格左右留白（demo svc-grid padding: 12px 16px）*/
+.services-page .services-list {
+  padding-left: 32rpx;
+  padding-right: 32rpx;
+}
+
+/* 底部留白：H5 端 fixed PcBottomNav 高 128rpx + 安全余量；小程序端用原生 tabBar，仅留 32rpx 防贴边。 */
+/* #ifdef H5 */
+.services-page {
+  padding-bottom: 192rpx;
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
+.services-page {
+  padding-bottom: 32rpx;
+}
+/* #endif */
+
+/* ─── 搜索栏（demo search-bar）─── */
+.svc-search-bar {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 18px;
-  min-height: 118px;
-  padding: 21px 20px;
-  border: 1px solid rgba(17, 121, 111, 0.16);
-  border-radius: 22px;
-  background:
-    radial-gradient(circle at 92% 18%, rgba(255, 218, 138, 0.82) 0 38px, transparent 39px),
-    linear-gradient(135deg, #F4FFFB 0%, #FFFFFF 46%, #E7F6F1 100%);
-  background:
-    radial-gradient(circle at 92% 18%, rgba(245, 166, 35, 0.3) 0 38px, transparent 39px),
-    linear-gradient(135deg, #fff, #DFF2ED);
-  box-shadow: 0 12px 30px rgba(25, 50, 46, 0.08);
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
 }
 
-.services-intro__kicker {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  color: #E97951;
-  color: #E97951;
+.svc-search-bar__input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 14rpx 24rpx;
 }
 
-.services-intro__title {
-  max-width: 300px;
-  font-size: 20px;
-  line-height: 1.35;
-  font-weight: 800;
-  color: #19322E;
-  color: #0C4D48;
+.svc-search-bar__field {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333333;
 }
 
-.services-intro__desc {
-  max-width: 310px;
-  font-size: 11px;
-  color: #5F746F;
-  color: #71817D;
+.svc-search-bar__ph {
+  color: #B2B2B2;
+  font-size: 26rpx;
 }
 
+.svc-search-bar__btn {
+  background: #11796F;
+  border-radius: 8rpx;
+  padding: 14rpx 32rpx;
+  flex-shrink: 0;
+}
+
+.svc-search-bar__btn:active {
+  opacity: 0.85;
+}
+
+.svc-search-bar__btn text {
+  color: #FFFFFF;
+  font-size: 26rpx;
+}
+
+/* ─── 分类 pills（demo cat-pills：4px 圆角小 pill）─── */
 .services-categories {
-  margin-bottom: 12px;
   white-space: nowrap;
   width: 100%;
+  padding: 0 32rpx 24rpx;
+  box-sizing: border-box;
 }
 
 .services-categories__track {
   display: inline-flex;
-  gap: 8px;
-  min-width: 100%;
-  padding-right: 20px;
-  box-sizing: border-box;
+  gap: 16rpx;
 }
 
 .services-category {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  height: 34px;
-  padding: 0 16px;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
-  border-radius: 999px;
-  background: #fff;
+  padding: 12rpx 28rpx;
+  border: 1rpx solid #E5E5E5;
+  border-radius: 8rpx;
+  background: #FFFFFF;
   flex-shrink: 0;
 }
 
 .services-category text {
-  color: #5F746F;
-  color: #71817D;
-  font-size: 14px;
-  font-weight: 600;
+  color: #666666;
+  font-size: 26rpx;
+  font-weight: 400;
 }
 
 .services-category--active {
-  border-color: #11796F;
-  border-color: #11796F;
   background: #11796F;
-  background: #11796F;
+  border-color: #11796F;
 }
 
 .services-category--active text {
-  color: #fff;
+  color: #FFFFFF;
 }
 
+/* ─── 宠物 tabs（demo pet-tabs：下划线指示器）─── */
 .services-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  padding: 0 32rpx;
+  border-bottom: 1rpx solid #E5E5E5;
 }
 
 .services-tab {
-  padding: 6px 16px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
-}
-
-.services-tab--active {
-  background: #11796F;
-  background: #11796F;
-  border-color: #11796F;
-  border-color: #11796F;
-}
-
-.services-tab--active text {
-  color: #fff;
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  position: relative;
 }
 
 .services-tab text {
-  font-size: 14px;
-  color: #5F746F;
-  color: #71817D;
+  color: #666666;
+  font-size: 28rpx;
+  font-weight: 400;
+}
+
+.services-tab--active text {
+  color: #11796F;
+  font-weight: 600;
+}
+
+.services-tab--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48rpx;
+  height: 4rpx;
+  background: #11796F;
+  border-radius: 2rpx;
 }
 
 .services-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: 28rpx;
 }
 
 /* Size Picker Popup */
@@ -449,77 +502,77 @@ onShow(loadCatalog)
 
 .size-picker {
   width: 100%;
-  background: #fff;
-  border-radius: 20px 20px 0 0;
-  padding: 20px 16px 32px;
+  background: var(--pc-user-surface);
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 40rpx 32rpx 64rpx;
 }
 
 .size-picker__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 8rpx;
 }
 
 .size-picker__title {
-  font-size: 18px;
+  font-size: 36rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .size-picker__close {
-  font-size: 18px;
-  color: #71817D;
-  padding: 4px 12px;
+  font-size: 36rpx;
+  color: var(--pc-user-muted);
+  padding: 8rpx 24rpx;
 }
 
 .size-picker__hint {
-  font-size: 11px;
-  color: #71817D;
-  margin-bottom: 16px;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
+  margin-bottom: 32rpx;
 }
 
 .size-picker__option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-radius: 12px;
-  background: #FAF8F3;
-  margin-bottom: 8px;
+  padding: 32rpx;
+  border-radius: 24rpx;
+  background: var(--pc-user-cream);
+  margin-bottom: 16rpx;
 }
 
 .size-picker__option-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8rpx;
 }
 
 .size-picker__option-name {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .size-picker__option-weight {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .size-picker__option-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .size-picker__option-price {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #F5A623;
+  color: var(--pc-user-accent);
 }
 
 .size-picker__option-arrow {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 </style>

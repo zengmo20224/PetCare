@@ -36,7 +36,7 @@ const wotType = computed(() => {
 
 <style scoped>
 .pc-status-tag {
-  font-size: 11px;
+  font-size: 22rpx;
   font-weight: 500;
 }
 </style>

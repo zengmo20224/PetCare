@@ -168,67 +168,67 @@ loadData()
 
 <style scoped>
 .my-community-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .mc-tabs {
   display: flex;
-  gap: 1px;
-  background: #E2E9E6;
-  border-radius: 12px;
+  gap: 2rpx;
+  background: var(--pc-user-line);
+  border-radius: 24rpx;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .mc-tab {
   flex: 1;
-  padding: 12px 0;
-  background: #fff;
+  padding: 24rpx 0;
+  background: var(--pc-user-surface);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mc-tab--active {
-  background: #11796F;
+  background: var(--pc-user-primary);
 }
 
 .mc-tab__text {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
   font-weight: 500;
 }
 
 .mc-tab--active .mc-tab__text {
-  color: #fff;
+  color: var(--pc-user-surface);
   font-weight: 700;
 }
 
 .mc-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .mc-card {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--pc-user-surface);
+  border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
   display: flex;
   flex-direction: row;
-  min-height: 100px;
+  min-height: 200rpx;
 }
 
 .mc-card__cover {
-  width: 100px;
-  height: 100px;
+  width: 200rpx;
+  height: 200rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #ffffff;
-  border-radius: 8px;
+  background: var(--pc-user-surface);
+  border-radius: 16rpx;
   overflow: hidden;
 }
 
@@ -239,7 +239,7 @@ loadData()
 
 .mc-card__body {
   flex: 1;
-  padding: 10px 12px;
+  padding: 20rpx 24rpx;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -247,66 +247,66 @@ loadData()
 }
 
 .mc-card__title {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 8rpx;
 }
 
 .mc-card__content {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 12rpx;
 }
 
 .mc-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: 8rpx;
+  margin-bottom: 12rpx;
 }
 
 .mc-card__tag {
-  font-size: 11px;
-  color: #11796F;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
   background: rgba(43, 122, 120, 0.08);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
 }
 
 .mc-card__meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 24rpx;
 }
 
 .mc-card__stat text {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .mc-card__date {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
   margin-left: auto;
 }
 
 .mc-card__delete {
-  padding: 2px 8px;
+  padding: 4rpx 16rpx;
   background: rgba(224, 80, 80, 0.1);
-  border-radius: 4px;
+  border-radius: 8rpx;
 }
 
 .mc-card__delete-text {
-  font-size: 11px;
+  font-size: 22rpx;
   color: #e05050;
 }
 </style>

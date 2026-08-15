@@ -1,22 +1,24 @@
 <template>
-  <view class="pc-service-card" @tap="$emit('tap')">
-    <view class="pc-service-card__image-wrap">
-      <image v-if="imageUrl" class="pc-service-card__image" :src="imageUrl" mode="aspectFill" lazy-load />
-      <view v-else class="pc-service-card__placeholder">
-        <text class="pc-service-card__placeholder-text">{{ placeholderText }}</text>
-      </view>
-      <view class="pc-service-card__mode">
-        <text class="pc-service-card__mode-text">{{ modeLabel }}</text>
-      </view>
+  <view class="pc-service-card" @tap="$emit('press')">
+    <!-- 图片区：demo 风格统一 #F5F5F5 灰底 + 墨色 PcIcon 线性图标 -->
+    <view class="pc-service-card__img">
+      <PcIcon :name="iconName" :size="44" color="#3D3D3D" />
     </view>
-    <view class="pc-service-card__info">
+    <view class="pc-service-card__body">
       <text class="pc-service-card__name">{{ name }}</text>
-      <view class="pc-service-card__meta">
-        <text class="pc-service-card__duration">{{ durationText }}</text>
-        <text class="pc-service-card__price">{{ priceText }}</text>
+      <view class="pc-service-card__attr">
+        <view class="pc-service-card__attr-item">
+          <PcIcon name="clock" :size="13" color="#999999" />
+          <text>{{ durationText }}</text>
+        </view>
+        <view class="pc-service-card__attr-item">
+          <PcIcon :name="modeIcon" :size="13" color="#999999" />
+          <text>{{ modeLabel }}</text>
+        </view>
       </view>
-      <view class="pc-service-card__action">
-        <text class="pc-service-card__action-text">{{ priceFrom ? '选体型预约' : '立即预约' }}</text>
+      <view class="pc-service-card__price">
+        <text class="pc-service-card__price-main">{{ priceMain }}</text>
+        <text v-if="priceUnit" class="pc-service-card__price-unit">{{ priceUnit }}</text>
       </view>
     </view>
   </view>
@@ -24,6 +26,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import PcIcon from '@/components/PcIcon.vue'
 import { formatDuration, formatYuan } from '@/utils/format'
 
 const props = defineProps<{
@@ -36,8 +39,25 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  (e: 'tap'): void
+  (e: 'press'): void
 }>()
+
+/** 按服务名关键字映射 PcIcon 图标（demo 风格：bath/scissors/door/paw/bottle） */
+const iconName = computed(() => {
+  const n = props.name || ''
+  if (n.includes('药浴')) return 'bottle'
+  if (n.includes('洗护') || n.includes('洗澡')) return 'bath'
+  if (n.includes('美容') || n.includes('造型') || n.includes('修剪')) return 'scissors'
+  if (n.includes('上门') || n.includes('到家')) return 'door'
+  if (n.includes('寄养') || n.includes('托管')) return 'paw'
+  return 'scissors' // 兜底
+})
+
+/** 按 serviceMode 映射 attr 地点图标 */
+const modeIcon = computed(() => {
+  if (props.mode === 'HOME') return 'door'
+  return 'shop' // STORE / BOTH 都用 shop
+})
 
 const modeLabel = computed(() => {
   const map: Record<string, string> = { STORE: '到店', HOME: '上门', BOTH: '到店/上门' }
@@ -45,129 +65,86 @@ const modeLabel = computed(() => {
 })
 
 const durationText = computed(() => formatDuration(props.durationMinutes))
-const priceText = computed(() => {
+
+const priceMain = computed(() => {
   if (props.price == null) return ''
-  return props.priceFrom ? `${formatYuan(props.price)}起` : formatYuan(props.price)
+  return formatYuan(props.price)
 })
 
-const placeholderText = computed(() => {
-  const map: Record<string, string> = { STORE: '到店', HOME: '上门', BOTH: '服务' }
-  return map[props.mode] ?? '服务'
+const priceUnit = computed(() => {
+  if (props.priceFrom) return '起'
+  // 寄养类按天计价
+  if ((props.name || '').includes('寄养') || (props.name || '').includes('托管')) return '/天'
+  return ''
 })
 </script>
 
 <style scoped>
+/* demo svc-card：白底、8px 圆角、无阴影无边框 */
 .pc-service-card {
-  background: #fff;
-  border: 1px solid rgba(226, 233, 230, 0.75);
-  border-radius: 20px;
+  background: #FFFFFF;
+  border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: 0 8px 22px rgba(25, 50, 46, 0.08);
 }
 
 .pc-service-card:active {
-  transform: scale(0.985);
+  transform: scale(0.98);
 }
 
-.pc-service-card__image-wrap {
-  position: relative;
+/* 图片区：统一 #F5F5F5 灰底，居中 PcIcon 墨色图标 */
+.pc-service-card__img {
   width: 100%;
-  height: 130px;
-  background: #fafafa;
-  overflow: hidden;
-}
-
-.pc-service-card__image {
-  width: 100%;
-  height: 100%;
-}
-
-.pc-service-card__placeholder {
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(circle at 78% 20%, rgba(245, 166, 35, 0.28) 0 34px, transparent 35px),
-    linear-gradient(135deg, #FFFFFF, #DFF2ED);
+  height: 260rpx; /* demo 130px */
+  background: #F5F5F5;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.pc-service-card__placeholder-text {
-  font-size: 28px;
-  font-weight: 800;
-  color: #11796F;
-  opacity: 0.28;
-}
-
-/* Mode badge on top of the image */
-.pc-service-card__mode {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(226, 233, 230, 0.7);
-}
-
-.pc-service-card__mode-text {
-  color: #0C4D48;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.pc-service-card__info {
-  padding: 12px 13px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.pc-service-card__body {
+  padding: 20rpx; /* demo 10px */
 }
 
 .pc-service-card__name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #19322E;
-  line-height: 1.4;
+  font-size: 30rpx; /* demo 15px */
+  font-weight: 500;
+  color: #1A1A1A;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.8em;
 }
 
-.pc-service-card__meta {
+.pc-service-card__attr {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 16rpx;
+  margin-top: 8rpx;
 }
 
-.pc-service-card__duration {
-  font-size: 11px;
-  color: #71817D;
-  flex-shrink: 0;
+.pc-service-card__attr-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  font-size: 22rpx; /* demo 11px */
+  color: #999999;
 }
 
 .pc-service-card__price {
-  font-size: 16px;
-  color: #E97951;
-  font-weight: 800;
-}
-
-.pc-service-card__action {
-  height: 32px;
-  border-radius: 16px;
-  background: #11796F;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 14px rgba(17, 121, 111, 0.2);
+  align-items: baseline;
+  gap: 4rpx;
+  margin-top: 12rpx;
 }
 
-.pc-service-card__action-text {
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+.pc-service-card__price-main {
+  font-size: 32rpx; /* demo 16px */
+  font-weight: 500;
+  color: #FA5151;
+}
+
+.pc-service-card__price-unit {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #999999;
 }
 </style>

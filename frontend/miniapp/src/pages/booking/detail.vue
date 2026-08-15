@@ -53,7 +53,7 @@
         </view>
 
         <view v-if="canCancel" class="booking-detail__action">
-          <PcPrimaryButton text="取消预约" :loading="cancelling" @tap="handleCancel" />
+          <PcPrimaryButton text="取消预约" :loading="cancelling" @press="handleCancel" />
         </view>
       </template>
     </PcStatePanel>
@@ -147,13 +147,13 @@ onLoad((query) => {
 
 <style scoped>
 .booking-detail {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .booking-detail__card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 40rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
@@ -161,34 +161,34 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .booking-detail__no {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .booking-detail__row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #E2E9E6;
+  padding: 16rpx 0;
+  border-bottom: 1px solid var(--pc-user-line);
 }
 
 .booking-detail__label {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .booking-detail__value {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   font-weight: 500;
 }
 
 .booking-detail__action {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 </style>

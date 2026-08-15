@@ -7,7 +7,7 @@ import type { ApiResponse } from '@/types/api'
 import { sanitizeErrorMessage } from '@/utils/error-sanitizer'
 
 const DEFAULT_MP_API_BASE_URL = 'http://127.0.0.1:8080'
-const REQUEST_TIMEOUT_MS = 8000
+const REQUEST_TIMEOUT_MS = 3000
 
 function normalizeBaseUrl(url: string | undefined): string {
   return (url || '').trim().replace(/\/+$/, '')
@@ -33,6 +33,27 @@ function configuredMpFallbackUrls(): string[] {
     .filter(Boolean)
 }
 
+/**
+ * 真机调试自检：微信小程序真机上 localhost/127.0.0.1 指代手机自己，
+ * 不可能连到电脑后端。检测到主地址仍是回环地址时，弹一次明显提示，
+ * 避免后续每次都闷头排查。仅触发一次。
+ */
+let mpLoopbackWarned = false
+function warnIfMpLoopback(baseUrl: string): void {
+  // #ifdef MP-WEIXIN
+  if (mpLoopbackWarned) return
+  const lowered = baseUrl.toLowerCase()
+  if (/^(https?:\/\/)(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(lowered)) {
+    mpLoopbackWarned = true
+    uni.showToast({
+      title: '请在 .env 配置电脑局域网 IP，localhost 在真机指手机自己',
+      icon: 'none',
+      duration: 4000,
+    })
+  }
+  // #endif
+}
+
 export function getRequestBaseUrls(): string[] {
   const apiBaseUrl = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL)
 
@@ -44,7 +65,9 @@ export function getRequestBaseUrls(): string[] {
     apiBaseUrl,
     DEFAULT_MP_API_BASE_URL,
   ]).filter(Boolean)
-  return mpUrls.length > 0 ? mpUrls : [DEFAULT_MP_API_BASE_URL]
+  const result = mpUrls.length > 0 ? mpUrls : [DEFAULT_MP_API_BASE_URL]
+  warnIfMpLoopback(result[0])
+  return result
   // #endif
 
   return uniqueUrls([apiBaseUrl])

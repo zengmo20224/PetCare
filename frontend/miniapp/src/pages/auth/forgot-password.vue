@@ -7,7 +7,7 @@
       <PcFormField label="手机号">
         <input class="pc-input" type="text" v-model="phoneInput" placeholder="请输入注册手机号" />
       </PcFormField>
-      <PcPrimaryButton text="获取安全问题" :loading="loading" @tap="handleGetQuestions" />
+      <PcPrimaryButton text="获取安全问题" :loading="loading" @press="handleGetQuestions" />
     </view>
 
     <!-- Step 2: Answer questions + set new password -->
@@ -23,13 +23,13 @@
       <PcFormField label="新密码">
         <input class="pc-input" type="text" v-model="newPassword" placeholder="请输入新密码" password />
       </PcFormField>
-      <PcPrimaryButton text="重置密码" :loading="loading" @tap="handleReset" />
+      <PcPrimaryButton text="重置密码" :loading="loading" @press="handleReset" />
     </view>
 
     <!-- Step 3: Success -->
     <view v-else-if="step === 3" class="auth-success">
       <text class="auth-success-text">密码已重置，请使用新密码登录</text>
-      <PcPrimaryButton text="去登录" @tap="goLogin" />
+      <PcPrimaryButton text="去登录" @press="goLogin" />
     </view>
   </view>
 </template>
@@ -108,65 +108,65 @@ function goLogin() {
 
 <style scoped>
 .auth-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 24px;
-  padding: 20px;
+  gap: 32rpx;
+  margin-top: 48rpx;
+  padding: 40rpx;
   border: 1px solid #DCEBE7;
-  border-radius: 24px;
-  background: #FFFFFF;
+  border-radius: 48rpx;
+  background: var(--pc-user-surface);
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
 .auth-step-label {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .auth-sq-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16rpx;
   background: #FFF7E6;
-  background: #FAF8F3;
-  border-radius: 16px;
-  padding: 12px;
+  background: var(--pc-user-cream);
+  border-radius: 32rpx;
+  padding: 24rpx;
 }
 
 .auth-sq-question {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .auth-success {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  padding-top: 48px;
+  gap: 48rpx;
+  padding-top: 96rpx;
 }
 
 .auth-success-text {
-  font-size: 16px;
-  color: #19322E;
+  font-size: 32rpx;
+  color: var(--pc-user-ink);
   text-align: center;
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 </style>

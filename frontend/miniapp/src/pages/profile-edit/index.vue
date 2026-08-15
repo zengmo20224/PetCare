@@ -45,7 +45,7 @@
 
       <!-- Save Button -->
       <view class="profile-edit__action">
-        <PcPrimaryButton text="保存" :loading="saving" @tap="handleSave" />
+        <PcPrimaryButton text="保存" :loading="saving" @press="handleSave" />
       </view>
     </view>
   </view>
@@ -144,28 +144,28 @@ async function handleSave() {
 
 <style scoped>
 .profile-edit {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .profile-edit__form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 32rpx;
 }
 
 .profile-edit__avatar-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 0;
+  gap: 16rpx;
+  padding: 32rpx 0;
 }
 
 .profile-edit__avatar {
-  width: 80px;
-  height: 80px;
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 50%;
-  background: #11796F;
+  background: var(--pc-user-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -178,32 +178,32 @@ async function handleSave() {
 }
 
 .profile-edit__avatar-placeholder {
-  font-size: 32px;
-  color: #fff;
+  font-size: 64rpx;
+  color: var(--pc-user-surface);
   font-weight: 700;
 }
 
 .profile-edit__avatar-hint {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .profile-edit__readonly {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .profile-edit__id-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 24rpx;
 }
 
 .profile-edit__id-card-preview {
-  width: 160px;
-  height: 100px;
-  border: 2px dashed #E2E9E6;
-  border-radius: 8px;
+  width: 320rpx;
+  height: 200rpx;
+  border: 2px dashed var(--pc-user-line);
+  border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,26 +216,26 @@ async function handleSave() {
 }
 
 .profile-edit__id-card-placeholder {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .profile-edit__id-card-change {
-  font-size: 11px;
-  color: #11796F;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 
 .profile-edit__action {
-  margin-top: 8px;
+  margin-top: 16rpx;
 }
 </style>

@@ -8,7 +8,7 @@
       @tap="onTabSwitch(tab.pagePath)"
     >
       <view class="pc-bottom-nav__icon">
-        <wd-icon :name="tab.icon" size="20px" :color="currentPath === tab.pagePath ? '#00796B' : '#314D48'" />
+        <wd-icon :name="tab.icon" size="20px" :color="currentPath === tab.pagePath ? '#11796F' : '#999999'" />
       </view>
       <text class="pc-bottom-nav__text">{{ tab.text }}</text>
     </view>
@@ -66,11 +66,11 @@ onMounted(() => {
   z-index: 900;
   display: flex;
   width: 100%;
-  max-width: 480px;
-  min-height: 64px;
-  padding: 6px 10px 8px;
-  border-top: 1px solid #E2E9E6;
-  background: #FFFFFF;
+  max-width: 960rpx;
+  min-height: 128rpx;
+  padding: 12rpx 20rpx 16rpx;
+  border-top: 1px solid var(--pc-user-line);
+  background: var(--pc-user-surface);
   box-shadow: 0 -10px 30px rgba(25, 50, 46, 0.1);
   transform: translateX(-50%);
   box-sizing: border-box;
@@ -79,7 +79,7 @@ onMounted(() => {
 .pc-bottom-nav__item {
   flex: 1;
   min-width: 0;
-  min-height: 50px;
+  min-height: 100rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -87,10 +87,10 @@ onMounted(() => {
 }
 
 .pc-bottom-nav__icon {
-  width: 28px;
-  height: 28px;
-  margin-bottom: 2px;
-  border-radius: 14px;
+  width: 56rpx;
+  height: 56rpx;
+  margin-bottom: 4rpx;
+  border-radius: 28rpx;
   background: #F3F7F5;
   display: flex;
   align-items: center;
@@ -98,16 +98,16 @@ onMounted(() => {
 }
 
 .pc-bottom-nav__text {
-  font-size: 11px;
+  font-size: 22rpx;
   line-height: 1.2;
   color: #314D48;
 }
 
 .pc-bottom-nav__item--active .pc-bottom-nav__icon {
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
 }
 
 .pc-bottom-nav__item--active .pc-bottom-nav__text {
-  color: #00796B;
+  color: var(--pc-user-primary);
 }
 </style>

@@ -28,7 +28,7 @@
     </PcStatePanel>
 
     <view class="addresses-action">
-      <PcPrimaryButton text="添加地址" @tap="goAdd" />
+      <PcPrimaryButton text="添加地址" @press="goAdd" />
     </view>
   </view>
 </template>
@@ -94,22 +94,22 @@ loadAddresses()
 
 <style scoped>
 .addresses-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .addresses-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 28rpx;
 }
 
 .addr-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
+  gap: 24rpx;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
@@ -117,45 +117,45 @@ loadAddresses()
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .addr-card__header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .addr-card__name {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .addr-card__phone {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .addr-card__default {
-  font-size: 11px;
-  color: #fff;
-  background: #11796F;
-  padding: 1px 8px;
-  border-radius: 6px;
+  font-size: 22rpx;
+  color: var(--pc-user-surface);
+  background: var(--pc-user-primary);
+  padding: 2rpx 16rpx;
+  border-radius: 12rpx;
 }
 
 .addr-card__detail {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .addr-card__arrow {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .addresses-action {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 </style>

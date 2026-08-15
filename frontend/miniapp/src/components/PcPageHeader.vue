@@ -16,12 +16,12 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0 12px;
+  padding: 32rpx 0 24rpx;
 }
 
 .pc-page-header__title {
-  font-size: 24px;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 </style>

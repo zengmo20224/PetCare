@@ -41,7 +41,7 @@
         <text class="cp-rules__item">· 必须同时包含数字和字母</text>
       </view>
 
-      <PcPrimaryButton text="确认修改" :loading="saving" @tap="handleSave" />
+      <PcPrimaryButton text="确认修改" :loading="saving" @press="handleSave" />
 
       <view class="cp-forgot">
         <wd-button type="text" size="small" @click="goForgotPassword">忘记原密码？用密保问题修改</wd-button>
@@ -112,60 +112,60 @@ function goForgotPassword() {
 
 <style scoped>
 .cp-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .cp-card {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-top: 24px;
-  padding: 24px 20px;
-  border-radius: 24px;
-  background: #FFFFFF;
+  gap: 36rpx;
+  margin-top: 48rpx;
+  padding: 48rpx 40rpx;
+  border-radius: 48rpx;
+  background: var(--pc-user-surface);
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
 .cp-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .cp-brand__title {
-  font-size: 18px;
+  font-size: 36rpx;
   font-weight: 800;
-  color: #0C4D48;
+  color: var(--pc-user-dark);
 }
 
 .cp-brand__subtitle {
-  font-size: 12px;
-  color: #71817D;
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
 }
 
 .cp-form {
-  border-radius: 16px;
+  border-radius: 32rpx;
   overflow: hidden;
 }
 
 .cp-rules {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background: #FAF8F3;
-  border-radius: 12px;
-  padding: 12px 14px;
+  gap: 8rpx;
+  background: var(--pc-user-cream);
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
 }
 
 .cp-rules__title {
-  font-size: 12px;
+  font-size: 24rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .cp-rules__item {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
   line-height: 1.6;
 }
 

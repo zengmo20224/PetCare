@@ -1,26 +1,27 @@
 <template>
   <view class="pc-page products-page">
-    <PcPageHeader title="商品" />
+    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
+    <PcHeroStrip
+      title="把每一件好物，都精挑细选给它的健康"
+      highlight="好物"
+      desc="主粮 · 零食 · 玩具 · 用品，店长亲测推荐。"
+    />
 
-    <view class="products-intro">
-      <text class="products-intro__kicker">PET SELECT</text>
-      <text class="products-intro__title">把日常照护，变成它喜欢的事</text>
-      <text class="products-intro__desc">门店精选主粮、零食与生活用品，到店自提更安心。</text>
-    </view>
-
+    <!-- 搜索栏（demo search-bar） -->
     <view class="products-search">
-      <input
-        v-model="searchKeyword"
-        class="products-search__input"
-        type="text"
-        confirm-type="search"
-        placeholder="搜索商品"
-        @confirm="handleSearch"
-      />
-      <view v-if="searchKeyword" class="products-search__clear" @tap="clearSearch">
-        <text>清空</text>
+      <view class="products-search__input">
+        <PcIcon name="search" :size="16" color="#B2B2B2" />
+        <input
+          v-model="searchKeyword"
+          class="products-search__field"
+          type="text"
+          confirm-type="search"
+          placeholder="搜索商品名称"
+          placeholder-class="products-search__ph"
+          @confirm="handleSearch"
+        />
       </view>
-      <view class="products-search__button" @tap="handleSearch">
+      <view class="products-search__btn" @tap="handleSearch">
         <text>搜索</text>
       </view>
     </view>
@@ -49,7 +50,9 @@
 
     <PcStatePanel
       :status="listStatus"
-      empty-text="暂无商品"
+      empty-icon="🛍️"
+      :empty-text="emptyText"
+      :empty-hint="emptyHint"
       @retry="loadProducts"
     >
       <view class="products-grid">
@@ -60,26 +63,22 @@
           :name="item.name"
           :price="item.price"
           :cover-url="item.coverUrl"
-          :sales-count="item.salesCount"
-          :badge="item.salesCount >= 100 ? '人气好物' : undefined"
-          @tap="goDetail(item.id)"
+          @press="goDetail(item.id)"
         />
       </view>
     </PcStatePanel>
-    <view class="products-cart-fab" aria-label="购物车" @tap="goCart">
-      <text class="products-cart-fab__icon">🛒</text>
-      <view v-if="cartCount > 0" class="products-cart-fab__badge">
-        <text class="products-cart-fab__badge-text">{{ cartCount > 99 ? '99+' : cartCount }}</text>
-      </view>
-    </view>
+    <!-- 购物车 FAB（demo 风格：右下角浮动按钮 + 角标） -->
+    <PcFab icon="cart" :badge="cartCount || undefined" @press="goCart" />
     <PcBottomNav current-path="pages/products/index" />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import PcPageHeader from '@/components/PcPageHeader.vue'
+import PcHeroStrip from '@/components/PcHeroStrip.vue'
+import PcIcon from '@/components/PcIcon.vue'
+import PcFab from '@/components/PcFab.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcProductCard from '@/components/PcProductCard.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
@@ -95,6 +94,13 @@ const categories = ref<ProductCategory[]>([])
 const activeCategoryId = ref('')
 const searchKeyword = ref('')
 const cartCount = ref(0)
+
+/** Whether the user is filtering by category or keyword — affects empty-state copy. */
+const hasFilter = computed(() => !!activeCategoryId.value || !!searchKeyword.value.trim())
+const emptyText = computed(() => hasFilter.value ? '没有找到相关商品' : '暂无商品')
+const emptyHint = computed(() =>
+  hasFilter.value ? '换个分类或关键词试试' : '新商品上架后会在这里展示'
+)
 
 async function loadCategories() {
   try {
@@ -139,12 +145,6 @@ function handleSearch() {
   loadProducts()
 }
 
-function clearSearch() {
-  if (!searchKeyword.value) return
-  searchKeyword.value = ''
-  loadProducts()
-}
-
 function goDetail(id: string) {
   uni.navigateTo({ url: `/pages/products/detail?id=${id}` })
 }
@@ -183,204 +183,110 @@ onShow(() => {
 
 <style scoped>
 .products-page {
-  min-height: 100vh;
-  padding: 20px 20px 96px;
-  background: #FAF8F3;
+  /* hero/搜索/pills 通栏贴边；grid 由下方规则补留白 */
+  padding: 0 0;
 }
 
-.products-cart-fab {
-  position: fixed;
-  right: 20px;
-  bottom: 96px;
-  z-index: 880;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  background: #11796F;
-  background: linear-gradient(145deg, #16877c, #0C4D48);
-  border: 3px solid rgba(255, 255, 255, 0.92);
-  border-radius: 50%;
-  box-shadow: 0 12px 28px rgba(12, 77, 72, 0.3);
+/* 底部留白 */
+/* #ifdef H5 */
+.products-page {
+  padding-bottom: 192rpx;
 }
-
-.products-cart-fab:active {
-  transform: scale(0.93);
+/* #endif */
+/* #ifdef MP-WEIXIN */
+.products-page {
+  padding-bottom: 32rpx;
 }
+/* #endif */
 
-.products-cart-fab__icon {
-  color: #fff;
-  font-size: 25px;
-  font-weight: 700;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.products-cart-fab__badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: 10px;
-  background: #E97951;
-  border: 2px solid #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.products-cart-fab__badge-text {
-  font-size: 11px;
-  color: #fff;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.products-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 18px;
-  min-height: 118px;
-  padding: 21px 20px;
-  border: 1px solid rgba(17, 121, 111, 0.16);
-  border-radius: 22px;
-  background:
-    radial-gradient(circle at 92% 18%, rgba(255, 218, 138, 0.82) 0 38px, transparent 39px),
-    linear-gradient(135deg, #F5FFFC 0%, #FFFFFF 46%, #E7F6F1 100%);
-  background:
-    radial-gradient(circle at 92% 18%, rgba(245, 166, 35, 0.3) 0 38px, transparent 39px),
-    linear-gradient(135deg, #fff, #DFF2ED);
-  box-shadow: 0 12px 30px rgba(25, 50, 46, 0.08);
-}
-
-.products-intro__kicker {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  color: #E97951;
-  color: #E97951;
-}
-
-.products-intro__title {
-  max-width: 270px;
-  font-size: 20px;
-  line-height: 1.35;
-  font-weight: 800;
-  color: #19322E;
-  color: #0C4D48;
-}
-
-.products-intro__desc {
-  max-width: 290px;
-  font-size: 11px;
-  color: #5F746F;
-  color: #71817D;
-}
-
+/* ─── 搜索栏（demo search-bar）─── */
 .products-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  padding: 8px;
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
-  border-radius: 16px;
-  background: #fff;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
 }
 
 .products-search__input {
   flex: 1;
-  min-width: 0;
-  height: 34px;
-  padding: 0 4px;
-  font-size: 14px;
-  color: #0C4D48;
-}
-
-.products-search__clear,
-.products-search__button {
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
+  gap: 12rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  padding: 14rpx 24rpx;
 }
 
-.products-search__clear {
-  background: #F3F7F5;
-  background: #F3F7F5;
+.products-search__field {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333333;
 }
 
-.products-search__clear text {
-  font-size: 12px;
-  color: #71817D;
+.products-search__ph {
+  color: #B2B2B2;
+  font-size: 26rpx;
 }
 
-.products-search__button {
+.products-search__btn {
   background: #11796F;
-  background: #11796F;
+  border-radius: 8rpx;
+  padding: 14rpx 32rpx;
+  flex-shrink: 0;
 }
 
-.products-search__button text {
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
+.products-search__btn:active {
+  opacity: 0.85;
 }
 
-/* Category Tabs */
+.products-search__btn text {
+  color: #FFFFFF;
+  font-size: 26rpx;
+}
+
+/* ─── 分类 pills（demo cat-pills：8rpx 圆角小 pill）─── */
 .products-tabs {
-  margin-bottom: 16px;
   white-space: nowrap;
   width: 100%;
+  padding: 0 32rpx 24rpx;
+  box-sizing: border-box;
 }
 
 .products-tabs__track {
   display: inline-flex;
-  gap: 8px;
-  min-width: 100%;
-  padding-right: 20px;
-  box-sizing: border-box;
+  gap: 16rpx;
 }
 
 .products-tab {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  padding: 7px 17px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid #E2E9E6;
-  border: 1px solid #E2E9E6;
+  padding: 12rpx 28rpx;
+  border: 1rpx solid #E5E5E5;
+  border-radius: 8rpx;
+  background: #FFFFFF;
   flex-shrink: 0;
+}
+
+.products-tab text {
+  color: #666666;
+  font-size: 26rpx;
+  font-weight: 400;
 }
 
 .products-tab--active {
   background: #11796F;
-  background: #11796F;
-  border-color: #11796F;
   border-color: #11796F;
 }
 
 .products-tab--active text {
-  color: #fff;
+  color: #FFFFFF;
 }
 
-.products-tab text {
-  font-size: 14px;
-  color: #5F746F;
-  color: #71817D;
-}
-
+/* ─── 商品网格（demo prod-grid：gap 10px）─── */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: 20rpx;
+  padding: 0 32rpx;
 }
 </style>

@@ -13,7 +13,8 @@
     <PcStatePanel
       v-else
       :status="listStatus"
-      empty-text="暂无通知"
+      empty-icon="🔔"
+      empty-text="暂无消息通知"
       @retry="loadData"
     >
       <view class="notif-list">
@@ -138,36 +139,36 @@ onShow(() => {
 
 <style scoped>
 .notif-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .notif-mark-all {
-  padding: 6px 14px;
-  background: #DFF2ED;
-  border-radius: 14px;
+  padding: 12rpx 28rpx;
+  background: var(--pc-user-soft);
+  border-radius: 28rpx;
 }
 
 .notif-mark-all__text {
-  font-size: 11px;
-  color: #11796F;
+  font-size: 22rpx;
+  color: var(--pc-user-primary);
   font-weight: 600;
 }
 
 .notif-list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  background: #E2E9E6;
-  border-radius: 12px;
+  gap: 2rpx;
+  background: var(--pc-user-line);
+  border-radius: 24rpx;
   overflow: hidden;
 }
 
 .notif-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  background: #fff;
-  padding: 14px 16px;
+  gap: 24rpx;
+  background: var(--pc-user-surface);
+  padding: 28rpx 32rpx;
   position: relative;
 }
 
@@ -176,10 +177,10 @@ onShow(() => {
 }
 
 .notif-item__avatar {
-  width: 40px;
-  height: 40px;
+  width: 80rpx;
+  height: 80rpx;
   border-radius: 50%;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -193,8 +194,8 @@ onShow(() => {
 }
 
 .notif-item__avatar-text {
-  font-size: 16px;
-  color: #11796F;
+  font-size: 32rpx;
+  color: var(--pc-user-primary);
   font-weight: 600;
 }
 
@@ -202,30 +203,30 @@ onShow(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8rpx;
   min-width: 0;
 }
 
 .notif-item__header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .notif-item__actor {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .notif-item__type {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .notif-item__content {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -233,16 +234,16 @@ onShow(() => {
 }
 
 .notif-item__time {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .notif-item__dot {
   position: absolute;
-  top: 14px;
-  right: 16px;
-  width: 8px;
-  height: 8px;
+  top: 28rpx;
+  right: 32rpx;
+  width: 16rpx;
+  height: 16rpx;
   border-radius: 50%;
   background: #e05050;
 }

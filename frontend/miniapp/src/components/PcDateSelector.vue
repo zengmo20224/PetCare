@@ -53,39 +53,39 @@ const days = computed(() => {
 
 .pc-date-selector__list {
   display: flex;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 16rpx;
+  padding: 8rpx 0;
 }
 
 .pc-date-selector__item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  min-width: 52px;
+  padding: 16rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
+  min-width: 104rpx;
 }
 
 .pc-date-selector__item--active {
-  background: #11796F;
-  border-color: #11796F;
+  background: var(--pc-user-primary);
+  border-color: var(--pc-user-primary);
 }
 
 .pc-date-selector__item--active .pc-date-selector__weekday,
 .pc-date-selector__item--active .pc-date-selector__date {
-  color: #fff;
+  color: var(--pc-user-surface);
 }
 
 .pc-date-selector__weekday {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .pc-date-selector__date {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   font-weight: 600;
 }
 </style>

@@ -157,7 +157,7 @@
 
         <!-- Submit -->
         <view class="booking-action">
-          <PcPrimaryButton text="提交预约" :loading="submitting" @tap="handleSubmit" />
+          <PcPrimaryButton text="提交预约" :loading="submitting" @press="handleSubmit" />
         </view>
       </template>
     </PcStatePanel>
@@ -488,134 +488,134 @@ onShow(() => {
 
 <style scoped>
 .booking-create {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .booking-service {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
 }
 
 .booking-service__name {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .booking-service__price {
-  font-size: 14px;
-  color: #F5A623;
+  font-size: 28rpx;
+  color: var(--pc-user-accent);
   font-weight: 700;
 }
 
 .booking-section {
-  margin-bottom: 20px;
+  margin-bottom: 40rpx;
 }
 
 .booking-label {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 600;
-  color: #19322E;
-  margin-bottom: 8px;
+  color: var(--pc-user-ink);
+  margin-bottom: 16rpx;
 }
 
 .booking-dates {
   display: flex;
-  gap: 8px;
+  gap: 16rpx;
   overflow-x: auto;
 }
 
 .booking-modes {
   display: flex;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .booking-mode {
   flex: 1;
-  padding: 12px;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
   text-align: center;
 }
 
 .booking-mode--active {
-  background: #11796F;
-  border-color: #11796F;
+  background: var(--pc-user-primary);
+  border-color: var(--pc-user-primary);
 }
 
 .booking-mode--active text {
-  color: #fff;
+  color: var(--pc-user-surface);
 }
 
 .booking-date {
-  padding: 8px 16px;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
+  padding: 16rpx 32rpx;
+  border-radius: 24rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
   white-space: nowrap;
 }
 
 .booking-date--active {
-  background: #11796F;
-  border-color: #11796F;
+  background: var(--pc-user-primary);
+  border-color: var(--pc-user-primary);
 }
 
 .booking-date--active text {
-  color: #fff;
+  color: var(--pc-user-surface);
 }
 
 .booking-slots {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .booking-slot {
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
+  padding: 16rpx 28rpx;
+  border-radius: 20rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4rpx;
 }
 
 .booking-slot--active {
-  background: #DFF2ED;
-  border-color: #11796F;
+  background: var(--pc-user-soft);
+  border-color: var(--pc-user-primary);
 }
 
 .booking-slot__count {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 
 .pc-select {
   width: 100%;
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
   box-sizing: border-box;
 }
 
@@ -630,7 +630,7 @@ onShow(() => {
 }
 
 .pc-select--placeholder {
-  color: #71817D;
+  color: var(--pc-user-muted);
 }
 
 .pc-select__text {
@@ -642,21 +642,21 @@ onShow(() => {
 }
 
 .pc-select__arrow {
-  margin-left: 8px;
-  color: #71817D;
+  margin-left: 16rpx;
+  color: var(--pc-user-muted);
 }
 
 .booking-action {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 
 .booking-empty-action {
-  margin-top: 10px;
-  padding: 8px 20px;
-  border-radius: 999px;
-  background: #11796F;
-  color: #fff;
-  font-size: 13px;
+  margin-top: 20rpx;
+  padding: 16rpx 40rpx;
+  border-radius: 1998rpx;
+  background: var(--pc-user-primary);
+  color: var(--pc-user-surface);
+  font-size: 26rpx;
   font-weight: 600;
   display: inline-block;
 }
@@ -664,39 +664,39 @@ onShow(() => {
 /* Payment method switch (CR-20260718-003) */
 .booking-pay {
   display: flex;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .booking-pay__opt {
   flex: 1;
-  height: 42px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
+  height: 84rpx;
+  border-radius: 16rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .booking-pay__opt--on {
-  background: #11796F;
-  border-color: #11796F;
+  background: var(--pc-user-primary);
+  border-color: var(--pc-user-primary);
 }
 
 .booking-pay__opt--on text {
-  color: #fff;
+  color: var(--pc-user-surface);
   font-weight: 600;
 }
 
 .booking-pay__opt text {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
 }
 
 .booking-wallet-hint {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #71817D;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
 }
 
 .booking-wallet-hint--low {

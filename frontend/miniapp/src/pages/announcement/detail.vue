@@ -99,52 +99,52 @@ onShow(() => {
 
 <style scoped>
 .announcement-detail {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .announcement-detail__read-all {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: #DFF2ED;
+  padding: 12rpx 24rpx;
+  border-radius: 1998rpx;
+  background: var(--pc-user-soft);
 }
 
 .announcement-detail__read-all text {
-  font-size: 11px;
+  font-size: 22rpx;
   font-weight: 700;
-  color: #11796F;
+  color: var(--pc-user-primary);
 }
 
 .announcement-detail__list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 32rpx;
 }
 
 .announcement-detail__card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px 16px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 40rpx 32rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
 .announcement-detail__title {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 16rpx;
 }
 
 .announcement-detail__time {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
   display: block;
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .announcement-detail__content {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-word;

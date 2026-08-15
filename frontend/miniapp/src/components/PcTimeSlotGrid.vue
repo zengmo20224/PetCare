@@ -35,25 +35,25 @@ defineEmits<{
 .pc-time-slot-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .pc-time-slot-grid__item {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 0;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid #E2E9E6;
-  font-size: 14px;
-  color: #19322E;
+  padding: 20rpx 0;
+  border-radius: 24rpx;
+  background: var(--pc-user-surface);
+  border: 1px solid var(--pc-user-line);
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
 }
 
 .pc-time-slot-grid__item--active {
-  background: #11796F;
-  border-color: #11796F;
-  color: #fff;
+  background: var(--pc-user-primary);
+  border-color: var(--pc-user-primary);
+  color: var(--pc-user-surface);
 }
 
 .pc-time-slot-grid__item--disabled {

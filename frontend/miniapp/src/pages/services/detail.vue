@@ -38,7 +38,7 @@
             </view>
           </view>
           <view class="service-detail__action">
-            <PcPrimaryButton text="立即预约" @tap="goBooking" />
+            <PcPrimaryButton text="立即预约" @press="goBooking" />
           </view>
         </view>
 
@@ -169,16 +169,16 @@ onLoad((query) => {
 
 <style scoped>
 .service-detail {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .service-detail__cover {
   position: relative;
   width: 100%;
-  height: 200px;
-  border-radius: 20px;
+  height: 400rpx;
+  border-radius: 40rpx;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 32rpx;
 }
 
 .service-detail__cover-img {
@@ -190,20 +190,20 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #DFF2ED;
+  background: var(--pc-user-soft);
 }
 
 .service-detail__cover-placeholder-text {
-  font-size: 48px;
+  font-size: 96rpx;
   font-weight: 700;
-  color: #11796F;
+  color: var(--pc-user-primary);
   opacity: 0.3;
 }
 
 .service-detail__body {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 40rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
@@ -211,53 +211,53 @@ onLoad((query) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 24rpx;
 }
 
 .service-detail__name {
-  font-size: 24px;
+  font-size: 48rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 /* Service details section (text description + image grid) */
 .service-detail__desc {
-  margin-top: 16px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  margin-top: 32rpx;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 40rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
 .service-detail__desc-title {
   display: block;
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 700;
-  color: #19322E;
-  margin-bottom: 12px;
+  color: var(--pc-user-ink);
+  margin-bottom: 24rpx;
 }
 
 .service-detail__desc-content {
   display: block;
   width: 100%;
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
-  margin-bottom: 12px;
+  margin-bottom: 24rpx;
 }
 
 /* Description images: always one per row (single column, full width) */
 .service-detail__desc-images {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .service-detail__desc-image-wrap {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 16rpx;
   overflow: hidden;
   background: #f5f5f5;
 }
@@ -271,8 +271,8 @@ onLoad((query) => {
 .service-detail__info {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 20rpx;
+  margin-bottom: 48rpx;
 }
 
 .service-detail__info-row {
@@ -282,23 +282,23 @@ onLoad((query) => {
 }
 
 .service-detail__label {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .service-detail__value {
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   font-weight: 500;
 }
 
 .service-detail__price {
-  font-size: 20px;
-  color: #F5A623;
+  font-size: 40rpx;
+  color: var(--pc-user-accent);
   font-weight: 700;
 }
 
 .service-detail__action {
-  margin-top: 8px;
+  margin-top: 16rpx;
 }
 </style>

@@ -1,91 +1,71 @@
 <template>
   <view class="pc-page home-page">
-    <!-- 顶部品牌头：wot 设计语言，徽章用 wd-tag -->
-    <view class="home-brand">
-      <view class="home-brand__info">
-        <text class="home-brand__name">PetCare</text>
-        <text class="home-brand__location">萌宠家园 · 上海徐汇店</text>
+    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
+    <PcHeroStrip
+      title="把每一份牵挂，都妥帖安放在这里"
+      highlight="牵挂"
+      desc="萌宠的每一刻，都有人温柔以待。"
+    />
+
+    <!-- 门店信息条（demo store-bar：门店名 + 地址 + 营业状态） -->
+    <view class="home-store-bar">
+      <view class="home-store-bar__info">
+        <text class="home-store-bar__name">萌宠家园 · 上海徐汇店</text>
+        <text class="home-store-bar__addr">徐汇区漕溪北路 88 号</text>
       </view>
-      <wd-tag
-        class="home-brand__status"
-        :type="storeStatus === 'OPEN' ? 'primary' : 'warning'"
-        :plain="storeStatus === 'OPEN'"
-        round
-      >
-        <wd-icon :name="storeStatus === 'OPEN' ? 'check-outline' : 'lock'" size="12px" />
-        {{ storeStatus === 'OPEN' ? '营业中' : '已休息' }}
-      </wd-tag>
+      <view class="home-store-bar__status" :class="storeStatus === 'OPEN' ? 'home-store-bar__status--open' : 'home-store-bar__status--closed'">
+        <view class="home-store-bar__dot" />
+        <text>{{ storeStatus === 'OPEN' ? '营业中' : '已休息' }}</text>
+      </view>
     </view>
 
-    <!-- Hero Section：保留青绿渐变大卡，CTA 用 wot 按钮 -->
-    <PcHeroCard
-      title="给它安心的照护时间"
-      subtitle="洗护、美容与上门照护，为宠物安排专业服务"
-    >
-      <template #action>
-        <wd-button
-          class="home-hero__btn"
-          type="primary"
-          size="large"
-          block
-          @click="goBooking"
-        >
-          马上预约
-        </wd-button>
-      </template>
-    </PcHeroCard>
-
-    <!-- Announcement Entry — green-themed card with unread red dot -->
+    <!-- 公告条（demo notice-bar：扁平白底通栏，裸图标无底色方块） -->
     <view
       v-if="latestAnnouncement"
-      class="home-announcement"
+      class="home-notice-bar"
       @tap="goAnnouncementDetail(latestAnnouncement.id)"
     >
-      <view class="home-announcement__icon">
-        <text class="home-announcement__icon-text">📢</text>
-      </view>
-      <view class="home-announcement__info">
-        <text class="home-announcement__label">社区公告</text>
-        <text class="home-announcement__title">{{ latestAnnouncement.title }}</text>
-      </view>
-      <view v-if="hasUnreadAnnouncement" class="home-announcement__dot" />
-      <text class="home-announcement__arrow">›</text>
+      <PcIcon name="megaphone" :size="16" color="#11796F" />
+      <text class="home-notice-bar__text">{{ latestAnnouncement.title }}</text>
+      <view v-if="hasUnreadAnnouncement" class="home-notice-bar__dot" />
+      <PcIcon name="arrow-right" :size="14" color="#B2B2B2" />
     </view>
 
-    <!-- Quick Service Shortcuts — wot grid 风格的彩色入口 -->
+    <!-- 常用服务宫格（demo grid-4：4列、48px 圆角图标方块） -->
     <view class="pc-section">
-      <view class="home-section-heading">
-        <text class="home-section-kicker">QUICK ACCESS</text>
-        <text class="home-section-title">常用服务</text>
-      </view>
-      <view class="home-shortcuts">
+      <view class="home-section-title">常用服务</view>
+      <view class="home-grid-4">
         <view
           v-for="item in serviceShortcuts"
           :key="item.label"
-          class="home-shortcut-card"
+          class="home-grid-4__item"
           @tap="goServices(item.categoryName)"
         >
-          <view class="home-shortcut-item">
-            <view class="home-shortcut-icon" :style="{ backgroundColor: item.background }">
-              <PcServiceIcon :name="item.icon" :color="item.color" />
-            </view>
-            <text class="home-shortcut-label">{{ item.label }}</text>
-            <text class="home-shortcut-hint">{{ item.hint }}</text>
+          <view class="home-shortcut-icon" :style="{ backgroundColor: item.background }">
+            <PcIcon :name="item.icon" :size="24" :color="item.color" />
           </view>
+          <text class="home-shortcut-label">{{ item.label }}</text>
+          <text class="home-shortcut-hint">{{ item.hint }}</text>
         </view>
       </view>
     </view>
 
-    <!-- Featured Products — 精选好物横向滚动 -->
+    <!-- 精选好物横向滚动（demo：section-title + more 链接） -->
     <view class="pc-section">
       <view class="home-section-header">
-        <view class="home-section-heading">
-          <text class="home-section-kicker">PET SELECT</text>
-          <text class="home-section-title">精选好物</text>
+        <text class="home-section-title">精选好物</text>
+        <view class="home-section-more" @tap="goProducts">
+          <text class="home-section-more-text">逛逛商店</text>
+          <PcIcon name="arrow-right" :size="12" color="#11796F" />
         </view>
-        <wd-button class="home-section-more" type="text" size="small" icon="arrow-right" @click="goProducts">逛逛商店</wd-button>
       </view>
-      <PcStatePanel :status="productsStatus" empty-text="暂无精选商品" error-message="">
+      <PcStatePanel
+        :status="productsStatus"
+        empty-icon="🛍️"
+        empty-text="暂无精选商品"
+        empty-hint="店长正在为你挑选好物"
+        @retry="loadFeaturedProducts"
+      >
         <scroll-view class="home-products-scroll" scroll-x>
           <view class="home-products">
             <PcProductCard
@@ -97,93 +77,97 @@
               :price="item.price"
               :cover-url="item.coverUrl"
               :sales-count="item.salesCount"
-              badge="门店精选"
-              @tap="goProductDetail(item.id)"
+              @press="goProductDetail(item.id)"
             />
           </view>
         </scroll-view>
       </PcStatePanel>
     </view>
 
-    <!-- Marketing Activities — wot card 风格 -->
+    <!-- 门店活动（demo：section-title + more 链接） -->
     <view class="pc-section">
       <view class="home-section-header">
-        <view class="home-section-heading">
-          <text class="home-section-kicker">SPECIAL OFFERS</text>
-          <text class="home-section-title">门店活动</text>
+        <text class="home-section-title">门店活动</text>
+        <view class="home-section-more" @tap="goActivities">
+          <text class="home-section-more-text">查看全部</text>
+          <PcIcon name="arrow-right" :size="12" color="#11796F" />
         </view>
-        <wd-button class="home-section-more" type="text" size="small" icon="arrow-right" @click="goActivities">查看全部</wd-button>
       </view>
-      <PcStatePanel :status="activitiesStatus" empty-text="暂无活动" error-message="">
-        <view class="home-posts">
-          <wd-card
+      <PcStatePanel
+        :status="activitiesStatus"
+        empty-icon="🎉"
+        empty-text="暂无进行中的活动"
+        empty-hint="新活动上线时会在这里通知你"
+        @retry="loadRecentActivities"
+      >
+        <view class="home-activity-list">
+          <view
             v-for="act in recentActivities"
             :key="act.id"
             class="home-activity-card"
-            @click="goActivityDetail(act.id)"
+            @tap="goActivityDetail(act.id)"
           >
-            <view class="home-activity-item">
-              <image v-if="act.coverUrl" class="home-activity-cover" :src="assetFullUrl(act.coverUrl)" mode="aspectFill" lazy-load />
-              <view v-else class="home-activity-cover home-activity-cover--placeholder">
-                <text>活动</text>
-              </view>
-              <view class="home-activity-body">
-                <text class="home-post-title">{{ act.title }}</text>
-                <text class="home-activity-time">{{ formatActivityTime(act) }}</text>
-                <view class="home-post-meta">
-                  <wd-tag v-if="activityProductCount(act) > 0" type="primary" plain size="small">{{ activityProductCount(act) }} 件商品</wd-tag>
-                  <wd-tag v-if="activityServiceCount(act) > 0" type="warning" plain size="small">{{ activityServiceCount(act) }} 项服务</wd-tag>
+            <view class="home-activity-card__img">
+              <image v-if="act.coverUrl" :src="assetFullUrl(act.coverUrl)" mode="aspectFill" class="home-activity-card__cover" lazy-load />
+              <PcIcon v-else name="sparkle" :size="24" color="#11796F" />
+            </view>
+            <view class="home-activity-card__body">
+              <text class="home-activity-card__title">{{ act.title }}</text>
+              <text class="home-activity-card__time">{{ formatActivityTime(act) }}</text>
+              <view class="home-activity-card__tags">
+                <view v-if="activityProductCount(act) > 0" class="home-pill-tag home-pill-tag--soft">
+                  <text>{{ activityProductCount(act) }} 件商品</text>
+                </view>
+                <view v-if="activityServiceCount(act) > 0" class="home-pill-tag home-pill-tag--warn">
+                  <text>{{ activityServiceCount(act) }} 项服务</text>
                 </view>
               </view>
             </view>
-          </wd-card>
+          </view>
         </view>
       </PcStatePanel>
     </view>
 
-    <!-- Recent Community Posts — wot card 风格 -->
+    <!-- 社区动态（demo：纯标题） -->
     <view class="pc-section">
-      <view class="home-section-heading">
-        <text class="home-section-kicker">COMMUNITY</text>
-        <text class="home-section-title">社区动态</text>
-      </view>
-      <PcStatePanel :status="postsStatus" empty-text="暂无动态" error-message="">
-        <view class="home-posts">
-          <wd-card
+      <text class="home-section-title">社区动态</text>
+      <PcStatePanel
+        :status="postsStatus"
+        empty-icon="💬"
+        empty-text="社区还很安静"
+        empty-hint="来分享第一篇萌宠日常吧"
+        @retry="loadRecentPosts"
+      >
+        <template #empty-action>
+          <view class="home-empty-cta" @tap="goCommunityTab">
+            <text class="home-empty-cta__text">去逛社区</text>
+          </view>
+        </template>
+        <view>
+          <view
             v-for="post in recentPosts"
             :key="post.id"
-            class="home-post-card"
-            @click="goPostDetail(post.id)"
+            class="home-post-mini"
+            @tap="goPostDetail(post.id)"
           >
-            <text class="home-post-title">{{ post.title }}</text>
-            <view class="home-post-meta">
-              <view class="home-post-stat">
-                <wd-icon name="heart" size="13px" color="#71817D" />
+            <text class="home-post-mini__title">{{ post.title }}</text>
+            <view class="home-post-mini__meta">
+              <view class="home-post-mini__stat">
+                <PcIcon name="heart" :size="13" color="#999999" />
                 <text>{{ post.likeCount }}</text>
               </view>
-              <view class="home-post-stat">
-                <wd-icon name="chat" size="13px" color="#71817D" />
+              <view class="home-post-mini__stat">
+                <PcIcon name="chat" :size="13" color="#999999" />
                 <text>{{ post.commentCount }}</text>
               </view>
             </view>
-          </wd-card>
+          </view>
         </view>
       </PcStatePanel>
     </view>
 
-    <!-- AI Assistant Entry -->
-    <view class="pc-section">
-      <view class="home-ai-card" @tap="goAiChat">
-        <view class="home-ai-card__icon">
-          <text class="home-ai-card__icon-text">AI</text>
-        </view>
-        <view class="home-ai-card__body">
-          <text class="home-ai-card__title">智能客服</text>
-          <text class="home-ai-card__desc">营业时间、服务价格、宠物闲聊，问 AI 就行</text>
-        </view>
-        <text class="home-ai-card__arrow">›</text>
-      </view>
-    </view>
+    <!-- AI 客服 FAB（demo 风格：右下角浮动按钮，用 demo 的 robot 图标） -->
+    <PcFab icon="robot" @press="goAiChat" />
     <PcBottomNav current-path="pages/home/index" />
   </view>
 </template>
@@ -191,11 +175,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import PcHeroCard from '@/components/PcHeroCard.vue'
+import PcHeroStrip from '@/components/PcHeroStrip.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcProductCard from '@/components/PcProductCard.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
-import PcServiceIcon from '@/components/PcServiceIcon.vue'
+import PcFab from '@/components/PcFab.vue'
+import PcIcon from '@/components/PcIcon.vue'
 import { getPosts } from '@/api/community'
 import { getActivities } from '@/api/activity'
 import { getAnnouncements } from '@/api/notification'
@@ -205,7 +190,7 @@ import type { PostItem } from '@/types/community'
 import type { ActivityItem } from '@/types/activity'
 import type { AnnouncementItem } from '@/types/notification'
 import type { ProductItem } from '@/types/product'
-import { openAllServices, openServiceCategory } from '@/utils/service-navigation'
+import { openServiceCategory } from '@/utils/service-navigation'
 import { hasUnreadAnnouncements } from '@/utils/announcement-read'
 import { assetFullUrl } from '@/utils/asset-url'
 
@@ -216,9 +201,9 @@ const storeStatus = ref<string>('OPEN')
 
 const serviceShortcuts = [
   { label: '洗护', categoryName: '洗护', hint: '清爽洁净', icon: 'bath', color: '#11796F', background: '#DFF2ED' },
-  { label: '美容', categoryName: '美容', hint: '精致造型', icon: 'groom', color: '#D78A0C', background: '#FFF0D1' },
-  { label: '上门照护', categoryName: '上门照护', hint: '省心到家', icon: 'home', color: '#4777C8', background: '#E8F0FE' },
-  { label: '安心寄养', categoryName: '寄养', hint: '贴心陪伴', icon: 'foster', color: '#C85B79', background: '#FCE4EC' },
+  { label: '美容', categoryName: '美容', hint: '精致造型', icon: 'scissors', color: '#D78A0C', background: '#FFF0D1' },
+  { label: '上门照护', categoryName: '上门照护', hint: '省心到家', icon: 'door', color: '#4777C8', background: '#E8F0FE' },
+  { label: '安心寄养', categoryName: '寄养', hint: '贴心陪伴', icon: 'paw', color: '#C85B79', background: '#FCE4EC' },
 ] as const
 
 const recentPosts = ref<PostItem[]>([])
@@ -232,44 +217,52 @@ const productsStatus = ref<'loading' | 'empty' | 'success' | 'error'>('loading')
 async function loadRecentPosts() {
   postsStatus.value = 'loading'
 
-  const res = await getPosts({ size: 5 })
+  try {
+    const res = await getPosts({ size: 5 })
 
-  if (!res.success || !res.data) {
+    if (!res.success || !res.data) {
+      postsStatus.value = 'error'
+      return
+    }
+
+    recentPosts.value = res.data.items
+    postsStatus.value = recentPosts.value.length > 0 ? 'success' : 'empty'
+  } catch {
     postsStatus.value = 'error'
-    return
   }
-
-  recentPosts.value = res.data.items
-  postsStatus.value = recentPosts.value.length > 0 ? 'success' : 'empty'
 }
 
 async function loadRecentActivities() {
   activitiesStatus.value = 'loading'
 
-  const res = await getActivities({ size: 3 })
+  try {
+    const res = await getActivities({ size: 3 })
 
-  if (!res.success || !res.data) {
+    if (!res.success || !res.data) {
+      activitiesStatus.value = 'error'
+      return
+    }
+
+    recentActivities.value = res.data.items
+    activitiesStatus.value = recentActivities.value.length > 0 ? 'success' : 'empty'
+  } catch {
     activitiesStatus.value = 'error'
-    return
   }
-
-  recentActivities.value = res.data.items
-  activitiesStatus.value = recentActivities.value.length > 0 ? 'success' : 'empty'
 }
 
 async function loadFeaturedProducts() {
   productsStatus.value = 'loading'
-  const res = await getProducts({ size: 6 })
-  if (!res.success || !res.data) {
+  try {
+    const res = await getProducts({ size: 6 })
+    if (!res.success || !res.data) {
+      productsStatus.value = 'error'
+      return
+    }
+    featuredProducts.value = res.data.items.slice(0, 6)
+    productsStatus.value = featuredProducts.value.length > 0 ? 'success' : 'empty'
+  } catch {
     productsStatus.value = 'error'
-    return
   }
-  featuredProducts.value = res.data.items.slice(0, 6)
-  productsStatus.value = featuredProducts.value.length > 0 ? 'success' : 'empty'
-}
-
-function goBooking() {
-  openAllServices()
 }
 
 function goServices(categoryName: string) {
@@ -278,6 +271,10 @@ function goServices(categoryName: string) {
 
 function goProducts() {
   uni.switchTab({ url: '/pages/products/index' })
+}
+
+function goCommunityTab() {
+  uni.switchTab({ url: '/pages/community/index' })
 }
 
 function goProductDetail(id: string) {
@@ -356,371 +353,362 @@ onShow(loadAnnouncement)
 
 <style scoped>
 .home-page {
-  /* 底部留白避开 fixed PcBottomNav（64px 高 + 安全余量），与其他 tab 页一致 */
-  padding: 20px 20px 96px;
+  /* hero、store-bar、notice-bar 通栏贴边；其余 section 由下方规则补左右留白。 */
+  padding: 0 0;
 }
 
-/* ─── 顶部品牌头 ─── */
-.home-brand {
+/* 各内容 section 左右留白（hero/store-bar/notice-bar 通栏不命中） */
+.home-page .pc-section {
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+  margin-bottom: 48rpx;
+}
+
+/* 第一个 section（常用服务）距 notice-bar 32rpx */
+.home-page .pc-section:first-of-type {
+  margin-top: 32rpx;
+}
+
+/* 横滚商品区：scroll-view 突破容器宽度，负边距对齐 */
+.home-page .home-products-scroll {
+  width: calc(100% + 80rpx);
+  margin-left: -40rpx;
+  margin-right: -40rpx;
+}
+
+/* 底部留白：H5 端 fixed PcBottomNav 高 128rpx + 安全余量；小程序端用原生 tabBar（系统托起），
+   仅留 32rpx 防止内容贴底边缘。 */
+/* #ifdef H5 */
+.home-page {
+  padding-bottom: 192rpx;
+}
+/* #endif */
+/* #ifdef MP-WEIXIN */
+.home-page {
+  padding-bottom: 32rpx;
+}
+/* #endif */
+
+/* ─── 门店信息条（demo store-bar）─── */
+.home-store-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 2px 2px 18px;
+  padding: 24rpx 32rpx;
+  background: var(--pc-user-surface);
+  border-bottom: 1rpx solid #E5E5E5;
 }
 
-.home-brand__info {
+.home-store-bar__info {
   display: flex;
   flex-direction: column;
+  gap: 4rpx;
 }
 
-.home-brand__name {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #0C4D48;
-}
-
-.home-brand__location {
-  font-size: 11px;
-  color: #71817D;
-}
-
-.home-brand__status {
-  flex-shrink: 0;
-}
-
-/* ─── 公告入口卡片（绿色主题）─── */
-.home-announcement {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #F4FFFB 0%, #E7F6F1 100%);
-  border: 1px solid rgba(17, 121, 111, 0.16);
-  box-shadow: 0 4px 14px rgba(17, 121, 111, 0.08);
-}
-
-.home-announcement__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #11796F;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.home-announcement__icon-text {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.home-announcement__info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.home-announcement__label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #11796F;
-}
-
-.home-announcement__title {
-  font-size: 14px;
+.home-store-bar__name {
+  font-size: 30rpx;
   font-weight: 600;
-  color: #0C4D48;
+  color: #1A1A1A;
+}
+
+.home-store-bar__addr {
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.home-store-bar__status {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 20rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  flex-shrink: 0;
+}
+
+.home-store-bar__status--open {
+  background: #E6F7EE;
+  color: #07C160;
+}
+
+.home-store-bar__status--closed {
+  background: #FFF3E5;
+  color: #FA9D3B;
+}
+
+.home-store-bar__dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ─── 公告条（demo notice-bar：扁平白底通栏）─── */
+.home-notice-bar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid #E5E5E5;
+}
+
+.home-notice-bar__text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #333333;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.home-announcement__dot {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 9px;
-  height: 9px;
+.home-notice-bar__dot {
+  width: 14rpx;
+  height: 14rpx;
   border-radius: 50%;
-  background: #F5465C;
-  border: 2px solid #FFFFFF;
-}
-
-.home-announcement__arrow {
-  font-size: 20px;
-  color: #11796F;
-  font-weight: 600;
+  background: #FA5151;
   flex-shrink: 0;
 }
 
-/* ─── Hero 按钮 ─── */
-.home-hero__btn {
-  margin-top: 16px;
-  align-self: stretch;
-}
-
-/* ─── 章节标题 ─── */
+/* ─── 章节标题（demo section-title：16px/600，左对齐）─── */
 .home-section-title {
   display: block;
-  font-size: 16px;
-  font-weight: 800;
-  color: #19322E;
-  margin-bottom: 12px;
-}
-
-.home-section-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.home-section-kicker {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.4px;
-  color: #E97951;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 24rpx;
 }
 
 .home-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 24rpx;
 }
 
 .home-section-header .home-section-title {
   margin-bottom: 0;
 }
 
+/* more 链接（demo section-title__more：12px/primary，带箭头） */
 .home-section-more {
-  font-size: 10px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
   flex-shrink: 0;
-  line-height: 1.4;
-  margin-top: 2px;
 }
 
-/* ─── 常用服务快捷入口（保留 PetCare 标志性彩色单字方块）─── */
-.home-shortcuts {
-  display: flex;
-  align-items: stretch;
-  padding: 12px 8px;
-  border: 1px solid rgba(226, 233, 230, 0.8);
-  border-radius: 20px;
-  background: #FFFFFF;
-  box-shadow: 0 8px 24px rgba(25, 50, 46, 0.08);
+.home-section-more-text {
+  font-size: 24rpx;
+  color: #11796F;
+  font-weight: 400;
 }
 
-.home-shortcut-card {
-  flex: 1;
-  min-width: 0;
+.home-section-more:active {
+  opacity: 0.6;
 }
 
-.home-shortcut-item {
+/* ─── 常用服务宫格（demo grid-4：4列网格、48px 圆角图标方块）─── */
+.home-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24rpx;
+}
+
+.home-grid-4__item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 0;
-  width: 100%;
-  min-height: 96px;
-  padding: 4px 2px;
+  gap: 12rpx;
 }
 
 .home-shortcut-icon {
-  width: 52px;
-  height: 52px;
-  margin-bottom: 4px;
-  border-radius: 17px;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
-.home-shortcut-item:active .home-shortcut-icon {
-  transform: translateY(2px) scale(0.96);
+.home-grid-4__item:active .home-shortcut-icon {
+  transform: scale(0.95);
 }
 
 .home-shortcut-label {
-  max-width: 100%;
-  font-size: 11px;
-  font-weight: 700;
-  color: #19322E;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 24rpx;
+  color: #333333;
 }
 
 .home-shortcut-hint {
-  max-width: 100%;
-  font-size: 9px;
-  color: #71817D;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 20rpx;
+  color: #999999;
 }
 
-/* ─── 商品横向滚动 ─── */
-.home-products-scroll {
-  width: calc(100% + 20px);
-}
-
+/* ─── 商品横向滚动（首页精选好物：缩到原 3/4）─── */
 .home-products {
   display: flex;
-  gap: 12px;
-  padding: 2px 20px 12px 0;
+  gap: 18rpx;   /* 24rpx × 3/4 */
+  padding: 4rpx 40rpx 24rpx 0;
 }
 
 .home-product-card {
-  width: 190px;
+  width: 285rpx;   /* 380rpx × 3/4 */
   flex-shrink: 0;
 }
 
-/* ─── wot card 列表通用 ─── */
-.home-posts {
+/* 首页横滚卡片等比缩小 PcProductCard 内部尺寸 */
+.home-product-card :deep(.pc-product-card__image-wrap) {
+  height: 207rpx;  /* 276rpx × 3/4 */
+}
+
+.home-product-card :deep(.pc-product-card__info) {
+  padding: 15rpx 15rpx 18rpx;  /* 20rpx × 3/4 */
+  gap: 5rpx;
+}
+
+.home-product-card :deep(.pc-product-card__name) {
+  font-size: 24rpx;  /* 28rpx × 3/4 ≈ 21，取 24 保证可读 */
+}
+
+.home-product-card :deep(.pc-product-card__price) {
+  margin-top: 6rpx;
+  font-size: 28rpx;  /* 32rpx × 3/4 = 24，取 28 保证可读 */
+}
+
+/* ─── 门店活动卡（demo activity-card：扁平、小缩略图）─── */
+.home-activity-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16rpx;
 }
 
-.home-activity-card,
-.home-post-card {
-  margin: 0;
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-/* 给 wot 卡片内容区足够内边距，避免内容贴边显得狭窄 */
-.home-activity-card :deep(.wd-card__content),
-.home-post-card :deep(.wd-card__content) {
-  padding: 18px 16px;
-}
-
-/* ─── 活动卡片内容 ─── */
-.home-activity-item {
+.home-activity-card {
   display: flex;
-  gap: 14px;
-  align-items: center;
+  gap: 24rpx;
+  padding: 24rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
 }
 
-.home-activity-cover {
-  width: 108px;
-  height: 88px;
+.home-activity-card__img {
+  width: 160rpx;
+  height: 120rpx;
   flex-shrink: 0;
-  border-radius: 14px;
+  border-radius: 8rpx;
   overflow: hidden;
-  background: #DFF2ED;
-}
-
-.home-activity-cover--placeholder {
+  background: linear-gradient(135deg, #DFF2ED, #E7F6F1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.home-activity-cover--placeholder text {
-  font-size: 20px;
-  font-weight: 800;
-  color: #11796F;
-  opacity: 0.36;
+.home-activity-card__cover {
+  width: 100%;
+  height: 100%;
 }
 
-.home-activity-body {
+.home-activity-card__body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
-.home-activity-time {
-  font-size: 11px;
-  color: #71817D;
-}
-
-/* ─── 社区帖子卡片内容 ─── */
-.home-post-title {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: #19322E;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
+.home-activity-card__title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1A1A1A;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.home-post-meta {
-  display: flex;
-  gap: 18px;
-  margin-top: 10px;
+.home-activity-card__time {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #999999;
 }
 
-.home-post-stat {
+.home-activity-card__tags {
   display: flex;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+/* ─── pill-tag（demo pill-tag：胶囊小标签）─── */
+.home-pill-tag {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #71817D;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
 }
 
-/* AI 客服入口卡（D-004 修订 2026-07-21） */
-.home-ai-card {
-  display: flex;
-  align-items: center;
-  background: linear-gradient(135deg, #F4FFFB 0%, #E7F6F1 100%);
-  border-radius: 16px;
-  padding: 16px;
-  cursor: pointer;
-}
-
-.home-ai-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #11796F;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.home-ai-card__icon-text {
-  font-size: 16px;
-  font-weight: 700;
-  color: #FFFFFF;
-}
-
-.home-ai-card__body {
-  flex: 1;
-  margin-left: 12px;
-  display: flex;
-  flex-direction: column;
-}
-
-.home-ai-card__title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #0C4D48;
-}
-
-.home-ai-card__desc {
-  font-size: 12px;
-  color: #71817D;
-  margin-top: 2px;
-}
-
-.home-ai-card__arrow {
-  font-size: 20px;
+.home-pill-tag--soft {
+  background: #DFF2ED;
   color: #11796F;
-  margin-left: 8px;
+}
+
+.home-pill-tag--warn {
+  background: #FFF3E5;
+  color: #FA9D3B;
+}
+
+.home-pill-tag--danger {
+  background: #FFE8E8;
+  color: #FA5151;
+}
+
+/* ─── 社区动态卡（demo post-mini：扁平、纯标题+meta）─── */
+.home-post-mini {
+  padding: 24rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+}
+
+.home-post-mini + .home-post-mini {
+  margin-top: 16rpx;
+}
+
+.home-post-mini__title {
+  font-size: 28rpx;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-post-mini__meta {
+  display: flex;
+  gap: 32rpx;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.home-post-mini__stat {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+/* ─── 空状态引导按钮 ─── */
+.home-empty-cta {
+  margin-top: 8rpx;
+  padding: 16rpx 40rpx;
+  border-radius: 1998rpx;
+  background: var(--pc-user-primary);
+  box-shadow: 0 8px 20px rgba(17, 121, 111, 0.18);
+}
+
+.home-empty-cta:active {
+  opacity: 0.85;
+}
+
+.home-empty-cta__text {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--pc-user-surface);
 }
 </style>

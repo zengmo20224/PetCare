@@ -88,7 +88,7 @@
       </PcFormField>
 
       <view class="pet-edit__actions">
-        <PcPrimaryButton :text="isEdit ? '保存修改' : '添加宠物'" :loading="saving" @tap="handleSave" />
+        <PcPrimaryButton :text="isEdit ? '保存修改' : '添加宠物'" :loading="saving" @press="handleSave" />
       </view>
 
       <view v-if="isEdit" class="pet-edit__delete" @tap="handleDelete">
@@ -270,47 +270,47 @@ onLoad((query) => {
 
 <style scoped>
 .pet-edit {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .pet-edit__form {
-  margin-top: 16px;
+  margin-top: 32rpx;
 }
 
 .pet-edit__actions {
-  margin-top: 24px;
+  margin-top: 48rpx;
 }
 
 .pet-edit__delete {
-  margin-top: 16px;
+  margin-top: 32rpx;
   text-align: center;
-  padding: 12px;
+  padding: 24rpx;
 }
 
 .pet-edit__delete-text {
-  font-size: 14px;
+  font-size: 28rpx;
   color: #e05050;
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 
 .pc-select {
   width: 100%;
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
   box-sizing: border-box;
 }
 
@@ -325,7 +325,7 @@ onLoad((query) => {
 }
 
 .pc-select--placeholder {
-  color: #71817D;
+  color: var(--pc-user-muted);
 }
 
 .pc-select__text {
@@ -337,7 +337,7 @@ onLoad((query) => {
 }
 
 .pc-select__arrow {
-  margin-left: 8px;
-  color: #71817D;
+  margin-left: 16rpx;
+  color: var(--pc-user-muted);
 }
 </style>

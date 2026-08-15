@@ -45,7 +45,7 @@
         </PcFormField>
       </view>
 
-      <PcPrimaryButton text="更新密保" :loading="saving" @tap="handleSave" />
+      <PcPrimaryButton text="更新密保" :loading="saving" @press="handleSave" />
     </view>
   </view>
 </template>
@@ -179,66 +179,66 @@ async function handleSave() {
 
 <style scoped>
 .sq-page {
-  padding: 20px;
+  padding: 40rpx;
 }
 
 .sq-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 24px;
-  padding: 24px 20px;
-  border-radius: 24px;
-  background: #FFFFFF;
+  gap: 32rpx;
+  margin-top: 48rpx;
+  padding: 48rpx 40rpx;
+  border-radius: 48rpx;
+  background: var(--pc-user-surface);
   box-shadow: 0 12px 32px rgba(25, 50, 46, 0.09);
 }
 
 .sq-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12rpx;
 }
 
 .sq-brand__title {
-  font-size: 18px;
+  font-size: 36rpx;
   font-weight: 800;
-  color: #0C4D48;
+  color: var(--pc-user-dark);
 }
 
 .sq-brand__subtitle {
-  font-size: 12px;
-  color: #71817D;
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
   line-height: 1.5;
 }
 
 .sq-current {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #FAF8F3;
-  border-radius: 16px;
-  padding: 14px;
+  gap: 16rpx;
+  background: var(--pc-user-cream);
+  border-radius: 32rpx;
+  padding: 28rpx;
 }
 
 .sq-current__title {
-  font-size: 13px;
+  font-size: 26rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .sq-current__item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 20rpx;
 }
 
 .sq-current__index {
-  width: 20px;
-  height: 20px;
+  width: 40rpx;
+  height: 40rpx;
   border-radius: 50%;
-  background: #11796F;
-  color: #fff;
-  font-size: 11px;
+  background: var(--pc-user-primary);
+  color: var(--pc-user-surface);
+  font-size: 22rpx;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -247,39 +247,39 @@ async function handleSave() {
 }
 
 .sq-current__question {
-  font-size: 13px;
-  color: #19322E;
+  font-size: 26rpx;
+  color: var(--pc-user-ink);
 }
 
 .sq-divider {
-  height: 1px;
-  background: #E2E9E6;
-  margin: 4px 0;
+  height: 2rpx;
+  background: var(--pc-user-line);
+  margin: 8rpx 0;
 }
 
 .sq-section-title {
-  font-size: 14px;
+  font-size: 28rpx;
   font-weight: 700;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .sq-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #FAF8F3;
-  border-radius: 16px;
-  padding: 12px;
+  gap: 16rpx;
+  background: var(--pc-user-cream);
+  border-radius: 32rpx;
+  padding: 24rpx;
 }
 
 .pc-input {
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
 }
 
 .pc-select-wrap {
@@ -288,13 +288,13 @@ async function handleSave() {
 
 .pc-select {
   width: 100%;
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  font-size: 14px;
-  color: #19322E;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
+  background: var(--pc-user-surface);
   box-sizing: border-box;
 }
 
@@ -309,7 +309,7 @@ async function handleSave() {
 }
 
 .pc-select--placeholder {
-  color: #71817D;
+  color: var(--pc-user-muted);
 }
 
 .pc-select__text {
@@ -321,7 +321,7 @@ async function handleSave() {
 }
 
 .pc-select__arrow {
-  margin-left: 8px;
-  color: #71817D;
+  margin-left: 16rpx;
+  color: var(--pc-user-muted);
 }
 </style>

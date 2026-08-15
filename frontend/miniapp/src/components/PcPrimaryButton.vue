@@ -15,9 +15,12 @@
 
 <script setup lang="ts">
 /**
- * 全局主操作按钮，外层 API 保持不变（text/loading/disabled/@tap），
+ * 全局主操作按钮，外层 API（text/loading/disabled/@press）。
  * 内部基于 wot-design-uni 的 wd-button 实现。
  * 主色由 tokens.css 中 --wot-color-theme: #11796F 全局控制。
+ *
+ * 事件协议：对外只发非原生 press，避免 mp-weixin 父子同名 bindtap 冒泡
+ * 导致“一次点击进入两次”。wd-button 内部仍用 click（物理点击），但绝不外泄 tap。
  */
 defineProps<{
   text?: string
@@ -26,29 +29,29 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'tap'): void
+  (e: 'press'): void
 }>()
 
-// 桥接：全站 18+ 处调用都用 @tap，wd-button 触发 click
+// 桥接：wd-button 的 click → 对外只 emit press
 function handleClick() {
-  emit('tap')
+  emit('press')
 }
 </script>
 
 <style scoped>
-/* 保留主色字面量（契约测试 mp-weixin-ui-contract.test.ts:178 要求本文件含该字符串） */
+/* 品牌主色通过设计令牌引用（tokens.css 的 --pc-user-primary），跨 H5/小程序统一 */
 .pc-primary-button {
-  background: #11796F;
-  height: 48px;
-  min-height: 48px;
-  border-radius: 16px;
-  font-size: 16px;
+  background: var(--pc-user-primary);
+  height: 96rpx;
+  min-height: 96rpx;
+  border-radius: 32rpx;
+  font-size: 32rpx;
   font-weight: 700;
 }
 
 /* wot 内部按钮高度对齐 */
 :deep(.wd-button) {
-  height: 48px;
-  border-radius: 16px;
+  height: 96rpx;
+  border-radius: 32rpx;
 }
 </style>

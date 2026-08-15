@@ -100,6 +100,10 @@ export const AI_STREAM_SUPPORTED: boolean =
  * EventSource 不适用）。调用前用 {@link AI_STREAM_SUPPORTED} 判断，不支持走同步 sendMessage。
  *
  * 事件协议（AiConversationStreamController）：chunk=文本块、done=[DONE]、error=降级文案。
+ *
+ * 结束语义（2026-08-15 验收缺陷修复）：收到 done/error 帧立即结束回调并 cancel reader，
+ * 不等待响应流自然关闭——经代理（vite/node http-proxy）时流关闭事件可能永不触发，
+ * 旧实现等流结束导致聊天页卡"正在思考"且输入框锁死。
  */
 export async function sendMessageStream(
   conversationId: string,
@@ -130,9 +134,12 @@ export async function sendMessageStream(
       return
     }
     const reader = res.body.getReader()
+    const cancelReader = () => {
+      reader.cancel().catch(() => {})
+    }
     const decoder = new TextDecoder('utf-8')
     let buffer = ''
-    for (;;) {
+    readLoop: for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
@@ -141,7 +148,13 @@ export async function sendMessageStream(
       while (sep >= 0) {
         const frame = buffer.slice(0, sep)
         buffer = buffer.slice(sep + 2)
-        handleSseFrame(frame, handlers)
+        const terminator = handleSseFrame(frame, handlers)
+        if (terminator) {
+          // done/error 帧即协议终止：立即结束，主动断开挂起的流
+          finish(terminator === 'done' ? handlers.onDone : () => {})
+          cancelReader()
+          break readLoop
+        }
         sep = buffer.indexOf('\n\n')
       }
     }
@@ -151,8 +164,8 @@ export async function sendMessageStream(
   }
 }
 
-/** 解析单帧 SSE（event/data 行；data 多行时按协议 join('\n')）。 */
-function handleSseFrame(frame: string, handlers: AiStreamHandlers): void {
+/** 解析单帧 SSE（event/data 行；data 多行时按协议 join('\n')）。返回终止帧类型（非终止帧返回 null）。 */
+function handleSseFrame(frame: string, handlers: AiStreamHandlers): 'done' | 'error' | null {
   let event = 'message'
   const dataLines: string[] = []
   for (const line of frame.split('\n')) {
@@ -165,8 +178,14 @@ function handleSseFrame(frame: string, handlers: AiStreamHandlers): void {
   const data = dataLines.join('\n')
   if (event === 'chunk') {
     if (data) handlers.onChunk(data)
-  } else if (event === 'error') {
-    handlers.onError(data || 'AI 暂时无法回复')
+    return null
   }
-  // done 事件由流结束时统一回调 onDone
+  if (event === 'error') {
+    handlers.onError(data || 'AI 暂时无法回复')
+    return 'error'
+  }
+  if (event === 'done') {
+    return 'done'
+  }
+  return null
 }

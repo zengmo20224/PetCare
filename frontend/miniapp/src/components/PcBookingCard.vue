@@ -1,5 +1,5 @@
 <template>
-  <view class="pc-booking-card" @tap="$emit('tap')">
+  <view class="pc-booking-card" @tap="$emit('press')">
     <view class="pc-booking-card__header">
       <text class="pc-booking-card__service">{{ serviceName }}</text>
       <PcStatusTag :label="statusLabel" :type="statusType" />
@@ -29,7 +29,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  (e: 'tap'): void
+  (e: 'press'): void
 }>()
 
 const statusType = computed(() => {
@@ -49,9 +49,9 @@ const dateText = computed(() => formatDate(props.bookingDate))
 
 <style scoped>
 .pc-booking-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
+  background: var(--pc-user-surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
   box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
 }
 
@@ -59,30 +59,30 @@ const dateText = computed(() => formatDate(props.bookingDate))
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 16rpx;
 }
 
 .pc-booking-card__service {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
-  color: #19322E;
+  color: var(--pc-user-ink);
 }
 
 .pc-booking-card__detail {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .pc-booking-card__date,
 .pc-booking-card__time {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
 }
 
 .pc-booking-card__staff {
-  margin-top: 4px;
-  font-size: 11px;
-  color: #71817D;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 </style>

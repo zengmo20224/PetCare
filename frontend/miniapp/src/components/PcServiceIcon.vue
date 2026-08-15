@@ -1,5 +1,6 @@
 <template>
   <view class="pc-service-icon" :style="{ color: color }">
+    <!-- #ifndef MP-WEIXIN -->
     <!-- 洗护：浴缸 + 水滴泡沫 -->
     <svg v-if="name === 'bath'" viewBox="0 0 24 24" fill="none" :stroke="color" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 11h18a0 0 0 0 1 0 0v1a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5v-1z" />
@@ -41,19 +42,44 @@
       <circle cx="9.5" cy="7" r="1.4" />
       <circle cx="14.5" cy="7" r="1.4" />
     </svg>
+    <!-- #endif -->
+
+    <!-- #ifdef MP-WEIXIN -->
+    <!-- 小程序不支持内联 <svg>，改用语义 emoji 字形（图标位于彩色圆形背景内，仅作装饰）。
+         字形通过 computed 映射，保持与 H5 端 4 个分类语义一致。 -->
+    <text class="pc-service-icon__glyph">{{ glyph }}</text>
+    <!-- #endif -->
   </view>
 </template>
 
 <script setup lang="ts">
 /**
- * 服务类别图标（内联 SVG，无外部依赖）。
- * 统一线性风格：24×24 viewBox、stroke-width 1.8、round 线帽，贴合 wot 设计语言。
- * 颜色通过 props.color 注入，复用 PetCare 彩色配色。
+ * 服务类别图标。
+ *
+ * - H5 / 其他端：内联 SVG（24×24 viewBox、stroke-width 1.8、round 线帽，贴合 wot 设计语言）。
+ *   颜色通过 props.color 注入，复用 PetCare 彩色配色。
+ *
+ * - 微信小程序：不支持内联 `<svg>` 标签（整体不渲染），改用语义 emoji 字形兜底。
+ *   home 页快捷入口的图标已位于彩色圆形背景之内，仅作装饰，emoji 不影响可读性。
  */
-defineProps<{
+const props = defineProps<{
   name: 'bath' | 'groom' | 'home' | 'foster'
   color: string
 }>()
+
+// #ifdef MP-WEIXIN
+import { computed } from 'vue'
+
+/** Map service category → emoji glyph (mp-weixin fallback only). */
+const SERVICE_ICON_GLYPHS: Record<string, string> = {
+  bath: '🛁',
+  groom: '✂️',
+  home: '🏠',
+  foster: '🐾',
+}
+
+const glyph = computed(() => SERVICE_ICON_GLYPHS[props.name] ?? '🐾')
+// #endif
 </script>
 
 <style scoped>
@@ -61,13 +87,22 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 52rpx;
+  height: 52rpx;
 }
 
+/* #ifndef MP-WEIXIN */
 .pc-service-icon svg {
-  width: 26px;
-  height: 26px;
+  width: 52rpx;
+  height: 52rpx;
   display: block;
 }
+/* #endif */
+
+/* #ifdef MP-WEIXIN */
+.pc-service-icon__glyph {
+  font-size: 44rpx;
+  line-height: 1;
+}
+/* #endif */
 </style>

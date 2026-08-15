@@ -35,6 +35,7 @@
     "@dcloudio/uni-stacktracey": "3.0.0-5000720260410001",
     "@dcloudio/vite-plugin-uni": "3.0.0-5000720260410001",
     "@types/node": "^20.14.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vue/runtime-core": "^3.4.21",
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.5.1",

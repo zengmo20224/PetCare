@@ -1,20 +1,14 @@
 <template>
-  <view class="pc-product-card" @tap="$emit('tap')">
+  <view class="pc-product-card" @tap="$emit('press')">
     <view class="pc-product-card__image-wrap">
       <image v-if="displayCover" class="pc-product-card__image" :src="displayCover" mode="aspectFill" lazy-load />
-      <view v-else class="pc-product-card__placeholder">
-        <text class="pc-product-card__placeholder-text">好物</text>
-      </view>
-      <view v-if="badge" class="pc-product-card__badge">
-        <text class="pc-product-card__badge-text">{{ badge }}</text>
-      </view>
+      <!-- 无图时纯灰底占位（demo 风格：无文字） -->
+      <!-- badge prop 保留以兼容调用方，但网易严选风不再渲染角标 -->
     </view>
     <view class="pc-product-card__info">
       <text class="pc-product-card__name">{{ name }}</text>
-      <view class="pc-product-card__bottom">
-        <text class="pc-product-card__price">{{ priceText }}</text>
-        <text v-if="salesCount != null" class="pc-product-card__sales">已售 {{ salesCount }}</text>
-      </view>
+      <text v-if="sub" class="pc-product-card__sub">{{ sub }}</text>
+      <text class="pc-product-card__price">{{ priceText }}</text>
     </view>
   </view>
 </template>
@@ -31,11 +25,14 @@ const props = defineProps<{
   price: number
   coverUrl?: string | null
   salesCount?: number | null
+  /** 网易严选风规格描述行（如 "中大型犬 · 2kg 袋装"） */
+  sub?: string
+  /** @deprecated 网易严选风不再渲染 badge，保留 prop 仅向后兼容 */
   badge?: string
 }>()
 
 defineEmits<{
-  (e: 'tap'): void
+  (e: 'press'): void
 }>()
 
 const priceText = computed(() => formatYuan(props.price))
@@ -43,24 +40,23 @@ const displayCover = computed(() => props.coverUrl ? assetFullUrl(props.coverUrl
 </script>
 
 <style scoped>
+/* 网易严选风：统一浅灰底、留白克制、字重降低、去装饰角标 */
 .pc-product-card {
-  background: #fff;
-  border: 1px solid rgba(226, 233, 230, 0.75);
-  border-radius: 20px;
+  background: var(--pc-user-surface);
+  border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: 0 8px 22px rgba(25, 50, 46, 0.08);
-  box-shadow: 0 8px 24px rgba(25, 50, 46, 0.08);
 }
 
 .pc-product-card:active {
   transform: scale(0.985);
 }
 
+/* 图片区：统一 #F5F5F5 灰底，替代原彩色渐变 placeholder */
 .pc-product-card__image-wrap {
   position: relative;
   width: 100%;
-  height: 138px;
-  background: #fafafa;
+  height: 276rpx;
+  background: var(--pc-demo-img-bg);
   overflow: hidden;
 }
 
@@ -69,52 +65,18 @@ const displayCover = computed(() => props.coverUrl ? assetFullUrl(props.coverUrl
   height: 100%;
 }
 
-.pc-product-card__placeholder {
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(circle at 78% 20%, rgba(245, 166, 35, 0.28) 0 34px, transparent 35px),
-    linear-gradient(135deg, #FFFFFF, #DFF2ED);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pc-product-card__placeholder-text {
-  font-size: 28px;
-  font-weight: 800;
-  color: #11796F;
-  opacity: 0.28;
-}
-
-.pc-product-card__badge {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(226, 233, 230, 0.7);
-}
-
-.pc-product-card__badge-text {
-  color: #19322E;
-  color: #0C4D48;
-  font-size: 10px;
-  font-weight: 700;
-}
-
+/* 信息区：紧凑留白，网易严选式层次 */
 .pc-product-card__info {
-  padding: 12px 13px 14px;
+  padding: 20rpx 20rpx 24rpx;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6rpx;
 }
 
 .pc-product-card__name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #19322E;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--pc-demo-ink-1);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -123,23 +85,17 @@ const displayCover = computed(() => props.coverUrl ? assetFullUrl(props.coverUrl
   min-height: 2.8em;
 }
 
-.pc-product-card__bottom {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
+/* 规格描述行（sub）：克制灰色小字 */
+.pc-product-card__sub {
+  font-size: 20rpx;
+  color: var(--pc-demo-ink-4);
+  line-height: 1.4;
 }
 
 .pc-product-card__price {
-  font-size: 18px;
-  color: #E97951;
-  color: #E97951;
-  font-weight: 800;
-}
-
-.pc-product-card__sales {
-  font-size: 11px;
-  color: #71817D;
-  flex-shrink: 0;
+  margin-top: 8rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: var(--pc-demo-price);
 }
 </style>

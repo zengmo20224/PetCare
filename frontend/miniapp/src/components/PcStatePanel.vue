@@ -8,8 +8,9 @@
 
     <!-- Empty -->
     <view v-else-if="status === 'empty'" class="pc-state-panel__state">
-      <text class="pc-state-panel__empty-icon">&#x1F4E6;</text>
+      <text class="pc-state-panel__empty-icon">{{ emptyIcon }}</text>
       <text class="pc-state-panel__text">{{ emptyText }}</text>
+      <text v-if="emptyHint" class="pc-state-panel__hint">{{ emptyHint }}</text>
       <slot name="empty-action" />
     </view>
 
@@ -17,7 +18,7 @@
     <view v-else-if="status === 'error'" class="pc-state-panel__state">
       <text class="pc-state-panel__error-icon">&#x26A0;</text>
       <text class="pc-state-panel__text">{{ sanitizedMessage }}</text>
-      <PcPrimaryButton text="重试" @tap="$emit('retry')" />
+      <PcPrimaryButton text="重试" @press="$emit('retry')" />
     </view>
 
     <!-- Blocked -->
@@ -47,11 +48,15 @@ const props = withDefaults(defineProps<{
   status: 'loading' | 'empty' | 'error' | 'blocked' | 'unauthorized' | 'success'
   loadingText?: string
   emptyText?: string
+  emptyIcon?: string
+  emptyHint?: string
   errorMessage?: string
   reason?: string
 }>(), {
   loadingText: '加载中...',
   emptyText: '暂无内容',
+  emptyIcon: '\u{1F4E6}',
+  emptyHint: '',
   errorMessage: '',
   reason: '',
 })
@@ -73,15 +78,15 @@ const sanitizedMessage = computed(() => sanitizeErrorMessage(props.errorMessage)
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
-  gap: 12px;
+  padding: 96rpx 48rpx;
+  gap: 24rpx;
 }
 
 .pc-state-panel__spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #E2E9E6;
-  border-top-color: #11796F;
+  width: 64rpx;
+  height: 64rpx;
+  border: 3px solid var(--pc-user-line);
+  border-top-color: var(--pc-user-primary);
   border-radius: 50%;
   animation: pc-spin 0.8s linear infinite;
 }
@@ -93,17 +98,26 @@ const sanitizedMessage = computed(() => sanitizeErrorMessage(props.errorMessage)
 .pc-state-panel__empty-icon,
 .pc-state-panel__error-icon,
 .pc-state-panel__blocked-icon {
-  font-size: 40px;
+  font-size: 80rpx;
 }
 
 .pc-state-panel__text {
-  font-size: 14px;
-  color: #71817D;
+  font-size: 28rpx;
+  color: var(--pc-user-muted);
   text-align: center;
 }
 
 .pc-state-panel__reason {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
+}
+
+.pc-state-panel__hint {
+  font-size: 24rpx;
+  color: var(--pc-user-muted);
+  text-align: center;
+  max-width: 520rpx;
+  line-height: 1.6;
+  margin-top: -8rpx;
 }
 </style>

@@ -142,67 +142,67 @@ function removeTag(index: number) {
 .tag-input {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .tag-input__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16rpx;
 }
 
 .tag-input__tag {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  background: #11796F;
-  border-radius: 16px;
+  gap: 8rpx;
+  padding: 8rpx 24rpx;
+  background: var(--pc-user-primary);
+  border-radius: 32rpx;
 }
 
 .tag-input__tag-text {
-  color: #fff;
-  font-size: 11px;
+  color: var(--pc-user-surface);
+  font-size: 22rpx;
 }
 
 .tag-input__tag-close {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 16px;
+  font-size: 32rpx;
 }
 
 .tag-input__row {
   display: flex;
   align-items: center;
-  height: 44px;
-  border: 1px solid #E2E9E6;
-  border-radius: 12px;
-  padding: 0 14px;
-  background: #fff;
+  height: 88rpx;
+  border: 1px solid var(--pc-user-line);
+  border-radius: 24rpx;
+  padding: 0 28rpx;
+  background: var(--pc-user-surface);
 }
 
 .tag-input__prefix {
-  color: #11796F;
-  font-size: 14px;
+  color: var(--pc-user-primary);
+  font-size: 28rpx;
   font-weight: 600;
-  margin-right: 4px;
+  margin-right: 8rpx;
 }
 
 .tag-input__field {
   flex: 1;
-  font-size: 14px;
-  color: #19322E;
+  font-size: 28rpx;
+  color: var(--pc-user-ink);
   border: none;
   outline: none;
 }
 
 .tag-input__hint {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 
 .tag-input__dropdown {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--pc-user-surface);
+  border-radius: 24rpx;
   box-shadow: 0 4px 16px rgba(25, 50, 46, 0.12);
   overflow: hidden;
   z-index: 10;
@@ -212,8 +212,8 @@ function removeTag(index: number) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid #E2E9E6;
+  padding: 20rpx 28rpx;
+  border-bottom: 1px solid var(--pc-user-line);
 }
 
 .tag-input__suggestion:last-child {
@@ -221,12 +221,12 @@ function removeTag(index: number) {
 }
 
 .tag-input__suggestion-text {
-  font-size: 14px;
-  color: #11796F;
+  font-size: 28rpx;
+  color: var(--pc-user-primary);
 }
 
 .tag-input__suggestion-count {
-  font-size: 11px;
-  color: #71817D;
+  font-size: 22rpx;
+  color: var(--pc-user-muted);
 }
 </style>
