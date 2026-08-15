@@ -61,6 +61,11 @@ export const enableProduct = (id: number) => {
   return request.post<Product>(`/v1/admin/products/${id}/enable`)
 }
 
+/** 删除商品（仅下架 OFF_SALE 状态可删，服务端强制校验） */
+export const deleteProduct = (id: number) => {
+  return request.delete<null>(`/v1/admin/products/${id}`)
+}
+
 export const updateProductStock = (id: number, data: ProductStockUpdateParams) => {
   return request.put<Product>(`/v1/admin/products/${id}/stock`, data)
 }

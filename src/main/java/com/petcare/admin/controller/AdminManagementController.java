@@ -31,6 +31,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -110,6 +111,16 @@ public class AdminManagementController {
     @PreAuthorize("hasAuthority('service:item:enable')")
     public ResponseEntity<ApiResponse<ServiceItemView>> enableServiceItem(@PathVariable Long id) {
         return ok(service.enableServiceItem(id, operatorId()));
+    }
+
+    /**
+     * 删除服务项（逻辑删除）。仅停用（OFF_SALE）状态可删——服务端强制先禁用后删除。
+     */
+    @DeleteMapping("/service-items/{id}")
+    @PreAuthorize("hasAuthority('service:item:delete')")
+    public ResponseEntity<ApiResponse<Void>> deleteServiceItem(@PathVariable Long id) {
+        service.deleteServiceItem(id, operatorId());
+        return ok(null);
     }
 
     @GetMapping("/staff")
@@ -215,6 +226,16 @@ public class AdminManagementController {
     @PreAuthorize("hasAuthority('product:item:enable')")
     public ResponseEntity<ApiResponse<ProductView>> enableProduct(@PathVariable Long id) {
         return ok(service.enableProduct(id, operatorId()));
+    }
+
+    /**
+     * 删除商品（逻辑删除）。仅下架（OFF_SALE）状态可删——服务端强制先下架后删除。
+     */
+    @DeleteMapping("/products/{id}")
+    @PreAuthorize("hasAuthority('product:item:delete')")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
+        service.deleteProduct(id, operatorId());
+        return ok(null);
     }
 
     @PutMapping("/products/{id}/stock")

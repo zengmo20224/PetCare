@@ -284,6 +284,26 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     }
 
     @Override
+    @Transactional
+    public void deleteServiceItem(Long id, Long operatorId) {
+        String url = "/api/v1/admin/service-items/" + id;
+        ServiceItem item = null;
+        try {
+            item = requireServiceItem(id);
+            if (!"OFF_SALE".equals(item.getStatus())) {
+                throw new BusinessException(ErrorCode.STATE_CONFLICT, "该服务项目未处于停用状态，请先停用再删除");
+            }
+            serviceItemService.removeById(item.getId());
+            String params = "targetName=" + item.getName() + ", serviceItemId=" + item.getId();
+            audit(operatorId, "service", "delete-item", "DELETE", url, "SUCCESS", params, null);
+        } catch (RuntimeException e) {
+            String params = item != null ? "targetName=" + item.getName() + ", serviceItemId=" + item.getId() : null;
+            audit(operatorId, "service", "delete-item", "DELETE", url, "FAIL", params, auditFailureMessage(e));
+            throw e;
+        }
+    }
+
+    @Override
     public PageResponse<StaffView> listStaff(int page, int size, String status) {
         LambdaQueryWrapper<Staff> query = new LambdaQueryWrapper<Staff>()
                 .eq(Staff::getDeleted, 0)
@@ -577,6 +597,26 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         } catch (RuntimeException e) {
             String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
             audit(operatorId, "product", "enable-item", "POST", url, "FAIL", params, auditFailureMessage(e));
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteProduct(Long id, Long operatorId) {
+        String url = "/api/v1/admin/products/" + id;
+        Product product = null;
+        try {
+            product = requireProduct(id);
+            if (!"OFF_SALE".equals(product.getStatus())) {
+                throw new BusinessException(ErrorCode.STATE_CONFLICT, "该商品未处于下架状态，请先下架再删除");
+            }
+            productService.removeById(product.getId());
+            String params = "targetName=" + product.getName() + ", productId=" + product.getId();
+            audit(operatorId, "product", "delete-item", "DELETE", url, "SUCCESS", params, null);
+        } catch (RuntimeException e) {
+            String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
+            audit(operatorId, "product", "delete-item", "DELETE", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }

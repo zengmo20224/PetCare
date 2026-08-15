@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,12 +55,12 @@ class AdminManagementControllerTest {
     private static final String[] PERMISSIONS = {
             "store:info:read", "store:info:update", "store:config:read", "store:config:update",
             "service:item:read", "service:item:create", "service:item:update", "service:item:disable",
-            "service:item:enable",
+            "service:item:enable", "service:item:delete",
             "staff:profile:read", "staff:profile:create", "staff:profile:update", "staff:profile:disable",
             "staff:profile:enable",
             "staff:skill:manage", "staff:schedule:read", "staff:schedule:manage",
             "product:item:read", "product:item:create", "product:item:update", "product:item:disable",
-            "product:item:enable",
+            "product:item:enable", "product:item:delete",
             "product:stock:update", "admin:operation-log:read"
     };
 
@@ -402,6 +403,57 @@ class AdminManagementControllerTest {
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("OFF_SALE"));
+    }
+
+    @Test
+    void productAndServiceItemDeleteRequireOffSaleFirst() throws Exception {
+        // 无删除权限的账号：403
+        mockMvc.perform(delete("/api/v1/admin/service-items/" + serviceItemId)
+                        .header("Authorization", bearer(noPermissionToken)))
+                .andExpect(status().isForbidden());
+
+        // 服务项在售（ON_SALE）直接删除 -> 409，服务端强制先停用
+        mockMvc.perform(delete("/api/v1/admin/service-items/" + serviceItemId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("state_conflict"));
+
+        // 停用后删除 -> 200；已删除后再删 -> 404（逻辑删除生效，列表不可见）
+        mockMvc.perform(post("/api/v1/admin/service-items/" + serviceItemId + "/disable")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("OFF_SALE"));
+        mockMvc.perform(delete("/api/v1/admin/service-items/" + serviceItemId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/admin/service-items/" + serviceItemId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isNotFound());
+
+        // 商品同样规则：新建默认在售 -> 409；下架 -> 删除 200
+        String productBody = mockMvc.perform(post("/api/v1/admin/products")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"categoryId":%d,"name":"待删商品","price":9,"pickupOnly":true,"sort":1}
+                                """.formatted(productCategoryId)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        String createdProductId = productBody.replaceAll(".*\"id\":\"?(\\d+)\"?.*", "$1");
+
+        mockMvc.perform(delete("/api/v1/admin/products/" + createdProductId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("state_conflict"));
+        mockMvc.perform(post("/api/v1/admin/products/" + createdProductId + "/disable")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/admin/products/" + createdProductId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/v1/admin/products/" + createdProductId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -80,3 +80,8 @@ export const disableServiceItem = (id: number) => {
 export const enableServiceItem = (id: number) => {
   return request.post<ServiceItem>(`/v1/admin/service-items/${id}/enable`)
 }
+
+/** DELETE /api/v1/admin/service-items/{id}（仅停用 OFF_SALE 状态可删，服务端强制校验） */
+export const deleteServiceItem = (id: number) => {
+  return request.delete<null>(`/v1/admin/service-items/${id}`)
+}

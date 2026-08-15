@@ -36,6 +36,8 @@ public interface AdminManagementService {
     ServiceItemView updateServiceItem(Long id, ServiceItemRequest request, Long operatorId);
     ServiceItemView disableServiceItem(Long id, Long operatorId);
     ServiceItemView enableServiceItem(Long id, Long operatorId);
+    /** 删除服务项（逻辑删除，仅停用 OFF_SALE 状态可删）。 */
+    void deleteServiceItem(Long id, Long operatorId);
 
     PageResponse<StaffView> listStaff(int page, int size, String status);
     StaffView createStaff(StaffRequest request, Long operatorId);
@@ -54,6 +56,8 @@ public interface AdminManagementService {
     ProductView disableProduct(Long id, Long operatorId);
     ProductView enableProduct(Long id, Long operatorId);
     ProductView updateProductStock(Long id, Integer stock, Long operatorId);
+    /** 删除商品（逻辑删除，仅下架 OFF_SALE 状态可删）。 */
+    void deleteProduct(Long id, Long operatorId);
     List<ProductCarouselImageView> listProductCarouselImages();
     List<ProductCarouselImageView> replaceProductCarouselImages(
             ProductCarouselImagesUpdateRequest request, Long operatorId);

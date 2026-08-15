@@ -248,6 +248,9 @@ INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `mod
   -- 注：7050 留给 phase7 后续扩展，7051-7054 已被 phase15 钱包占用，故启用新段 7060+
   (7060, 'product:item:enable',           '商品上架',       'product', 'ACTIVE'),
   (7061, 'service:item:enable',           '服务项启用',     'service', 'ACTIVE'),
+  -- product/service-item delete (7062-7063) — phase19：先下架/停用后才能删除（2026-08-15）
+  (7062, 'product:item:delete',           '商品删除',       'product', 'ACTIVE'),
+  (7063, 'service:item:delete',           '服务项删除',     'service', 'ACTIVE'),
   -- ai (7048-7049) — D-004 修订（2026-07-21）：用户端客服 + 管理端分析报告已激活
   (7048, 'ai:analysis:generate',          '生成AI分析报告', 'ai', 'ACTIVE'),
   (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE'),
@@ -256,11 +259,11 @@ INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `mod
   (7055, 'ai:moderation:review',          '查看AI审核建议', 'ai', 'ACTIVE'),
   (7056, 'ai:knowledge:rebuild',          '重建AI知识库',   'ai', 'ACTIVE');
 
--- SUPER_ADMIN 和 ADMIN：全部权限（开发环境，含 V2 ai 段）
+-- SUPER_ADMIN 和 ADMIN：全部权限（开发环境，含 V2 ai 段 + phase19 delete 段）
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
-SELECT 80000 + p.id, 1, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7061;
+SELECT 80000 + p.id, 1, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7063;
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
-SELECT 81000 + p.id, 2, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7061;
+SELECT 81000 + p.id, 2, p.id FROM `admin_permission` p WHERE p.id BETWEEN 7001 AND 7063;
 
 -- MODERATOR：只获得 ai:moderation:review（7055），不能重建知识库
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`) VALUES

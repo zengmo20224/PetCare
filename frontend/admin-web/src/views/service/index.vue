@@ -48,7 +48,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="sort" label="排序" width="70" />
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="openEditDialog(row)" :disabled="!userStore.hasPermission('service:item:update')">编辑</el-button>
           <el-button
@@ -63,6 +63,12 @@
             @click="handleEnable(row.id)"
             :disabled="!userStore.hasPermission('service:item:enable')"
           >启用</el-button>
+          <el-button
+            size="small" type="danger" plain
+            v-if="!isServiceOnSale(row.status)"
+            @click="handleDelete(row.id)"
+            :disabled="!userStore.hasPermission('service:item:delete')"
+          >删除</el-button>
         </template>
       </el-table-column>
     </DataTableShell>
@@ -200,12 +206,22 @@
       @confirm="executeEnable"
       @cancel="enableDialogVisible = false"
     />
+
+    <!-- Delete Confirm Dialog（仅停用状态可见入口） -->
+    <ActionConfirmDialog
+      :visible="deleteDialogVisible"
+      title="删除服务项目"
+      message="确定要永久删除此服务项目吗？删除后不可恢复，历史预约不受影响。"
+      :danger="true"
+      @confirm="executeDelete"
+      @cancel="deleteDialogVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { getServiceItems, getServiceCategories, createServiceItem, updateServiceItem, disableServiceItem, enableServiceItem } from '../../api/service'
+import { getServiceItems, getServiceCategories, createServiceItem, updateServiceItem, disableServiceItem, enableServiceItem, deleteServiceItem } from '../../api/service'
 import type { ServiceItem, ServiceItemCreateParams, ServiceCategory } from '../../api/service'
 import { uploadCatalogImage } from '../../api/upload'
 import type { FormInstance, FormRules, UploadRawFile, UploadRequestOptions, UploadUserFile } from 'element-plus'
@@ -313,6 +329,26 @@ const executeEnable = async () => {
   try {
     await enableServiceItem(enableTargetId.value)
     showSuccess('服务项目已启用')
+    await fetchData()
+  } catch (error) {
+    showError(error instanceof Error ? error.message : '操作失败')
+  }
+}
+
+// ─── Delete Confirm Dialog（仅停用状态可删，服务端二次校验） ───
+const deleteDialogVisible = ref(false)
+const deleteTargetId = ref(0)
+
+const handleDelete = (id: number) => {
+  deleteTargetId.value = id
+  deleteDialogVisible.value = true
+}
+
+const executeDelete = async () => {
+  deleteDialogVisible.value = false
+  try {
+    await deleteServiceItem(deleteTargetId.value)
+    showSuccess('服务项目已删除')
     await fetchData()
   } catch (error) {
     showError(error instanceof Error ? error.message : '操作失败')

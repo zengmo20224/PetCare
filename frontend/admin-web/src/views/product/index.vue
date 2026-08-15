@@ -40,7 +40,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="sort" label="排序" width="70" />
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="320" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="openEditDialog(row)" :disabled="!userStore.hasPermission('product:item:update')">编辑</el-button>
           <el-button size="small" @click="openStockDialog(row)" :disabled="!userStore.hasPermission('product:stock:update')">库存</el-button>
@@ -56,6 +56,12 @@
             @click="handleEnable(row.id)"
             :disabled="!userStore.hasPermission('product:item:enable')"
           >上架</el-button>
+          <el-button
+            size="small" type="danger" plain
+            v-if="!isProductOnSale(row.status)"
+            @click="handleDelete(row.id)"
+            :disabled="!userStore.hasPermission('product:item:delete')"
+          >删除</el-button>
         </template>
       </el-table-column>
     </DataTableShell>
@@ -209,12 +215,22 @@
       @confirm="executeEnable"
       @cancel="enableDialogVisible = false"
     />
+
+    <!-- Delete Confirm Dialog（仅下架商品可见入口） -->
+    <ActionConfirmDialog
+      :visible="deleteDialogVisible"
+      title="删除商品"
+      message="确定要永久删除此商品吗？删除后不可恢复，历史订单不受影响。"
+      :danger="true"
+      @confirm="executeDelete"
+      @cancel="deleteDialogVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { getProductList, createProduct, updateProduct, disableProduct, enableProduct, updateProductStock } from '../../api/product'
+import { getProductList, createProduct, updateProduct, disableProduct, enableProduct, updateProductStock, deleteProduct } from '../../api/product'
 import type { Product, ProductCreateParams } from '../../api/product'
 import { uploadCatalogImage } from '../../api/upload'
 import type { FormInstance, FormRules, UploadRawFile, UploadRequestOptions, UploadUserFile } from 'element-plus'
@@ -339,6 +355,26 @@ const executeEnable = async () => {
   try {
     await enableProduct(enableTargetId.value)
     showSuccess('商品已上架')
+    await fetchData()
+  } catch (error) {
+    showError(error instanceof Error ? error.message : '操作失败')
+  }
+}
+
+// ─── Delete Confirm Dialog（仅下架状态可删，服务端二次校验） ───
+const deleteDialogVisible = ref(false)
+const deleteTargetId = ref(0)
+
+const handleDelete = (id: number) => {
+  deleteTargetId.value = id
+  deleteDialogVisible.value = true
+}
+
+const executeDelete = async () => {
+  deleteDialogVisible.value = false
+  try {
+    await deleteProduct(deleteTargetId.value)
+    showSuccess('商品已删除')
     await fetchData()
   } catch (error) {
     showError(error instanceof Error ? error.message : '操作失败')
