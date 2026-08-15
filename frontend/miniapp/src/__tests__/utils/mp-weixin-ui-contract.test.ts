@@ -17,6 +17,7 @@ const ensureMpWeixinStaticScript = readProject('scripts/ensure-mp-weixin-static.
 const pagesJson = JSON.parse(read('pages.json'))
 const app = read('App.vue')
 const bottomNav = read('components/PcBottomNav.vue')
+const fab = read('components/PcFab.vue')
 const primaryButton = read('components/PcPrimaryButton.vue')
 const serviceCard = read('components/PcServiceCard.vue')
 const heroCard = read('components/PcHeroCard.vue')
@@ -64,7 +65,8 @@ describe('mp-weixin UI page contracts', () => {
     expect(bottomNav).toContain('v-if="!isWeixin"')
     expect(bottomNav).toContain('if (!isWeixin)')
     expect(pagesJson.tabBar.list).toHaveLength(5)
-    expect(pagesJson.tabBar.color).toBe('#314D48')
+    // 2026-08 UI 改版：普通态改用灰阶 #999999（demo 风格），选中色保持品牌绿
+    expect(pagesJson.tabBar.color).toBe('#999999')
     expect(pagesJson.tabBar.selectedColor).toBe('#11796F')
     expect(pagesJson.tabBar.list.map((tab: { iconPath: string }) => tab.iconPath)).toEqual([
       'static/icons/home.png',
@@ -113,12 +115,13 @@ describe('mp-weixin UI page contracts', () => {
       expect(file).not.toMatch(/\.[A-Za-z0-9_-]+(?:--[A-Za-z0-9_-]+)?(?:\s+\.[A-Za-z0-9_-]+)*\s+text\b/)
     }
 
-    // Sizing values were migrated px → rpx (×2) for cross-device scaling.
-    expect(communityPage).toContain('right: 40rpx')
-    expect(communityPage).toContain('bottom: 192rpx')
-    expect(productsPage).toContain('products-cart-fab')
-    expect(productsPage).toContain('right: 40rpx')
-    expect(productsPage).toContain('bottom: 192rpx')
+    // 2026-08 UI 改版：浮动操作统一为 PcFab 组件，fixed + rpx 定位收拢在组件内，
+    // 页面里不再散落 FAB 定位样式。
+    expect(fab).toContain('position: fixed')
+    expect(fab).toContain('right: 32rpx')
+    expect(fab).toContain('bottom: 164rpx')
+    expect(communityPage).toContain('<PcFab icon="edit"')
+    expect(productsPage).toContain('<PcFab icon="cart"')
     expect(productsPage).not.toContain('products-fab')
     expect(productsPage).not.toContain('products-cart-entry')
     expect(productCard).toContain('height: 276rpx')
@@ -173,7 +176,9 @@ describe('mp-weixin UI page contracts', () => {
     }) => [tab.iconPath, tab.selectedIconPath])
 
     for (const icon of icons) {
-      expect(sizeOf(icon)).toBeGreaterThan(2000)
+      // 2026-08 改版为线性风格图标（81x81 实测 984B–1949B）；
+      // 空白/占位 PNG 通常 <300B，阈值 500B 仍能拦截不可见图标。
+      expect(sizeOf(icon)).toBeGreaterThan(500)
     }
   })
 
@@ -182,26 +187,28 @@ describe('mp-weixin UI page contracts', () => {
     // rather than a literal hex, so wot components and custom elements stay aligned.
     expect(primaryButton).toContain('var(--pc-user-primary)')
     expect(primaryButton).toContain('loading?: boolean')
-    expect(serviceCard).toContain('pc-service-card__action')
-    expect(serviceCard).toContain("priceFrom ? '选体型预约' : '立即预约'")
-    expect(serviceCard).toContain('var(--pc-user-primary)')
+    // 2026-08 改版：服务卡价格面替换旧 __action 区；品牌色浮钮由 PcFab 承载
+    expect(serviceCard).toContain('pc-service-card__price-main')
+    expect(serviceCard).toContain("if (props.priceFrom) return '起'")
+    expect(serviceCard).toContain('color: #FA5151')
+    expect(fab).toContain('background: var(--pc-user-primary, #11796F)')
     expect(profilePage).toContain('PcPrimaryButton text="手机号登录"')
-    expect(profilePage).toContain('profile-login-card')
+    expect(profilePage).toContain('profile-login__btn')
     expect(loginPage).toContain('PcPrimaryButton text="登录"')
     expect(registerPage).toContain('PcPrimaryButton text="注册"')
   })
 
   it('keeps the restored service, community and product visual shells in mp-weixin', () => {
     expect(heroCard).toContain('linear-gradient(135deg, #16877C, #0B3D39)')
+    // 2026-08 改版：页首通栏改用 PcHeroStrip；横向轨道保留
+    expect(servicesPage).toContain('PcHeroStrip')
     expect(servicesPage).toContain('services-categories__track')
-    expect(servicesPage).toContain('linear-gradient(135deg, #F4FFFB 0%, var(--pc-user-surface) 46%, #E7F6F1 100%)')
-    expect(communityPage).toContain('community-tags__track')
-    expect(communityPage).toContain('community-fab__icon')
-    expect(communityPage).toContain('background: var(--pc-user-primary)')
+    expect(communityPage).toContain('PcHeroStrip')
+    expect(communityPage).toContain('community-post')
+    expect(communityPage).toContain('<PcFab icon="edit"')
     expect(productsPage).toContain('products-tabs__track')
-    expect(productsPage).toContain('products-cart-fab__icon')
-    expect(productsPage).toContain('🛒')
-    expect(productsPage).toContain('background: var(--pc-user-primary)')
+    expect(productsPage).toContain('products-grid')
+    expect(productsPage).toContain('<PcFab icon="cart"')
   })
 
   it('keeps marketing activity pages tolerant of missing association arrays', () => {
