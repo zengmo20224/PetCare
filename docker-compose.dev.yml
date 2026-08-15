@@ -13,3 +13,5 @@ services:
   mysql:
     volumes:
       - ./src/main/resources/data-dev.sql:/docker-entrypoint-initdb.d/02-data-dev.sql:ro
+      # 03 真实演示媒体与内容种子（图片封面/文案/社区帖子，幂等；图片文件在仓库 uploads/images/seed/）
+      - ./src/main/resources/data-media.sql:/docker-entrypoint-initdb.d/03-data-media.sql:ro

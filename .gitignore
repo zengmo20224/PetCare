@@ -38,7 +38,13 @@ application-local.yaml
 # Database and uploaded runtime files
 *.db
 *.sqlite
-uploads/
+# 运行时用户上传不进库，但演示种子媒体（data-media.sql 引用）需随仓库分发
+uploads/*
+!uploads/images/
+uploads/images/*
+!uploads/images/seed/
+!uploads/images/activity-service.jpg
+!uploads/images/activity-product.jpg
 data/
 
 # Docker local state
