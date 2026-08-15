@@ -1,8 +1,15 @@
 <template>
   <view class="pc-service-card" @tap="$emit('press')">
-    <!-- 图片区：demo 风格统一 #F5F5F5 灰底 + 墨色 PcIcon 线性图标 -->
+    <!-- 图片区：有真实封面用照片（aspectFill 裁切），否则回退 demo 风格 #F5F5F5 灰底 + 墨色线性图标 -->
     <view class="pc-service-card__img">
-      <PcIcon :name="iconName" :size="44" color="#3D3D3D" />
+      <image
+        v-if="resolvedImage"
+        :src="resolvedImage"
+        mode="aspectFill"
+        class="pc-service-card__photo"
+        lazy-load
+      />
+      <PcIcon v-else :name="iconName" :size="44" color="#3D3D3D" />
     </view>
     <view class="pc-service-card__body">
       <text class="pc-service-card__name">{{ name }}</text>
@@ -27,6 +34,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PcIcon from '@/components/PcIcon.vue'
+import { assetFullUrl } from '@/utils/asset-url'
 import { formatDuration, formatYuan } from '@/utils/format'
 
 const props = defineProps<{
@@ -41,6 +49,9 @@ const props = defineProps<{
 defineEmits<{
   (e: 'press'): void
 }>()
+
+/** 后端相对路径（/uploads/...）解析为可访问的绝对地址；空值回退图标 */
+const resolvedImage = computed(() => assetFullUrl(props.imageUrl))
 
 /** 按服务名关键字映射 PcIcon 图标（demo 风格：bath/scissors/door/paw/bottle） */
 const iconName = computed(() => {
@@ -99,6 +110,13 @@ const priceUnit = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 真实封面照片：铺满图片区，aspectFill 裁切 */
+.pc-service-card__photo {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .pc-service-card__body {
