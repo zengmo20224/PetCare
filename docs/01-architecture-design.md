@@ -9,8 +9,9 @@
 管理端 Web（frontend/admin-web）
                 |
          Spring Boot REST API
-                |
-              MySQL
+                |            \
+              MySQL        PgVector（AI 派生知识索引，
+            （业务真源）      只存 RAG 副本，见 D-013/B6）
 ```
 
 `frontend/miniapp` 继续使用 UniApp，但当前主目标是 H5。暂不重命名目录，避免对现有构建、测试和引用造成无业务价值的迁移。
@@ -57,10 +58,10 @@ Controller 负责协议和输入校验，Service 负责业务规则和事务，M
 
 ## 5. 认证策略
 
-- 当前开发和验收可复用已有测试身份登录能力。
-- H5 正式公开登录方式仍是未决事项，见 `docs/08-pending-decisions.md`。
-- 微信登录延后；其接入不得改变内部用户身份和授权模型。
-- 在正式公开登录完成前，测试身份入口不得用于生产环境。
+- H5 正式公开登录已决定并实现（P-001）：手机号 + 密码注册登录，安全问题找回密码；`@Profile("test")` 测试登录仅自动化测试可用，生产环境自动关闭。
+- 管理端 JWT 已迁移 HttpOnly Cookie 双轨（2026-08-15）：Cookie 优先、`Authorization: Bearer` 回退，见 `docs/11` §4。
+- 微信登录为 demo 形态（P-002）：后端三态 Provider（disabled/mock/real）；其接入不改变内部用户身份和授权模型。
+- 测试身份入口不得用于生产环境。
 
 ## 6. 营销与 AI
 

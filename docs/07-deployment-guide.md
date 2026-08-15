@@ -119,9 +119,9 @@ docker compose up -d --build --wait
 
 ### 4.2 数据库初始化
 
-`docker-compose.yml` 中 MySQL 容器启动时自动挂载 `schema.sql` 与 `data-dev.sql` 到 `/docker-entrypoint-initdb.d/`，首次启动自动建表 + 灌种子数据。
+`docker-compose.yml` 中 MySQL 容器启动时自动挂载 `schema.sql` 到 `/docker-entrypoint-initdb.d/`，首次启动自动建表。**生产 compose 不挂载 `data-dev.sql` 演示种子**（2026-08 H-2 修复）；本地开发需要种子数据时用 `docker-compose.dev.yml`（含 dev 种子与演示媒体），或手动执行 `data-dev.sql`。
 
-> 仅**数据卷为空**时执行；卷已存在则跳过。重置方法见 §7。
+> 仅**数据卷为空**时执行；卷已存在则跳过。重置方法见 §7。注意：initdb 不会自动执行 `migration-phase*.sql` 增量脚本，已初始化的库需手动执行（脚本头部有命令说明）。
 
 ### 4.3 验证部署
 
@@ -129,13 +129,14 @@ docker compose up -d --build --wait
 # 容器状态
 docker compose ps
 
-# 后端健康检查
-curl http://localhost:8082/actuator/health
-# 期望：{"status":"UP"}
+# 后端健康检查（无 actuator，用业务健康端点）
+curl http://localhost:8082/api/v1/system/health
 
 # 管理端访问
 # 浏览器打开 http://localhost:8080  → 看到登录页
-# 默认管理员：admin / admin123456
+```
+
+> **凭据提醒**：`admin / admin123456` 仅是 `data-dev.sql` 演示种子的弱口令。prod profile 有 `AdminWeakCredentialStartupCheck` 启动检查——生产环境沿用弱口令会被拒绝启动，必须通过环境变量注入真实凭据（见 `.env.example` 与 `docs/11` §4 部署加固清单）。
 
 # 用户端 H5 访问
 # 浏览器打开 http://localhost:8081  → 看到 H5 首页

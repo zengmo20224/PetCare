@@ -162,3 +162,40 @@ PetCare O2O 的安全基线在课程项目中处于**较高水平**。SQL 注入
 ## 5. 审计方法说明
 
 本次审计为**授权白盒安全评估**（ defensive security audit），针对项目自身的代码与配置，目标是发现漏洞以便修复加固。所有"注入测试"均以本地受控验证和静态代码分析为准，未对外发起真实攻击流量，未植入持久化后门，未破坏数据。
+
+---
+
+# 上线前部署加固 2026-08
+
+> 日期：2026-08-15 ｜ 类型：上线前部署配置审计（4 路并行：密钥与 git 历史 / 后端 / 前端 / 部署配置） ｜ 状态：**8 项阻塞清单已修复 7 项，剩余 2 项为部署时动作**
+>
+> 核心结论：git 全历史（所有分支）无任何真实密钥泄露；后端代码无严重/高危（越权、注入、SSRF、XSS、资金事务四路复核通过）。阻塞项集中在**部署配置**维度。
+
+## 6. 总体结论
+
+| 类别 | 评价 |
+|---|---|
+| 密钥泄露 | ✅ git 全历史无真实密钥；DeepSeek key / DB 密码 / JWT secret 仅在本机 `.env`（已 gitignore） |
+| 后端代码 | ✅ 无严重/高危；低危待排期：改密后旧 JWT 最长 120 分钟仍有效、订单/AI 会话分页 size 未钳制、AI 对话原文进 INFO 日志 |
+| token 存储 | ✅ 已迁移 HttpOnly Cookie 双轨（2026-08-15，`21ea438`）：Cookie 优先 + Bearer 回退（小程序运行时无 cookie，header 通道永久保留） |
+| 上传接口 | ✅ `UploadRateLimitFilter` 分钟级限流（20/分/登录主体，`21ea438`） |
+
+## 7. 部署阻塞清单（8 项）
+
+| # | 项 | 状态 | 修复提交/说明 |
+|---|---|---|---|
+| 1 | 备份与敏感产物隔离：全库备份移出仓库（`../petcare-o2o-backups`），`.dockerignore` 补 `logs/`、`*.sql.gz` | ✅ 已修复 | `ff38cd0` |
+| 2 | 根 `.env` 全是弱 demo 凭据（DB/JWT/MYSQL_ROOT）——生产须**全新生成**，不能拷贝 demo 值 | ⬜ **部署时动作** | 购买服务器后生成强凭据写入生产 `.env`；注意 Jenkinsfile 部署校验会核对 DB 口令与现有卷一致 |
+| 3 | compose 强化：admin-web/h5 端口绑 `127.0.0.1`（公网走 TLS 反代）；6 处 `changeme` 回退 + `JWT_SECRET` 改 `${VAR:?}` 强制语法；MySQL healthcheck 去 root 凭据 | ✅ 已修复 | `ff38cd0`；连带 Jenkinsfile 占位值注入 + 部署校验扩到 3 变量 |
+| 4 | `frontend/miniapp/.env.production` 指向 `http://192.168.137.1:8080`（热点内网 IP）——生产构建会把 JWT/密码发往明文内网 | ⬜ **部署时动作** | 生产构建前改为真实域名 + HTTPS（域名/服务器待购买，见 docs/13 VPS 方案） |
+| 5 | `application.yml` 默认 profile 改 `prod`：裸 `java -jar` 不再静默落入 dev（公开 JWT 回退密钥） | ✅ 已修复 | `ff38cd0`；本地开发需显式 `SPRING_PROFILES_ACTIVE=dev` |
+| 6 | AI 全计费入口限流：`AiRateLimitFilter` 前缀集合（conversations/ + post-assistant/ + admin/ai/ + 发帖审核）+ 三层限额（分钟 20 / 每用户每日 50 / 全站每日默认关） | ✅ 已修复 | `649a330`；`AiRateLimitFilterTest` 9 用例，全量 1078 通过 |
+| 7 | nginx 安全头与上传上限：`client_max_body_size 12m`（修 >1MB 上传 413）+ `X-Frame-Options` / `nosniff` / `Referrer-Policy` | ✅ 已修复 | `ff38cd0`；`nginx -t` 通过 |
+| 8 | docs/07 部署文档三处过时（弱口令表述 / 健康检查端点 / dev 种子挂载） | ✅ 已修复 | 2026-08-15 文档整合（docs/07 §4.2-4.3） |
+
+## 8. 部署时待办（第 2、4 项操作指引）
+
+1. **凭据**：生产 `.env` 全新生成（`openssl rand` 级别）；`JWT_SECRET` ≥32 字节；DB 口令若沿用已有卷须与卷内一致，否则需重置卷。
+2. **H5 生产 API 地址**：`frontend/miniapp/.env.production` 的 `VITE_API_BASE_URL` 改为 `https://<真实域名>`，经 TLS 反代（Caddy 方案见 `docs/13-vps-deploy-cheatsheet.md`）。
+3. AI 开关：用户已拍板上线启用（`AI_PROVIDER_ENABLED=true` + DeepSeek key + PgVector）；Jenkins 仅做构建验证。
+

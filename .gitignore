@@ -96,3 +96,6 @@ tmp-ui-shots/
 models/**/*.onnx
 models/**/*.bin
 models/**/*.safetensors
+
+# 迭代过程截图存档（本根目录散落 PNG 的归档处，不入库）
+.screenshots/

@@ -6,13 +6,55 @@
 
 ---
 
+## [Unreleased] / v1.2.0 — AI V2 Agent + UI 改版 + 上线加固（2026-07-21 ~ 2026-08-15）
+
+### 新增（AI V2 Agent，D-013 / `docs/09`）
+
+- **微信登录 demo 形态（P-002）**：后端三态 Provider（`disabled`/`mock`/`real`）；小程序兼容回归修复（v-html→rich-text、15 个图片 helper 统一 `assetFullUrl`）；主包 ≈332KB。`fb7b692`
+- **M8.0 基建**：langchain4j + PgVector 独立实例（RAG 派生知识副本）+ embedding + 知识入库；`RagConfig` DataSource 局部化。`84628e2` `5812365`
+- **M8.1 客服 RAG 升级**：RAG 召回与 V1 实时 Tool 并存；中文 embedding 切 BGE-small-zh-v1.5（512 维）。`bb39532` `9cc8dd4`
+- **M8.2 经营分析 Agent**：只读下钻 Tool + 结构化报告；`AgentToolRegistry` 白名单 + RBAC 双校验 + `ai_tool_call_log` 审计。D-014 决策不引入 Dify 进生产链路。`443df22`
+- **M8.3 社区助手 + 文本审核**：解除 401 激活发帖助手（仅草稿不自动发布）；文本审核 Agent LLM 分类产 `PostReport` 进人工队列。`639c4d9`
+- **M8.5 收口**：AI 用量查看页（管理端）+ H5 SSE 流式对接 + 全量回归（1067 默认 + 33 tc-mysql）。`490f35c`
+- **安全边界守卫**：新增 `AiAgentArchitectureTest`（ai/agent 不依赖 Mapper，数据只经受限 Tool）。
+
+### 新增（管理端与演示）
+
+- **商品/服务上架端点对称**（与禁用下架互逆）。`8e215c6`
+- **商品/服务删除（phase19）**：服务端强制先下架/停用（OFF_SALE）后删除，新权限码 + 审计 + 管理端按钮。`329fdc4`
+- **真实媒体与内容种子**：`data-media.sql`（10 服务封面 + 12 商品电商级文案 + 10 社区帖 44 评论），68 张 Wikimedia/Unsplash 授权图片入库 `uploads/images/seed/`（署名见 CREDITS.md）。`64e239a`
+
+### 新增（UI 改版 2026-08）
+
+- **miniapp 全站 UI 改版**：新组件体系（PcServiceCard 等）+ Tabler Icons 字体方案（docs/14→16→17 调研链）+ 设计 demo；契约守卫重锚定到新设计，160/160 全绿。`64291f1` `bad0747`
+- 服务列表卡片恢复真实封面照片渲染（UI 改版回归修复）。`c6022e4`
+
+### 修复（安全，2026-08）
+
+- **3 个高危**：账号接管 / 生产弱口令 / 资金滞留。`9118be8`
+- **中危批次 1**：AI 安全 7 项 + 限流 3 项（A1-A7/C1/C3）。`7ae9668`
+- **中危批次 2**：业务并发 4 项（B1-B4）。`0937a4d`
+- **SSE 卡死修复**：JWT 过滤器 ASYNC dispatch 重跑 + 流结束主动完成。`062c91a`
+- **JWT 认证迁移 HttpOnly Cookie 双轨**：Cookie 优先 + Bearer 回退（小程序无 cookie），新增 4 个 logout 端点；上传接口分钟级限流（20/分）。后端全量 1093 测试。`21ea438`
+- **上线前部署加固 4 项**（备份隔离 / compose 强化 / 默认 prod profile / nginx 安全头）。`ff38cd0`
+- **AI 全计费入口限流 + 每日额度**：三层限额（分钟/用户日额/全站日额）。`649a330`
+
+### 修复（CI）
+
+- admin-web 锁文件用 npm@latest 重建（补登记 `@emnapi/runtime`）。`1fd152e`
+- 补提 `AiToolCallLog` 无 IService 白名单，修复 Jenkins 全量回归挂测。`5a97b81`
+
+### 文档
+
+- 2026-08-15 文档整合：README 全面刷新（AI V2/测试数/截图展示区）；docs/08 未决区清空（P-001/002/003 移入已决定）；docs/11 追加 2026-08 上线加固清单（8 项，余 2 项部署时动作）；docs/14+17 合并为 18-ui-icon-decisions；CHANGELOG 补断档期；docs/01/02/05/07/requirements-source 局部修正。
+
+---
+
 ## [Unreleased] / v1.1.0 — 钱包余额（CR-20260718-003）
 
 ### 变更（决策与边界）
 
-- **D-004 修订（2026-07-21）**：部分激活 AI——用户端智能客服对话（CUSTOMER_SERVICE / PET_CHAT，多轮上下文）+ 管理端 AI 经营分析报告（BUSINESS/COMMUNITY/SALES/ACTIVITY），接入真实 DeepSeek LLM。发帖助手、AI 用量查看页仍关闭。安全边界不变（AI 不直连 DB、不做诊断/处方/治疗承诺）。
-- **D-010 修订**：精确化为"不接真实在线支付通道（微信/支付宝等）、优惠券、会员积分和多门店；钱包余额为管理端手工台账，不计息、不可提现、不可转账"。
-
+- **D-004 修订（2026-07-21）**：部分激活 AI——用户端智能客服对话（CUSTOMER_SERVICE / PET_CHAT，多轮上下文）+ 管理端 AI 经营分析报告（BUSINESS/COMMUNITY/SALES/ACTIVITY），接入真实 DeepSeek LLM。发帖助手、AI 用量查看页仍关闭（后随 M8.3/M8.5 解除）。安全边界不变（AI 不直连 DB、不做诊断/处方/治疗承诺）。
 - **D-010 修订**：精确化为"不接真实在线支付通道（微信/支付宝等）、优惠券、会员积分和多门店；钱包余额为管理端手工台账，不计息、不可提现、不可转账"。
 - **D-012 新增**：钱包余额强制规则——扣款与扣库存同事务、行锁 + 条件 UPDATE、流水只追加、审计照 booking 范式、调整必填理由、金额精度 `DECIMAL(10,2)` + `HALF_UP`。
 - **boundary §3 精确化**：明确"在线支付"指真实第三方支付通道，钱包余额不属于此范畴。

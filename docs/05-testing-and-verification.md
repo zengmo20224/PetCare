@@ -24,7 +24,6 @@
 优先运行受影响测试，发布前运行全量测试：
 
 ```powershell
-cd backend
 mvn test
 ```
 
@@ -87,9 +86,9 @@ git status --short --branch
 
 | 层 | 形式 | 数量级 | 作用 |
 |---|---|---|---|
-| 纯 Mockito 单元 | 不起 Spring 容器，mock 依赖，验证业务规则 | 约 13 个测试类 | 快速验证 Service 的分支逻辑、异常路径、状态流转 |
-| `@SpringBootTest` 集成（H2） | 起完整容器，用 H2 内存库 | 占主体（约 700+ 测试方法） | 验证 Mapper、事务、缓存、Web 层、配置绑定的真实行为 |
-| `@Tag("tc-mysql")` 真实 MySQL | 用 Testcontainers 起 MySQL 8 容器 | 9 个 IT 类，约 18 个测试 | 在真实数据库上验证并发、幂等、锁、状态机的安全性 |
+| 纯 Mockito 单元 | 不起 Spring 容器，mock 依赖，验证业务规则 | 10+ 测试类 | 快速验证 Service 的分支逻辑、异常路径、状态流转 |
+| `@SpringBootTest` 集成（H2） | 起完整容器，用 H2 内存库 | 占主体（2026-08 全量回归约 1067 个测试） | 验证 Mapper、事务、缓存、Web 层、配置绑定的真实行为 |
+| `@Tag("tc-mysql")` 真实 MySQL | 用 Testcontainers 起 MySQL 8 容器 | 2026-08 回归 33 个测试 | 在真实数据库上验证并发、幂等、锁、状态机的安全性 |
 
 `mvn test` 默认跑前两层（H2）；`mvn -P tc-mysql test` 才跑第三层。CI 当前只跑前两层，第三层需本地或专门阶段触发。
 
