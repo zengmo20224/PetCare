@@ -1,8 +1,10 @@
 # PetCare O2O 🐾
 
+**[简体中文](README.md) ｜ [English](README_EN.md)**
+
 > **面向单体宠物门店的 O2O 服务/商品/社区平台** —— 本科毕业设计项目
 >
-> 版本：**v1.2.0（开发中）** ｜ 状态：M1–M8 交付完毕 ｜ AI V2 Agent 已上线 ｜ 后端 1093+ 测试通过 ｜ CI/CD 全链路 + 上线前安全加固完成
+> 里程碑 **M1–M8 全部交付** ｜ AI V2 Agent 已上线 ｜ 后端 1093+ 测试通过 ｜ CI/CD 全链路 ｜ 上线前安全加固收口
 
 ---
 
@@ -20,6 +22,8 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
 ---
 
 ## 📱 UI 展示（2026-08 改版，运行中的应用实拍）
+
+### 用户端 H5
 
 > 五页均为**当前运行中的应用**统一视口（390×844）逐页截取，数据来自真实后端 + 演示媒体种子（68 张 Wikimedia/Unsplash 授权图片，逐图署名见 `uploads/images/seed/CREDITS.md`）。
 
@@ -44,6 +48,29 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
   <img src="docs/assets/screenshots/services-desktop.png" width="800" alt="桌面端响应式"/><br/>
   <sub><b>桌面端响应式布局</b>（1280 宽视口，服务页——同一套代码自适应）</sub>
 </p>
+
+### 管理端 PC Web
+
+> 1440 宽桌面视口实拍：运营总览、商品管理、社区内容治理、AI 调用计量（token 消耗与结果审计，不含对话原文）。
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/screenshots/admin-dashboard.png" width="440" alt="运营总览"/></td>
+    <td align="center"><img src="docs/assets/screenshots/admin-products.png" width="440" alt="商品管理"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>运营总览</b>（在售商品 / 订单 / 预约 / 社区帖子 + 待办）</sub></td>
+    <td align="center"><sub><b>商品管理</b>（真实库存价格 + 上下架 + 先下架后删除）</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/assets/screenshots/admin-community.png" width="440" alt="社区内容治理"/></td>
+    <td align="center"><img src="docs/assets/screenshots/admin-ai-usage.png" width="440" alt="AI 调用用量"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>社区内容治理</b>（帖子审核 / 举报处理 / 敏感词）</sub></td>
+    <td align="center"><sub><b>AI 调用用量</b>（模型 / token 消耗 / 成败审计）</sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -94,7 +121,7 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
 
 ```
 提交代码 → Jenkins 自动触发 → 编译 → 测试(1093+) → 打包 → Docker 构建 → 部署 → 健康检查
-                GitHub Actions（push/PR）→ 后端 + 管理端 + H5 三 job 并行
+             ↳ GitHub Actions（push/PR）→ 后端 + 管理端 + H5 三 job 并行
 ```
 
 - **Jenkins 流水线**（[`Jenkinsfile`](Jenkinsfile)）：Checkout → Backend Build → Backend Test → Backend Package → Docker Build → Deployment Check → Deploy → Health Check
@@ -241,7 +268,7 @@ scope: booking | order | community | auth | product | service | ai | wallet | cm
 
 ## 🔒 不在 V1 范围
 
-真实在线支付通道（微信/支付宝资质接入）、多门店、优惠券、会员积分、独立员工端、AI 疾病诊断/药物处方/治疗承诺（永久禁止）、微信小程序真实上架（资质/合规流程，demo 形态已可演示）—— 均在 H5 稳定交付后再规划。
+真实在线支付通道（微信/支付宝资质接入）、多门店、优惠券、会员积分、独立员工端、AI 疾病诊断/药物处方/治疗承诺（永久禁止）、微信小程序真实上架（资质/合规流程，demo 形态已可演示）—— 均待真实运营需求驱动后再排期。
 
 ---
 
