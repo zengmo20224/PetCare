@@ -19,17 +19,24 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JWT authentication filter that extracts Bearer tokens from Authorization header.
+ * JWT authentication filter that extracts tokens via Authorization header
+ * <b>or</b> HttpOnly cookie（双轨，2026-08-15）.
  *
  * Routes by tokenType:
  * - ADMIN -> AdminUserDetailsService -> AdminPrincipal
  * - USER  -> UserAuthLoadingService  -> UserPrincipal
  * - other -> no SecurityContext set, subsequent 401
  *
+ * Token sources（优先级从高到低）:
+ * 1. {@code Authorization: Bearer <token>}（小程序/存量客户端通道，永久保留）
+ * 2. HttpOnly cookie：admin 路径先读 ADMIN_TOKEN 再 USER_TOKEN，其余反之
+ *    （路径决定优先级、双名回退——同浏览器两种身份不互踩，共享端点如
+ *    /api/v1/upload 不因选错 cookie 而 401；越权防护仍由下游 tokenType
+ *    路由与 @PreAuthorize / authority 校验兜底）
+ *
  * Behavior:
- * - Only processes Authorization: Bearer <token>
- * - Token missing: does not error, lets Spring Security decide if auth is required
- *   (anonymous access still works on permitAll public reads)
+ * - No token from either source: does not error, lets Spring Security decide if
+ *   auth is required (anonymous access still works on permitAll public reads)
  * - Token present but invalid/expired/disabled: rejected with 401 via the entry
  *   point and NEVER downgraded to anonymous (Phase 11-05 §6)
  * - Token valid: sets authentication in SecurityContext
@@ -39,6 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String ADMIN_PATH_PREFIX = "/api/v1/admin";
 
     private final JwtTokenService jwtTokenService;
     private final AdminUserDetailsService adminUserDetailsService;
@@ -73,20 +81,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+        String token = resolveToken(request);
 
-        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
-            // No Bearer token present: anonymous path. Let Spring Security decide
-            // (permitAll public reads succeed; protected endpoints get 401).
+        if (token == null) {
+            // No token from header or cookie: anonymous path. Let Spring Security
+            // decide (permitAll public reads succeed; protected endpoints get 401).
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(BEARER_PREFIX.length());
-
-        // A Bearer token is present, so it MUST authenticate successfully. Any failure
-        // (malformed, bad signature, expired, disabled/deleted subject, unknown type)
-        // is rejected with 401 and never downgraded to anonymous (Phase 11-05 §6).
+        // A token is present (header or cookie), so it MUST authenticate successfully.
+        // Any failure (malformed, bad signature, expired, disabled/deleted subject,
+        // unknown type) is rejected with 401 and never downgraded to anonymous
+        // (Phase 11-05 §6).
         try {
             JwtTokenService.TokenParseResult parseResult = jwtTokenService.parseTokenForFilter(token);
 
@@ -112,6 +119,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Resolves the token: Authorization Bearer header first (小程序/存量客户端通道),
+     * then HttpOnly cookie. Cookie 按"路径偏好"顺序尝试：admin 路径先 ADMIN_TOKEN
+     * 再 USER_TOKEN，其余先 USER_TOKEN 再 ADMIN_TOKEN——回退保证共享端点
+     * （如 POST /api/v1/upload，管理端商品图与用户头像共用）不因路径选错 cookie
+     * 而 401；越权由下游 tokenType 路由与 @PreAuthorize 兜底，不会构成提权。
+     * Null when neither source carries a token.
+     */
+    private String resolveToken(HttpServletRequest request) {
+        String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+        if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+            return authHeader.substring(BEARER_PREFIX.length());
+        }
+        if (request.getCookies() == null) {
+            return null;
+        }
+        String first = request.getRequestURI().startsWith(ADMIN_PATH_PREFIX)
+                ? AuthCookieService.ADMIN_COOKIE_NAME
+                : AuthCookieService.USER_COOKIE_NAME;
+        String second = first.equals(AuthCookieService.ADMIN_COOKIE_NAME)
+                ? AuthCookieService.USER_COOKIE_NAME
+                : AuthCookieService.ADMIN_COOKIE_NAME;
+        String firstValue = cookieValue(request, first);
+        return firstValue != null ? firstValue : cookieValue(request, second);
+    }
+
+    private String cookieValue(HttpServletRequest request, String name) {
+        for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName()) && !cookie.getValue().isBlank()) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 
     /**

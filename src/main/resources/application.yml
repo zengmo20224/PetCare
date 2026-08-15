@@ -29,6 +29,9 @@ petcare:
     jwt-secret: ${JWT_SECRET:}
     jwt-issuer: ${JWT_ISSUER:petcare-o2o-api}
     jwt-expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+    # HttpOnly 认证 Cookie（双轨）：生产 HTTPS 下 Secure=true；本地 HTTP 由 dev profile 关闭
+    cookie:
+      secure: ${COOKIE_SECURE:true}
   wechat:
     # Safe default: WeChat login endpoint returns 422 wechat_login_not_enabled.
     # Override to `mock` (dev) or `real` (prod) via env/profile.
@@ -37,6 +40,9 @@ petcare:
     secret: ${WECHAT_SECRET:}
     connect-timeout: ${WECHAT_CONNECT_TIMEOUT:}
     read-timeout: ${WECHAT_READ_TIMEOUT:}
+  upload:
+    # 上传接口分钟级限流（2026-08-15 审计加固：防写满 uploads 卷/免费图床滥用）
+    rate-limit-per-min: ${UPLOAD_RATE_LIMIT_PER_MIN:20}
   ai:
     provider-enabled: ${AI_PROVIDER_ENABLED:false}
     # V2 Provider 切换：deepseek（V1 手写实现）| langchain4j（V2 框架实现，需 agent-enabled=true）

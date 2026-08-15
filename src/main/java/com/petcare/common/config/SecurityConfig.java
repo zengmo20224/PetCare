@@ -24,6 +24,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * - POST /api/v1/admin/auth/login
  * - POST /api/v1/auth/register
  * - POST /api/v1/auth/login
+ * - POST /api/v1/auth/logout（清 HttpOnly cookie，token 过期时也要能调）
+ * - POST /api/v1/admin/auth/logout（同上）
  * - POST /api/v1/auth/forgot-password/*
  * - POST /api/v1/auth/wechat-login
  * - POST /api/v1/auth/test-login (only active in test profile)
@@ -67,6 +69,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/register").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/logout").permitAll()
+                        .requestMatchers("/api/v1/admin/auth/logout").permitAll()
                         .requestMatchers("/api/v1/auth/forgot-password/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/security-questions").permitAll()
                         .requestMatchers("/api/v1/auth/wechat-login").permitAll()

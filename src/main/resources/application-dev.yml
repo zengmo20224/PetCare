@@ -8,6 +8,9 @@ spring:
 petcare:
   security:
     jwt-secret: ${JWT_SECRET:dev-secret-key-for-local-testing-only-32chars}
+    # dev 本地跑 HTTP（vite 代理/热点直连），Secure cookie 不会落地——必须关闭
+    cookie:
+      secure: false
   wechat:
     # dev：用 mock provider 派生确定性 openid，前端无需真实微信即可联调登录链路。
     mode: ${WECHAT_LOGIN_MODE:mock}

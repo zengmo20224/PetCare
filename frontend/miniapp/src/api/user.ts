@@ -53,6 +53,11 @@ export function login(data: { phone: string; password: string }): Promise<ApiRes
   return http.post<AuthResult>('/api/v1/auth/login', data as any)
 }
 
+/** Logout — POST /api/v1/auth/logout（服务端清 HttpOnly cookie，H5 登出必须调用） */
+export function logout(): Promise<ApiResponse<null>> {
+  return http.post<null>('/api/v1/auth/logout')
+}
+
 /** Get security questions for password recovery */
 export function getSecurityQuestions(phone: string): Promise<ApiResponse<SecurityQuestion[]>> {
   return http.post<SecurityQuestion[]>('/api/v1/auth/forgot-password/questions', { phone })

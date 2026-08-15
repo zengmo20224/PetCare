@@ -37,6 +37,11 @@ export const login = (data: LoginParams) => {
   return request.post<AdminLoginResult>('/v1/admin/auth/login', data)
 }
 
+/** Admin logout — POST /api/v1/admin/auth/logout（服务端清 HttpOnly cookie） */
+export const logout = () => {
+  return request.post<null>('/v1/admin/auth/logout')
+}
+
 /** Get current admin info — GET /api/v1/admin/auth/me */
 export const getUserInfo = () => {
   return request.get<AdminUserInfo>('/v1/admin/auth/me')

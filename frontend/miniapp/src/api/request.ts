@@ -99,19 +99,30 @@ function buildQueryString(params: Record<string, unknown>): string {
   return parts.length > 0 ? `?${parts.join('&')}` : ''
 }
 
-/** Get stored user token */
+/**
+ * Get stored user token.
+ * HttpOnly Cookie 双轨（2026-08-15）：H5 凭证由 HttpOnly cookie 承载（同源自动携带），
+ * 不再读 storage 注入 Authorization——返回 null 让请求层省略该头；
+ * 微信小程序运行时无 cookie，永久保留 storage + header 通道。
+ */
 function getToken(): string | null {
+  // #ifdef H5
+  return null
+  // #endif
+  // #ifndef H5
   try {
     return uni.getStorageSync('user_token') || null
   } catch {
     return null
   }
+  // #endif
 }
 
-/** Clear stored token on auth failure */
+/** Clear stored credentials on auth failure（两个 key 都清，跨端安全） */
 function clearToken(): void {
   try {
     uni.removeStorageSync('user_token')
+    uni.removeStorageSync('user_auth')
   } catch {
     // ignore storage errors
   }

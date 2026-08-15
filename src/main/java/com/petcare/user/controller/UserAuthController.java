@@ -1,9 +1,11 @@
 package com.petcare.user.controller;
 
 import com.petcare.common.api.ApiResponse;
+import com.petcare.common.security.AuthCookieService;
 import com.petcare.user.auth.UserAuthService;
 import com.petcare.user.auth.WechatLoginApplicationService;
 import com.petcare.user.dto.*;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +18,8 @@ import java.util.List;
 /**
  * User authentication endpoints.
  * Public endpoints: register, login, forgot-password, wechat-login placeholder.
+ * 双轨（2026-08-15）：登录/注册/微信登录同时 Set-Cookie（HttpOnly）与 body 返回
+ * accessToken（小程序通道保留 header）；logout 服务端清 cookie。
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -23,11 +27,14 @@ public class UserAuthController {
 
     private final WechatLoginApplicationService wechatLoginApplicationService;
     private final UserAuthService userAuthService;
+    private final AuthCookieService authCookieService;
 
     public UserAuthController(WechatLoginApplicationService wechatLoginApplicationService,
-                              UserAuthService userAuthService) {
+                              UserAuthService userAuthService,
+                              AuthCookieService authCookieService) {
         this.wechatLoginApplicationService = wechatLoginApplicationService;
         this.userAuthService = userAuthService;
+        this.authCookieService = authCookieService;
     }
 
     /**
@@ -38,9 +45,11 @@ public class UserAuthController {
      * {@code real} calls the WeChat jscode2session API.
      */
     @PostMapping("/wechat-login")
-    public ApiResponse<WechatLoginResponse> wechatLogin(@Valid @RequestBody WechatLoginRequest request) {
-        WechatLoginResponse response = wechatLoginApplicationService.login(request.code());
-        return ApiResponse.ok(response);
+    public ApiResponse<WechatLoginResponse> wechatLogin(@Valid @RequestBody WechatLoginRequest request,
+                                                        HttpServletResponse response) {
+        WechatLoginResponse body = wechatLoginApplicationService.login(request.code());
+        authCookieService.writeUserCookie(response, body.accessToken());
+        return ApiResponse.ok(body);
     }
 
     /**
@@ -57,18 +66,32 @@ public class UserAuthController {
      * Public endpoint.
      */
     @PostMapping("/register")
-    public ApiResponse<PasswordLoginResponse> register(@Valid @RequestBody RegisterRequest request) {
-        PasswordLoginResponse response = userAuthService.register(request);
-        return ApiResponse.ok(response);
+    public ApiResponse<PasswordLoginResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                       HttpServletResponse response) {
+        PasswordLoginResponse body = userAuthService.register(request);
+        authCookieService.writeUserCookie(response, body.accessToken());
+        return ApiResponse.ok(body);
     }
 
     /**
      * Login with phone + password. Public endpoint.
      */
     @PostMapping("/login")
-    public ApiResponse<PasswordLoginResponse> login(@Valid @RequestBody PasswordLoginRequest request) {
-        PasswordLoginResponse response = userAuthService.login(request);
-        return ApiResponse.ok(response);
+    public ApiResponse<PasswordLoginResponse> login(@Valid @RequestBody PasswordLoginRequest request,
+                                                    HttpServletResponse response) {
+        PasswordLoginResponse body = userAuthService.login(request);
+        authCookieService.writeUserCookie(response, body.accessToken());
+        return ApiResponse.ok(body);
+    }
+
+    /**
+     * Logout: clears the HttpOnly user cookie (public——token 已过期时也要能清干净).
+     * JWT 无服务端状态，token 本身按过期时间自然失效.
+     */
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(HttpServletResponse response) {
+        authCookieService.clearUserCookie(response);
+        return ApiResponse.ok(null);
     }
 
     /**

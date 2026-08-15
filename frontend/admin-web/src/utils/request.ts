@@ -11,17 +11,8 @@ const axiosInstance = axios.create({
   timeout: 10000,
 })
 
-/** Inject admin JWT token into every request */
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('admin_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error),
-)
+// HttpOnly Cookie 双轨改造（2026-08-15）：凭证由后端 Set-Cookie 承载，
+// 同源请求浏览器自动携带，不再注入 Authorization 头（token 不落 localStorage）。
 
 /**
  * Response interceptor — unwraps AxiosResponse to ApiResponse<T>.
@@ -55,7 +46,7 @@ axiosInstance.interceptors.response.use(
           ElMessage.warning(userMessage)
           break
         case 401:
-          localStorage.removeItem('admin_token')
+          localStorage.removeItem('admin_auth')
           if (!requestUrl.includes('/admin/auth/login')) {
             router.push('/login')
           }
