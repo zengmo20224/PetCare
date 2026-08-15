@@ -106,6 +106,12 @@ public class AdminManagementController {
         return ok(service.disableServiceItem(id, operatorId()));
     }
 
+    @PostMapping("/service-items/{id}/enable")
+    @PreAuthorize("hasAuthority('service:item:enable')")
+    public ResponseEntity<ApiResponse<ServiceItemView>> enableServiceItem(@PathVariable Long id) {
+        return ok(service.enableServiceItem(id, operatorId()));
+    }
+
     @GetMapping("/staff")
     @PreAuthorize("hasAuthority('staff:profile:read')")
     public ResponseEntity<ApiResponse<PageResponse<StaffView>>> listStaff(
@@ -203,6 +209,12 @@ public class AdminManagementController {
     @PreAuthorize("hasAuthority('product:item:disable')")
     public ResponseEntity<ApiResponse<ProductView>> disableProduct(@PathVariable Long id) {
         return ok(service.disableProduct(id, operatorId()));
+    }
+
+    @PostMapping("/products/{id}/enable")
+    @PreAuthorize("hasAuthority('product:item:enable')")
+    public ResponseEntity<ApiResponse<ProductView>> enableProduct(@PathVariable Long id) {
+        return ok(service.enableProduct(id, operatorId()));
     }
 
     @PutMapping("/products/{id}/stock")

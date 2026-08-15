@@ -75,3 +75,8 @@ export const updateServiceItem = (id: number, data: ServiceItemCreateParams) => 
 export const disableServiceItem = (id: number) => {
   return request.post<ServiceItem>(`/v1/admin/service-items/${id}/disable`)
 }
+
+/** POST /api/v1/admin/service-items/{id}/enable */
+export const enableServiceItem = (id: number) => {
+  return request.post<ServiceItem>(`/v1/admin/service-items/${id}/enable`)
+}

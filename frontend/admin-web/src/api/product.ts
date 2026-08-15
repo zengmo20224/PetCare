@@ -57,6 +57,10 @@ export const disableProduct = (id: number) => {
   return request.post<Product>(`/v1/admin/products/${id}/disable`)
 }
 
+export const enableProduct = (id: number) => {
+  return request.post<Product>(`/v1/admin/products/${id}/enable`)
+}
+
 export const updateProductStock = (id: number, data: ProductStockUpdateParams) => {
   return request.put<Product>(`/v1/admin/products/${id}/stock`, data)
 }

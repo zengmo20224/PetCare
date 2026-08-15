@@ -18,7 +18,8 @@ ON DUPLICATE KEY UPDATE `role_name` = VALUES(`role_name`), `status` = 'ACTIVE';
 
 -- ============================================================================
 -- 2. Permissions
--- id range 7001-7050 reserved for admin permissions
+-- id range 7001-7050 reserved for admin permissions; 7060-7061 for product/service-item enable
+-- (7051-7054 reserved by phase15 wallet, 7055+ by phase16 ai-agent)
 -- ============================================================================
 INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `module`, `status`) VALUES
   -- store (7001-7004)
@@ -81,7 +82,11 @@ INSERT INTO `admin_permission` (`id`, `permission_code`, `permission_name`, `mod
   (7047, 'staff:profile:enable',          '员工启用',     'staff', 'ACTIVE'),
   -- ai (7048-7049) — D-004 修订（2026-07-21）：用户端客服 + 管理端分析报告已激活
   (7048, 'ai:analysis:generate',          '生成AI分析报告', 'ai', 'ACTIVE'),
-  (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE')
+  (7049, 'ai:usage:read',                 'AI用量查看',     'ai', 'ACTIVE'),
+  -- product/service-item enable (7060-7061) — 与 disable 对称：下架后可重新上架
+  -- 注：7050 留给 phase7 后续扩展，7051-7054 已被 phase15 钱包占用，故启用新段 7060+
+  (7060, 'product:item:enable',           '商品上架',       'product', 'ACTIVE'),
+  (7061, 'service:item:enable',           '服务项启用',     'service', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`), `status` = 'ACTIVE';
 
 -- ============================================================================
@@ -89,18 +94,18 @@ ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`), `status` 
 --    SUPER_ADMIN and ADMIN: all permissions (dev simplification)
 --    STAFF: read-only subset
 -- ============================================================================
--- SUPER_ADMIN (role_id=1): all permission ids 7001-7049
+-- SUPER_ADMIN (role_id=1): all permission ids 7001-7061 (含 7060-7061 enable)
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
 SELECT 80000 + p.id, 1, p.id
 FROM `admin_permission` p
-WHERE p.id BETWEEN 7001 AND 7049
+WHERE p.id BETWEEN 7001 AND 7061
 ON DUPLICATE KEY UPDATE `role_id` = VALUES(`role_id`);
 
 -- ADMIN (role_id=2): same as SUPER_ADMIN in dev (all permissions)
 INSERT INTO `admin_role_permission` (`id`, `role_id`, `permission_id`)
 SELECT 81000 + p.id, 2, p.id
 FROM `admin_permission` p
-WHERE p.id BETWEEN 7001 AND 7049
+WHERE p.id BETWEEN 7001 AND 7061
 ON DUPLICATE KEY UPDATE `role_id` = VALUES(`role_id`);
 
 -- STAFF (role_id=3): read-only permissions only

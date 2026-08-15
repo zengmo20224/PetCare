@@ -35,6 +35,7 @@ public interface AdminManagementService {
     ServiceItemView createServiceItem(ServiceItemRequest request, Long operatorId);
     ServiceItemView updateServiceItem(Long id, ServiceItemRequest request, Long operatorId);
     ServiceItemView disableServiceItem(Long id, Long operatorId);
+    ServiceItemView enableServiceItem(Long id, Long operatorId);
 
     PageResponse<StaffView> listStaff(int page, int size, String status);
     StaffView createStaff(StaffRequest request, Long operatorId);
@@ -51,6 +52,7 @@ public interface AdminManagementService {
     ProductView createProduct(ProductRequest request, Long operatorId);
     ProductView updateProduct(Long id, ProductRequest request, Long operatorId);
     ProductView disableProduct(Long id, Long operatorId);
+    ProductView enableProduct(Long id, Long operatorId);
     ProductView updateProductStock(Long id, Integer stock, Long operatorId);
     List<ProductCarouselImageView> listProductCarouselImages();
     List<ProductCarouselImageView> replaceProductCarouselImages(

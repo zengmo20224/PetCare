@@ -48,7 +48,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="sort" label="排序" width="70" />
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="240" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="openEditDialog(row)" :disabled="!userStore.hasPermission('service:item:update')">编辑</el-button>
           <el-button
@@ -57,6 +57,12 @@
             @click="handleDisable(row.id)"
             :disabled="!userStore.hasPermission('service:item:disable')"
           >禁用</el-button>
+          <el-button
+            size="small" type="success"
+            v-if="!isServiceOnSale(row.status)"
+            @click="handleEnable(row.id)"
+            :disabled="!userStore.hasPermission('service:item:enable')"
+          >启用</el-button>
         </template>
       </el-table-column>
     </DataTableShell>
@@ -184,12 +190,22 @@
       @confirm="executeDisable"
       @cancel="disableDialogVisible = false"
     />
+
+    <!-- Enable Confirm Dialog -->
+    <ActionConfirmDialog
+      :visible="enableDialogVisible"
+      title="启用服务项目"
+      message="确定要启用此服务项目吗？启用后将重新展示给用户并可被预约。"
+      :danger="false"
+      @confirm="executeEnable"
+      @cancel="enableDialogVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { getServiceItems, getServiceCategories, createServiceItem, updateServiceItem, disableServiceItem } from '../../api/service'
+import { getServiceItems, getServiceCategories, createServiceItem, updateServiceItem, disableServiceItem, enableServiceItem } from '../../api/service'
 import type { ServiceItem, ServiceItemCreateParams, ServiceCategory } from '../../api/service'
 import { uploadCatalogImage } from '../../api/upload'
 import type { FormInstance, FormRules, UploadRawFile, UploadRequestOptions, UploadUserFile } from 'element-plus'
@@ -277,6 +293,26 @@ const executeDisable = async () => {
   try {
     await disableServiceItem(disableTargetId.value)
     showSuccess('服务项目已禁用')
+    await fetchData()
+  } catch (error) {
+    showError(error instanceof Error ? error.message : '操作失败')
+  }
+}
+
+// ─── Enable Confirm Dialog ───
+const enableDialogVisible = ref(false)
+const enableTargetId = ref(0)
+
+const handleEnable = (id: number) => {
+  enableTargetId.value = id
+  enableDialogVisible.value = true
+}
+
+const executeEnable = async () => {
+  enableDialogVisible.value = false
+  try {
+    await enableServiceItem(enableTargetId.value)
+    showSuccess('服务项目已启用')
     await fetchData()
   } catch (error) {
     showError(error instanceof Error ? error.message : '操作失败')

@@ -50,6 +50,12 @@
             @click="handleDisable(row.id)"
             :disabled="!userStore.hasPermission('product:item:disable')"
           >下架</el-button>
+          <el-button
+            size="small" type="success"
+            v-if="!isProductOnSale(row.status)"
+            @click="handleEnable(row.id)"
+            :disabled="!userStore.hasPermission('product:item:enable')"
+          >上架</el-button>
         </template>
       </el-table-column>
     </DataTableShell>
@@ -193,12 +199,22 @@
       @confirm="executeDisable"
       @cancel="disableDialogVisible = false"
     />
+
+    <!-- Enable Confirm Dialog -->
+    <ActionConfirmDialog
+      :visible="enableDialogVisible"
+      title="上架商品"
+      message="确定要重新上架此商品吗？上架后将重新展示给用户。"
+      :danger="false"
+      @confirm="executeEnable"
+      @cancel="enableDialogVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { getProductList, createProduct, updateProduct, disableProduct, updateProductStock } from '../../api/product'
+import { getProductList, createProduct, updateProduct, disableProduct, enableProduct, updateProductStock } from '../../api/product'
 import type { Product, ProductCreateParams } from '../../api/product'
 import { uploadCatalogImage } from '../../api/upload'
 import type { FormInstance, FormRules, UploadRawFile, UploadRequestOptions, UploadUserFile } from 'element-plus'
@@ -303,6 +319,26 @@ const executeDisable = async () => {
   try {
     await disableProduct(disableTargetId.value)
     showSuccess('商品已下架')
+    await fetchData()
+  } catch (error) {
+    showError(error instanceof Error ? error.message : '操作失败')
+  }
+}
+
+// ─── Enable Confirm Dialog ───
+const enableDialogVisible = ref(false)
+const enableTargetId = ref(0)
+
+const handleEnable = (id: number) => {
+  enableTargetId.value = id
+  enableDialogVisible.value = true
+}
+
+const executeEnable = async () => {
+  enableDialogVisible.value = false
+  try {
+    await enableProduct(enableTargetId.value)
+    showSuccess('商品已上架')
     await fetchData()
   } catch (error) {
     showError(error instanceof Error ? error.message : '操作失败')

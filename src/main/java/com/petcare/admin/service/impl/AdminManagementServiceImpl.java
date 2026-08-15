@@ -262,6 +262,28 @@ public class AdminManagementServiceImpl implements AdminManagementService {
     }
 
     @Override
+    @Transactional
+    public ServiceItemView enableServiceItem(Long id, Long operatorId) {
+        String url = "/api/v1/admin/service-items/" + id + "/enable";
+        ServiceItem item = null;
+        try {
+            item = requireServiceItem(id);
+            if (!"OFF_SALE".equals(item.getStatus())) {
+                throw new BusinessException(ErrorCode.STATE_CONFLICT, "该服务项目未处于停用状态");
+            }
+            item.setStatus("ON_SALE");
+            serviceItemService.updateById(item);
+            String params = "targetName=" + item.getName() + ", serviceItemId=" + item.getId();
+            audit(operatorId, "service", "enable-item", "POST", url, "SUCCESS", params, null);
+            return serviceItemView(item);
+        } catch (RuntimeException e) {
+            String params = item != null ? "targetName=" + item.getName() + ", serviceItemId=" + item.getId() : null;
+            audit(operatorId, "service", "enable-item", "POST", url, "FAIL", params, auditFailureMessage(e));
+            throw e;
+        }
+    }
+
+    @Override
     public PageResponse<StaffView> listStaff(int page, int size, String status) {
         LambdaQueryWrapper<Staff> query = new LambdaQueryWrapper<Staff>()
                 .eq(Staff::getDeleted, 0)
@@ -533,6 +555,28 @@ public class AdminManagementServiceImpl implements AdminManagementService {
         } catch (RuntimeException e) {
             String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
             audit(operatorId, "product", "disable-item", "POST", url, "FAIL", params, auditFailureMessage(e));
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public ProductView enableProduct(Long id, Long operatorId) {
+        String url = "/api/v1/admin/products/" + id + "/enable";
+        Product product = null;
+        try {
+            product = requireProduct(id);
+            if (!"OFF_SALE".equals(product.getStatus())) {
+                throw new BusinessException(ErrorCode.STATE_CONFLICT, "该商品未处于下架状态");
+            }
+            product.setStatus("ON_SALE");
+            productService.updateById(product);
+            String params = "targetName=" + product.getName() + ", productId=" + product.getId();
+            audit(operatorId, "product", "enable-item", "POST", url, "SUCCESS", params, null);
+            return productView(product);
+        } catch (RuntimeException e) {
+            String params = product != null ? "targetName=" + product.getName() + ", productId=" + product.getId() : null;
+            audit(operatorId, "product", "enable-item", "POST", url, "FAIL", params, auditFailureMessage(e));
             throw e;
         }
     }
