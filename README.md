@@ -19,17 +19,31 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
 
 ---
 
-## 📱 UI 展示（2026-08 改版，真实媒体种子）
+## 📱 UI 展示（2026-08 改版，运行中的应用实拍）
 
-| 首页 | 服务预约 |
-|---|---|
-| ![首页](docs/assets/screenshots/home.png) | ![服务](docs/assets/screenshots/services.png) |
-| **商品零售** | **社区互动** |
-| ![商品](docs/assets/screenshots/products.png) | ![社区](docs/assets/screenshots/community.png) |
-| **个人中心** | **桌面端响应式** |
-| ![我的](docs/assets/screenshots/profile.png) | ![桌面服务页](docs/assets/screenshots/services-desktop.png) |
+> 五页均为**当前运行中的应用**统一视口（390×844）逐页截取，数据来自真实后端 + 演示媒体种子（68 张 Wikimedia/Unsplash 授权图片，逐图署名见 `uploads/images/seed/CREDITS.md`）。
 
-> 截图数据来自 `data-media.sql` 真实媒体种子（68 张 Wikimedia/Unsplash 授权图片，逐图署名见 `uploads/images/seed/CREDITS.md`），非静态假数据。
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/screenshots/home.png" width="160" alt="首页"/></td>
+    <td align="center"><img src="docs/assets/screenshots/services.png" width="160" alt="服务预约"/></td>
+    <td align="center"><img src="docs/assets/screenshots/products.png" width="160" alt="商品零售"/></td>
+    <td align="center"><img src="docs/assets/screenshots/community.png" width="160" alt="社区互动"/></td>
+    <td align="center"><img src="docs/assets/screenshots/profile.png" width="160" alt="个人中心"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>首页</b></sub></td>
+    <td align="center"><sub><b>服务预约</b></sub></td>
+    <td align="center"><sub><b>商品零售</b></sub></td>
+    <td align="center"><sub><b>社区互动</b></sub></td>
+    <td align="center"><sub><b>个人中心</b></sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/assets/screenshots/services-desktop.png" width="800" alt="桌面端响应式"/><br/>
+  <sub><b>桌面端响应式布局</b>（1280 宽视口，服务页——同一套代码自适应）</sub>
+</p>
 
 ---
 
