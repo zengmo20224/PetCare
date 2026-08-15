@@ -55,6 +55,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
+    /**
+     * Must run on ASYNC dispatch (2026-08-15 验收缺陷修复)。
+     * <p>
+     * Spring MVC completes async requests (SseEmitter etc.) via ASYNC dispatch, and
+     * Spring Security 6's AuthorizationFilter re-authorizes on dispatch. OncePerRequestFilter
+     * skips async dispatch by default, leaving the SecurityContext empty → AccessDenied on a
+     * committed response → Tomcat aborts the connection without the chunked terminator,
+     * hanging frontend streaming readers.
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,

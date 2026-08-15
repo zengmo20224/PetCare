@@ -5,6 +5,8 @@ import com.petcare.ai.dto.AiMessageCreateRequest;
 import com.petcare.ai.dto.AiMessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -17,6 +19,11 @@ import java.util.regex.Pattern;
  * <p>
  * <b>分块流式</b>（非真流式）：后端调同步 {@code complete()} 拿完整文本 → 整段过护栏 → 按句边界切分
  * → SseEmitter 逐块发送，前端呈现打字机效果。首 token 延迟 = 完整生成时间（真流式留作 M8.1+ 优化）。
+ * <p>
+ * <b>异步生命周期（2026-08-15 修复）</b>：生成与发送必须在独立线程执行，emitter 由 controller
+ * 立即返回。若在 controller 线程内同步 send + complete，Spring MVC 走非标准完成路径，Tomcat
+ * 关闭连接时不写 chunked 终止块——经 vite/node 代理时 fetch reader 永远不结束，前端卡
+ * "正在思考"（验收缺陷，回归守卫见 AsyncLifecycle 测试）。
  * <p>
  * <b>流式护栏（B8）</b>：
  * <ul>
@@ -42,15 +49,22 @@ public class StreamingConversationService {
             "(?<=[。！？!?\\n])");
 
     private final AiConversationApplicationService conversationService;
+    private final TaskExecutor executor;
 
     public StreamingConversationService(AiConversationApplicationService conversationService) {
+        this(conversationService, new SimpleAsyncTaskExecutor("ai-sse-"));
+    }
+
+    StreamingConversationService(AiConversationApplicationService conversationService, TaskExecutor executor) {
         this.conversationService = conversationService;
+        this.executor = executor;
     }
 
     /**
      * 流式发送一条消息。
      * <p>
-     * 流程：鉴权（service 内）→ 前置护栏 → 同步生成完整回复（含后置护栏）→ 切分 → 逐块 SSE 发送。
+     * 流程：注册超时回调 → 提交后台任务 → 立即返回 emitter。
+     * 后台任务内：前置护栏 → 同步生成完整回复（含后置护栏）→ 切分 → 逐块 SSE 发送 → complete。
      *
      * @param currentUserId  当前用户 ID（Controller 已解析，非空）
      * @param conversationId 会话 ID
@@ -59,15 +73,26 @@ public class StreamingConversationService {
      */
     public SseEmitter streamMessage(Long currentUserId, Long conversationId, AiMessageCreateRequest request) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+        emitter.onTimeout(() -> log.warn("[AI] SSE timeout (conversation={})", conversationId));
+        try {
+            executor.execute(() -> runStream(emitter, currentUserId, conversationId, request));
+        } catch (RuntimeException e) {
+            // executor 拒绝（如关停中）：走缓存路径发降级文案（几乎不可达）
+            log.warn("[AI] SSE task rejected (conversation={}): {}", conversationId, e.getMessage());
+            sendErrorEvent(emitter, "AI 暂时无法回复，请稍后再试。");
+        }
+        return emitter;
+    }
 
+    private void runStream(SseEmitter emitter, Long currentUserId, Long conversationId,
+                           AiMessageCreateRequest request) {
         // PET_CHAT 前置护栏：高危症状直接发固定兽医文案，不调 Provider（B8 前置）
         if (HighRiskSymptomDetector.isHighRisk(request.content())) {
             sendAndComplete(emitter, HighRiskSymptomDetector.getFixedSafetyResponse());
-            return emitter;
+            return;
         }
 
         // 同步获取完整回复（sendMessage 内部已做后置护栏：PetMedicalSafetyPolicy / AiOutputSafetyPolicy）
-        // 在 SSE 线程内同步执行——单门店并发足够，无需 @Async
         AiMessageResponse response;
         try {
             response = conversationService.sendMessage(currentUserId, conversationId, request);
@@ -75,14 +100,12 @@ public class StreamingConversationService {
             // 任何生成失败：发送降级文案，不向上游抛（SSE 已开流）
             log.warn("[AI] SSE stream generation failed (conversation={}): {}", conversationId, e.getMessage());
             sendErrorEvent(emitter, "AI 暂时无法回复，请稍后再试。");
-            return emitter;
+            return;
         }
 
         // 切分完整文本并逐块发送
         String fullText = response.content() == null ? "" : response.content();
-        List<String> chunks = splitIntoChunks(fullText);
-        emitChunks(emitter, chunks);
-        return emitter;
+        emitChunks(emitter, splitIntoChunks(fullText));
     }
 
     /**
