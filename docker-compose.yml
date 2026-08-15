@@ -106,6 +106,10 @@ services:
       # V2 AI Agent（D-013）：Agent / RAG / PgVector 连接，默认关闭，缺值不影响启动
       AI_AGENT_ENABLED: ${AI_AGENT_ENABLED:-false}
       AI_RAG_ENABLED: ${AI_RAG_ENABLED:-false}
+      # AI 限流与每日额度（上线加固，可经 .env 覆盖；0=关闭对应额度）
+      AI_AGENT_RATE_LIMIT_PER_MIN: ${AI_AGENT_RATE_LIMIT_PER_MIN:-20}
+      AI_AGENT_DAILY_LIMIT_PER_USER: ${AI_AGENT_DAILY_LIMIT_PER_USER:-50}
+      AI_AGENT_DAILY_LIMIT_GLOBAL: ${AI_AGENT_DAILY_LIMIT_GLOBAL:-0}
       PGVECTOR_HOST: postgres
       PGVECTOR_PORT: 5432
       PGVECTOR_DB: ${PGVECTOR_DB:-petcare_ai}
@@ -117,6 +121,9 @@ services:
       - "127.0.0.1:${API_PORT:-8082}:8080"
     volumes:
       - api-uploads:/app/uploads
+      # AI embedding 模型（~90MB ONNX，不入 git 也不进镜像）：部署时按 models/README.md
+      # 下载到宿主机 ./models/ 后挂载进容器；AI 关闭时挂载无害
+      - ./models:/app/models:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/v1/system/health || exit 1"]
       interval: 15s

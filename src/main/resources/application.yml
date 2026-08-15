@@ -68,9 +68,13 @@ petcare:
     # V2 RAG 检索参数
     rag:
       top-k: ${AI_RAG_TOP_K:5}
-    # V2 Agent 限流
+    # V2 Agent 限流与每日额度（上线加固：拦截层近似计数，精确对账看 ai_usage_log）
     agent:
       rate-limit-per-min: ${AI_AGENT_RATE_LIMIT_PER_MIN:20}
+      # 每用户每日 AI 调用上限（0=关闭）；发帖仅 Provider 启用（真实计费）时计入
+      daily-limit-per-user: ${AI_AGENT_DAILY_LIMIT_PER_USER:50}
+      # 全站每日 AI 调用上限兜底，防多账号刷量（0=关闭）
+      daily-limit-global: ${AI_AGENT_DAILY_LIMIT_GLOBAL:0}
     # V2 内容审核（M8.3 文本阈值；NSFW 图片模型渠道 M8.4 决策）
     moderation:
       nsfw-threshold: ${AI_MODERATION_NSFW_THRESHOLD:0.8}
