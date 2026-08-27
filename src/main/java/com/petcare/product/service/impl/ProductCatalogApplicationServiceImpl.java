@@ -3,23 +3,41 @@ package com.petcare.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.exception.BusinessException;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.exception.ErrorCode;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.pagination.PageResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.dto.ProductCategoryResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.dto.ProductCarouselImageResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.dto.ProductDetailResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.dto.ProductSummaryResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.entity.Product;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.entity.ProductCarouselImage;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.entity.ProductCategory;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.entity.ProductDetailImage;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.entity.ProductImage;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.mapper.ProductCarouselImageMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.mapper.ProductCategoryMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.mapper.ProductDetailImageMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.mapper.ProductImageMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.mapper.ProductMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.product.service.ProductCatalogApplicationService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -75,9 +93,9 @@ public class ProductCatalogApplicationServiceImpl implements ProductCatalogAppli
         }
         if (StringUtils.hasText(keyword)) {
             String normalizedKeyword = keyword.trim();
-            wrapper.and(w -> w.like(Product::getName, normalizedKeyword)
+            wrapper.and(w -> w.like(Product::getName, SqlLikeUtils.escape(normalizedKeyword))
                     .or()
-                    .like(Product::getDescription, normalizedKeyword));
+                    .like(Product::getDescription, SqlLikeUtils.escape(normalizedKeyword)));
         }
         wrapper.orderByAsc(Product::getSort);
 

@@ -289,6 +289,43 @@ class UserSecurityAndPasswordControllerTest {
         }
 
         @Test
+        @DisplayName("P2：改密成功后旧 JWT 立即失效（401），跨秒后新签发 token 可用")
+        void oldTokenInvalidatedAfterPasswordChange() throws Exception {
+            User user = createUserWithPassword("Test1234");
+            String oldToken = jwtTokenService.signUserToken(user.getId());
+
+            // JWT iat 为秒级精度：确保撤销时刻严格晚于旧 token 签发秒，消除同秒边界抖动
+            Thread.sleep(1100);
+
+            String body = objectMapper.writeValueAsString(Map.of(
+                    "oldPassword", "Test1234",
+                    "newPassword", "NewPass5678"
+            ));
+
+            mockMvc.perform(put("/api/v1/user/password")
+                            .header("Authorization", "Bearer " + oldToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+
+            // 旧 token 重放：iat 早于撤销时刻 → 401（JWT iat 秒级精度，跨秒保证确定性）
+            mockMvc.perform(get("/api/v1/user/security-questions")
+                            .header("Authorization", "Bearer " + oldToken))
+                    .andExpect(status().isUnauthorized());
+
+            // 撤销后新签发的 token 不受影响（iat 晚于撤销时刻）
+            // 同秒边界：撤销秒内新签发的 token 会被误拒一次，跨秒保证确定性
+            Thread.sleep(1100);
+
+            String freshToken = jwtTokenService.signUserToken(user.getId());
+            mockMvc.perform(get("/api/v1/user/security-questions")
+                            .header("Authorization", "Bearer " + freshToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
         @DisplayName("旧密码错误 → 401")
         void wrongOldPasswordRejected() throws Exception {
             User user = createUserWithPassword("Test1234");

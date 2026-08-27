@@ -39,6 +39,7 @@ class RateLimitFilterTest {
 
     private static final int WINDOW_SECONDS = 60;
     private static final long MAX_REQUESTS = 3;
+    private static final long ADMIN_MAX_REQUESTS = 2;
 
     @BeforeEach
     void setUp() {
@@ -46,6 +47,7 @@ class RateLimitFilterTest {
         // 注入配置（绕过 Spring @Value）
         ReflectionTestUtils.setField(filter, "windowSeconds", WINDOW_SECONDS);
         ReflectionTestUtils.setField(filter, "maxRequests", MAX_REQUESTS);
+        ReflectionTestUtils.setField(filter, "adminMaxRequests", ADMIN_MAX_REQUESTS);
     }
 
     @Test
@@ -167,18 +169,19 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("管理员登录端点 /admin/auth/login 同样受限")
-    void adminLoginEndpoint_isRateLimited() throws Exception {
-        // 耗尽配额
-        for (int i = 0; i < MAX_REQUESTS; i++) {
+    @DisplayName("管理员登录端点使用更严阈值（2026-08-23 审计 M5）：第 3 次即被拒")
+    void adminLoginEndpoint_usesStricterThreshold() throws Exception {
+        // 前两次放行
+        for (int i = 0; i < ADMIN_MAX_REQUESTS; i++) {
             HttpServletRequest req = mockRequest("POST", "/api/v1/admin/auth/login", "5.5.5.5");
             HttpServletResponse resp = mock(HttpServletResponse.class);
             when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
             FilterChain chain = mock(FilterChain.class);
             filter.doFilter(req, resp, chain);
+            verify(chain).doFilter(req, resp);
         }
 
-        // 第 4 次：应被拒
+        // 第 3 次：应被拒（严于普通端点的 MAX_REQUESTS=3）
         HttpServletRequest req = mockRequest("POST", "/api/v1/admin/auth/login", "5.5.5.5");
         HttpServletResponse resp = mock(HttpServletResponse.class);
         StringWriter sw = new StringWriter();
@@ -189,6 +192,29 @@ class RateLimitFilterTest {
 
         verify(chain, never()).doFilter(any(), any());
         verify(resp).setStatus(429);
+    }
+
+    @Test
+    @DisplayName("更严的管理员阈值不影响同 IP 的用户登录阈值")
+    void stricterAdminThreshold_doesNotAffectUserEndpoint() throws Exception {
+        // 同 IP 已打满 admin 阈值
+        for (int i = 0; i < ADMIN_MAX_REQUESTS; i++) {
+            HttpServletRequest req = mockRequest("POST", "/api/v1/admin/auth/login", "6.6.6.6");
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(req, resp, chain);
+        }
+
+        // 同 IP 用户登录：MAX_REQUESTS 次内全部放行
+        for (int i = 0; i < MAX_REQUESTS; i++) {
+            HttpServletRequest req = mockRequest("POST", "/api/v1/auth/login", "6.6.6.6");
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(req, resp, chain);
+            verify(chain).doFilter(req, resp);
+        }
     }
 
     @Test
@@ -235,6 +261,74 @@ class RateLimitFilterTest {
 
         filter.doFilter(req, resp, chain);
         verify(resp).setStatus(429);
+    }
+
+    // ==================== 桶容量防护（2026-08-23 审计 M1：防海量伪造 IP 撑爆堆内存） ====================
+
+    @Test
+    @DisplayName("桶容量上限：海量伪造 IP 打满后触发清扫，桶数量有界不再无限增长")
+    void bucketCapacity_boundedUnderUniqueIpFlood() throws Exception {
+        ReflectionTestUtils.setField(filter, "maxBuckets", 5);
+        for (int i = 0; i < 50; i++) {
+            HttpServletRequest req = mockRequest("POST", "/api/v1/auth/login",
+                    "10.1." + (i / 256) + "." + (i % 256));
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(req, resp, chain);
+        }
+        assertThat(filter.bucketCount()).isLessThanOrEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("过期桶被清扫回收：闲置超过窗口的条目被移除，容量得以复用")
+    void idleBuckets_areEvictedBySweep() throws Exception {
+        ReflectionTestUtils.setField(filter, "windowSeconds", 1);
+        ReflectionTestUtils.setField(filter, "maxBuckets", 3);
+        for (int i = 0; i < 3; i++) {
+            HttpServletRequest req = mockRequest("POST", "/api/v1/auth/login", "10.2.0." + i);
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(req, resp, chain);
+        }
+        assertThat(filter.bucketCount()).isEqualTo(3);
+
+        Thread.sleep(1100);
+
+        // 新 IP 到来触发清扫：旧闲置桶被移除，新桶可建立且请求放行
+        HttpServletRequest req = mockRequest("POST", "/api/v1/auth/login", "10.2.9.9");
+        HttpServletResponse resp = mock(HttpServletResponse.class);
+        when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+        FilterChain chain = mock(FilterChain.class);
+        filter.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        assertThat(filter.bucketCount()).isLessThanOrEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("容量打满且无可清扫条目时 fail-open 放行，不误伤正常用户")
+    void saturated_failsOpen_notLockedOut() throws Exception {
+        ReflectionTestUtils.setField(filter, "maxBuckets", 2);
+        for (int i = 0; i < 2; i++) {
+            HttpServletRequest req = mockRequest("POST", "/api/v1/auth/login", "10.3.0." + i);
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(req, resp, chain);
+        }
+        assertThat(filter.bucketCount()).isEqualTo(2);
+
+        // 第 3 个新 IP：应放行（fail-open），既不是 429 也不抛异常
+        HttpServletRequest req = mockRequest("POST", "/api/v1/auth/login", "10.3.9.9");
+        HttpServletResponse resp = mock(HttpServletResponse.class);
+        when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+        FilterChain chain = mock(FilterChain.class);
+        filter.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).setStatus(org.mockito.ArgumentMatchers.anyInt());
     }
 
     // ==================== helpers ====================

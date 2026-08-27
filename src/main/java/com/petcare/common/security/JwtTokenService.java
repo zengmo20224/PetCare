@@ -200,13 +200,16 @@ public class JwtTokenService {
             return null;
         }
         Long subjectId = Long.parseLong(claims.getSubject());
-        return new TokenParseResult(tokenType, subjectId);
+        // P2（2026-08-23）：携带 iat 供 JwtRevocationRegistry 做改密撤销判定
+        long issuedAtEpochSeconds = claims.getIssuedAt() == null
+                ? 0L : claims.getIssuedAt().getTime() / 1000;
+        return new TokenParseResult(tokenType, subjectId, issuedAtEpochSeconds);
     }
 
     /**
      * Single-pass token parse result for filter use.
      */
-    public record TokenParseResult(String tokenType, Long subjectId) {
+    public record TokenParseResult(String tokenType, Long subjectId, long issuedAtEpochSeconds) {
     }
 
     /**

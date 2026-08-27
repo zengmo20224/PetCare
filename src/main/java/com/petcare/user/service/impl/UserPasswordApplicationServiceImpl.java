@@ -16,10 +16,14 @@ public class UserPasswordApplicationServiceImpl implements UserPasswordApplicati
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final com.petcare.common.security.JwtRevocationRegistry revocationRegistry;
 
-    public UserPasswordApplicationServiceImpl(UserService userService, PasswordEncoder passwordEncoder) {
+    public UserPasswordApplicationServiceImpl(UserService userService,
+                                              PasswordEncoder passwordEncoder,
+                                              com.petcare.common.security.JwtRevocationRegistry revocationRegistry) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.revocationRegistry = revocationRegistry;
     }
 
     @Override
@@ -41,5 +45,8 @@ public class UserPasswordApplicationServiceImpl implements UserPasswordApplicati
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userService.updateById(user);
+
+        // P2（2026-08-23）：改密后撤销该用户全部已签发 token（旧 JWT 立即失效）
+        revocationRegistry.revokeUser(userId);
     }
 }

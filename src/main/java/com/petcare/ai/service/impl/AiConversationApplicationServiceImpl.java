@@ -211,7 +211,9 @@ public class AiConversationApplicationServiceImpl implements AiConversationAppli
         if (ragEnabled) {
             try {
                 ragResults = ragRetrievalService.retrieveRelevant(userQuestion);
-                log.info("[AI] RAG retrieved {} segments for question: {}", ragResults.size(), userQuestion);
+                // P2（2026-08-23）：对话原文不进 INFO 日志，仅记录长度供运维观测
+                log.info("[AI] RAG retrieved {} segments (questionLength={})",
+                        ragResults.size(), userQuestion == null ? 0 : userQuestion.length());
             } catch (Exception e) {
                 // RAG 检索失败不阻塞对话，降级为空召回（仍可用 V1 context 回答）
                 log.warn("[AI] RAG retrieval failed, falling back to V1 context only: {}", e.getMessage());

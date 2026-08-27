@@ -31,17 +31,23 @@ public class UserAuthService {
     private final PhoneBlacklistService phoneBlacklistService;
     private final JwtTokenService jwtTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final com.petcare.common.security.LoginAttemptService loginAttemptService;
+    private final com.petcare.common.security.JwtRevocationRegistry jwtRevocationRegistry;
 
     public UserAuthService(UserService userService,
                            UserSecurityQuestionService securityQuestionService,
                            PhoneBlacklistService phoneBlacklistService,
                            JwtTokenService jwtTokenService,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           com.petcare.common.security.LoginAttemptService loginAttemptService,
+                           com.petcare.common.security.JwtRevocationRegistry jwtRevocationRegistry) {
         this.userService = userService;
         this.securityQuestionService = securityQuestionService;
         this.phoneBlacklistService = phoneBlacklistService;
         this.jwtTokenService = jwtTokenService;
         this.passwordEncoder = passwordEncoder;
+        this.loginAttemptService = loginAttemptService;
+        this.jwtRevocationRegistry = jwtRevocationRegistry;
     }
 
     /**
@@ -55,7 +61,11 @@ public class UserAuthService {
                 new LambdaQueryWrapper<User>().eq(User::getPhone, request.phone())
         );
         if (existing > 0) {
-            throw new BusinessException(ErrorCode.PHONE_ALREADY_REGISTERED, "该手机号已注册");
+            // P2（2026-08-23 审计 A3 泛化）：不再返回专属错误码/文案，
+            // 归并为通用校验失败，降低 permitAll 注册端点的手机号枚举信号；
+            // 文案保留对真实用户的引导（直接登录）。
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR,
+                    "注册信息有误或手机号不可用，请修改后重试或直接登录");
         }
 
         // Check phone blacklist — a banned phone cannot be used to register again,
@@ -119,17 +129,29 @@ public class UserAuthService {
      * Login with phone + password.
      */
     public PasswordLoginResponse login(PasswordLoginRequest request) {
+        // M5 账号级锁定：锁定期间在凭证比对前直接拒绝（429，文案不透露账号存在性）
+        if (loginAttemptService.isLocked(
+                com.petcare.common.security.LoginAttemptService.Channel.USER, request.phone())) {
+            throw new BusinessException(ErrorCode.RATE_LIMIT_EXCEEDED, "登录尝试过于频繁，请稍后再试");
+        }
+
         User user = userService.getOne(
                 new LambdaQueryWrapper<User>().eq(User::getPhone, request.phone())
         );
 
-        if (user == null || !user.getStatus().equals("ACTIVE") || user.getPasswordHash() == null) {
+        boolean credentialValid = user != null
+                && "ACTIVE".equals(user.getStatus())
+                && user.getPasswordHash() != null
+                && passwordEncoder.matches(request.password(), user.getPasswordHash());
+
+        if (!credentialValid) {
+            loginAttemptService.recordFailure(
+                    com.petcare.common.security.LoginAttemptService.Channel.USER, request.phone());
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "手机号或密码不正确");
         }
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "手机号或密码不正确");
-        }
+        loginAttemptService.onSuccess(
+                com.petcare.common.security.LoginAttemptService.Channel.USER, request.phone());
 
         // Update last login time
         user.setLastLoginTime(LocalDateTime.now());
@@ -247,5 +269,8 @@ public class UserAuthService {
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userService.updateById(user);
+
+        // P2（2026-08-23）：密保找回重置后同样撤销旧 token
+        jwtRevocationRegistry.revokeUser(user.getId());
     }
 }

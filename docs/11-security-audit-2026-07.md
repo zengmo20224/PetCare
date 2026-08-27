@@ -199,3 +199,62 @@ PetCare O2O 的安全基线在课程项目中处于**较高水平**。SQL 注入
 2. **H5 生产 API 地址**：`frontend/miniapp/.env.production` 的 `VITE_API_BASE_URL` 改为 `https://<真实域名>`，经 TLS 反代（Caddy 方案见 `docs/13-vps-deploy-cheatsheet.md`）。
 3. AI 开关：用户已拍板上线启用（`AI_PROVIDER_ENABLED=true` + DeepSeek key + PgVector）；Jenkins 仅做构建验证。
 
+---
+
+# 安全复审 2026-08-23（资源耗尽面 P0 修复）
+
+> 类型：授权白盒复审（4 路并行：认证会话 / 业务校验 / AI 模块 / 前端与部署 CI） ｜ 状态：**P0 三项已修复，全量回归通过**
+
+## 9. 复审结论
+
+前两轮修复复核有效：SQL 参数化、IDOR 归属校验、金额/库存/预约/钱包事务与行锁、上传魔数校验、JWT HttpOnly Cookie 双轨、AI 架构边界守卫均合格。本轮新发现 **8 中危 + 约 20 低危/信息项，0 高危**，集中在资源耗尽、限流拓扑与部署流水线三个维度。中危清单：
+
+- **M1** RateLimitFilter 桶 Map 无界增长 → 海量伪造 IP 慢性 OOM
+- **M2** 分页插件无全局 maxLimit → 15 个端点可 `size=100000` 拖库（含匿名 `/api/v1/posts`、`/api/v1/products`）
+- **M3** AI SSE 无并发连接限制 + `SimpleAsyncTaskExecutor` 无界建线程 → 线程耗尽 DoS
+- **M4** 规划中 Caddy 反代拓扑下 XFF 末段恒为网关 IP → 登录限流退化为全站共享桶（部署时处理）
+- **M5** 无账号级登录失败锁定，admin 与用户登录同阈值
+- **M6** deploy.yml 自动回退 `.env.example`（changeme 可静默上生产）+ tag 名未消毒插值进 sed
+- **M7** CSRF 全局禁用仅靠 SameSite=Strict 单点防御
+- **M8** 预约/订单 DTO 超长字段稳定 500；钱包手工加钱无单笔上限、无自操作拦截
+
+## 10. 本轮已修复（P0）
+
+| # | 修复 | 位置 | 守卫测试 |
+|---|---|---|---|
+| M2 | `PaginationInnerInterceptor.setMaxLimit(100)` 一行兜底全部端点（已核实无内部大批量分页依赖 >100） | `common/config/MyBatisPlusConfig.java` | `MyBatisPlusConfigTest` |
+| M1 | 桶容量上限（`max-buckets` 默认 50000）+ 闲置桶清扫（按窗口节流）+ 打满 fail-open 放行不计数 | `common/security/RateLimitFilter.java` | `RateLimitFilterTest` 新增 3 用例（有界/清扫回收/fail-open 不误伤） |
+| M3 | 有界 `ThreadPoolTaskExecutor`(core 4/max 16/queue 0) + 单用户并发流上限 2（拒绝路径保证归还许可）+ 同步归属校验移到开流前 | `ai/service/StreamingConversationService.java` | `StreamingConversationServiceTest` 新增 3 用例（超限拒绝/越权前置拒绝/池满拒绝且归还） |
+
+验证：`mvn test` 全量 **1101 通过 / 0 失败**（新增守卫 7 个）。异步生命周期回归守卫（AsyncLifecycle）继续通过。
+
+## 11. 待办（按优先级）
+
+- **P1**：~~账号级登录失败锁定 + admin 更严阈值；CSRF 双提交纵深；预约/订单 DTO `@Size`/`@Pattern` 补齐；钱包加钱单笔上限与自操作拦截。~~
+  **✅ 已完成（2026-08-23 第二批）**：
+  - `LoginAttemptService`：账号级固定窗口失败锁定（USER 5 次/10 分，ADMIN 更严 3 次/15 分），成功清零、过期自动解锁、容量上限防枚举洪泛；锁定复用 `rate_limit_exceeded`(429) 文案不透露账号存在性。接入 `UserAuthService.login` / `AdminAuthServiceImpl.login`。
+  - `RateLimitFilter.admin-max-requests`（默认 5）管理端 IP 阈值独立且更严。
+  - 钱包 `requirePositiveAmount` 单笔上限 100 万；自操作拦截经评估不可实现（admin 与 user 分表、无身份关联），依赖既有强制审计日志追溯，决策已记录。
+  - DTO 补齐：BookingCreate/ProductOrderCreate（contactName/contactPhone/remark/serviceMode/paymentMethod）、BookingRejectRequest.reason(255)、ReportPostRequest.reasonType(32)、SensitiveWordCreateRequest.category(32)。
+  - test profile 放宽限流/锁定阈值（沿用既有先例），生产配置不变。
+  - 守卫测试：LoginAttemptServiceTest 6 + RateLimitFilterTest 重构 admin 阈值对比 + DtoValidationGuardTest 8 + WalletServiceTest 上限 1；全量回归 **1117 通过 / 0 失败**。
+  - **CSRF 双提交纵深移至独立切片**：需后端 filter + admin-web/H5 双前端请求头协同改造 + 契约测试重锚定，风险高于其余项，单独交付。
+  **✅ 已完成（2026-08-23 第四批，M7 收口）**：
+  - 新增 `CsrfDoubleSubmitFilter`：仅约束 Cookie 通道的非安全方法写请求（`X-XSRF-TOKEN` 头 vs `XSRF-TOKEN` cookie 常量时间比对，失败 403）；Bearer 通道与匿名请求放行；permitAll 认证入口豁免；GET 惰性补发令牌实现存量会话无感迁移。
+  - `AuthCookieService` 登录/登出自动配对签发/清除 XSRF cookie（非 HttpOnly，Secure/SameSite=Strict/Path=/api 与认证 cookie 一致）。
+  - 前端：admin-web axios 开启 `withXSRFToken` 双提交回显；miniapp H5 request 层与 AI SSE fetch 补头（MP 端 Bearer 通道不受影响）。
+  - 守卫测试：CsrfDoubleSubmitFilterTest 9 用例 + AuthCookieServiceTest 配对断言升级；前端双端构建通过；全量回归 **1137 通过 / 0 失败**。
+  - 迁移说明：升级瞬间已存在的会话在首个 GET 时自动补发令牌，无需重新登录。
+- **P2**：~~注册手机号枚举泛化（`UserAuthService.java:58`）；LIKE `%`/`_` 转义统一工具（5 处）；AI 对话原文出 INFO 日志（`AiConversationApplicationServiceImpl.java:214`）；改密后旧 JWT 撤销；AiRateLimitFilter 覆盖 `POST /ai/conversations` 创建端点；Upload/Ai 限流桶同款容量防护。~~
+  **✅ 已完成（2026-08-23 第三批）**：
+  - 注册重复手机号归并为通用 `validation_error`(400)，文案引导直接登录，消除专属枚举信号（残余信号：与其它校验失败同码同形，已不可脚本区分）。
+  - 新增 `common/util/SqlLikeUtils.escape()`，收口全部 LIKE 通配符面（社区帖子/标签搜索、钱包手机号/ID 片段、管理端用户搜索、商品搜索共 8 个 like 调用点），MySQL/H2 默认转义符一致无需 ESCAPE 子句。
+  - AI RAG 日志改为仅记录 `questionLength`，对话原文不再进 INFO。
+  - **改密后旧 JWT 撤销**：新增 `JwtRevocationRegistry`（进程内"主体→撤销时刻"，容量上限+TTL 惰性清扫）；`TokenParseResult` 增加 iat；filter 在解析后校验；触发点=改密+密保找回重置。同秒边界语义：撤销秒内旧 token 必拒（iat 秒级精度宁严勿漏），撤销秒内新登录可能被误拒一次属可接受代价。进程内存态重启清零后旧 token 最长恢复至剩余 TTL（≤120 分钟，与引入前常态相同，只改善不回退）；多实例需换 Redis。
+  - `AiRateLimitFilter.isProtected` 补 `POST /api/v1/ai/conversations` 精确匹配（原前缀尾斜杠漏掉创建端点）。
+  - Upload/Ai 两过滤器分钟桶增加容量上限（默认 50000 可配）+ 闲置清扫 + 打满 fail-open 放行不计数；Ai 日额度桶按 2 天闲置清扫。
+  - 守卫测试：JwtRevocationRegistryTest 4 + SqlLikeUtilsTest 3 + Ai/Upload 容量与覆盖 3 + UserSecurityAndPasswordControllerTest 改密撤销 E2E 1；全量回归 **1128 通过 / 0 失败**。
+- **部署时（随 VPS）**：~~M4/M6——deploy.yml 去自动回退与 sed 消毒；反代拓扑下限流键修正；nginx location 头继承补齐 + CSP；生产 `.env` 全新生成（含轮换本机 DeepSeek key）；H5 生产域名 HTTPS。~~
+  **代码侧已修（2026-08-23 第五批，上线准备切片）**：B1 nginx 双 conf 改 XFF 覆盖式透传 + filter 多段告警；B2 deploy.yml 去自动回退 + tag 白名单；B3 .env.example AI 生产标注（GLOBAL 日额度必配）；B4 check-env.ps1 脱敏重写；B5 /uploads 与静态资源 location 补全安全头 + 全站 CSP。首次引导缺口以 `AdminBootstrapRunner`（方案 A：`--bootstrap-admin` 一次性命令）解决，见 docs/13 §13。
+  **仍属服务器操作**：生产 .env 强凭据生成、H5 域名 HTTPS 化、Caddy/nginx 实际部署、备份与日志轮转——清单见 docs/13 §2-§9/§12/§13。
+

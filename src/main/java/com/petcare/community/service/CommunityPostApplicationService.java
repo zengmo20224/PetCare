@@ -3,46 +3,87 @@ package com.petcare.community.service;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.exception.BusinessException;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.exception.ErrorCode;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.pagination.PageResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.domain.CommunityContentType;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.CommentCreateRequest;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.CommentResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PostCreateRequest;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PostDetailResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PostResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PublicCommentFlatResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PublicCommentResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PublicCommentTreeResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PublicPostDetailResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.PublicPostSummaryResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.TagResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.dto.TopicResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.CommentLike;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.CommunityTag;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.Post;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.PostComment;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.PostImage;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.PostTagRel;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.Topic;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.PostLike;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.entity.PostFavorite;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.CommentLikeMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.CommunityTagMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.PostCommentMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.PostFavoriteMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.PostImageMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.PostLikeMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.PostMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.PostTagRelMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.community.mapper.TopicMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.moderation.dto.ContentReviewResult;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.moderation.service.ContentModerationService;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.notification.service.NotificationService;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.user.entity.Pet;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.user.entity.User;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.user.mapper.PetMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.user.service.UserService;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -427,7 +468,7 @@ public class CommunityPostApplicationService {
         }
         if (keyword != null && !keyword.isBlank()) {
             String trimmed = keyword.trim();
-            wrapper.and(w -> w.like(Post::getTitle, trimmed).or().like(Post::getContent, trimmed));
+            wrapper.and(w -> w.like(Post::getTitle, SqlLikeUtils.escape(trimmed)).or().like(Post::getContent, SqlLikeUtils.escape(trimmed)));
         }
 
         // Filter by tag name: find tag ID, then post IDs from post_tag_rel
@@ -1126,7 +1167,7 @@ public class CommunityPostApplicationService {
         if (keyword != null && !keyword.isBlank()) {
             String trimmed = keyword.trim();
             String normalized = trimmed.startsWith("#") ? trimmed.substring(1) : trimmed;
-            wrapper.like(CommunityTag::getName, normalized);
+            wrapper.like(CommunityTag::getName, SqlLikeUtils.escape(normalized));
         }
 
         return tagMapper.selectList(wrapper).stream()

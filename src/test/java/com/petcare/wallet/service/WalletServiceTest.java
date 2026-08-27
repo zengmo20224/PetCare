@@ -194,6 +194,15 @@ class WalletServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.WALLET_ADJUST_REASON_REQUIRED);
         }
+
+        @Test
+        @DisplayName("单笔金额超过 100 万上限被拒绝（2026-08-23 审计 M8）")
+        void overSingleOperationLimitRejected() {
+            assertThatThrownBy(() -> walletService.rechargeByAdmin(
+                    USER_ID, new BigDecimal("1000000.01"), "超大充值", ADMIN_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting("code").isEqualTo(ErrorCode.WALLET_AMOUNT_INVALID);
+        }
     }
 
     @Nested

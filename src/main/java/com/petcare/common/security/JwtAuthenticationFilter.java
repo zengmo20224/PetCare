@@ -52,15 +52,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AdminUserDetailsService adminUserDetailsService;
     private final UserAuthLoadingService userAuthLoadingService;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final JwtRevocationRegistry revocationRegistry;
 
     public JwtAuthenticationFilter(JwtTokenService jwtTokenService,
                                    AdminUserDetailsService adminUserDetailsService,
                                    UserAuthLoadingService userAuthLoadingService,
-                                   RestAuthenticationEntryPoint authenticationEntryPoint) {
+                                   RestAuthenticationEntryPoint authenticationEntryPoint,
+                                   JwtRevocationRegistry revocationRegistry) {
         this.jwtTokenService = jwtTokenService;
         this.adminUserDetailsService = adminUserDetailsService;
         this.userAuthLoadingService = userAuthLoadingService;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.revocationRegistry = revocationRegistry;
     }
 
     /**
@@ -98,6 +101,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             JwtTokenService.TokenParseResult parseResult = jwtTokenService.parseTokenForFilter(token);
 
             if (parseResult == null) {
+                rejectInvalidToken(request, response);
+                return;
+            }
+
+            // P2（2026-08-23）：改密/密保重置后撤销早于撤销时刻签发的旧 token
+            if (revocationRegistry.isRevoked(parseResult.tokenType(), parseResult.subjectId(),
+                    parseResult.issuedAtEpochSeconds())) {
                 rejectInvalidToken(request, response);
                 return;
             }

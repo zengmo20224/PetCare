@@ -33,19 +33,22 @@ class AuthCookieServiceTest {
     }
 
     @Test
-    @DisplayName("写用户 cookie：HttpOnly+Secure+SameSite=Strict+Path=/api+Max-Age")
+    @DisplayName("写用户 cookie：HttpOnly+Secure+SameSite=Strict+Path=/api+Max-Age；并配对签发非 HttpOnly XSRF")
     void writeUserCookie_fullAttributes() {
         HttpServletResponse response = mock(HttpServletResponse.class);
 
         service.writeUserCookie(response, "token-abc");
 
-        String cookie = captureSetCookie(response);
-        assertThat(cookie).contains("USER_TOKEN=token-abc");
-        assertThat(cookie).contains("HttpOnly");
-        assertThat(cookie).contains("Secure");
-        assertThat(cookie).contains("SameSite=Strict");
-        assertThat(cookie).contains("Path=/api");
-        assertThat(cookie).contains("Max-Age=7200");
+        var cookies = captureAllSetCookies(response);
+        assertThat(cookies.get(0)).contains("USER_TOKEN=token-abc");
+        assertThat(cookies.get(0)).contains("HttpOnly");
+        assertThat(cookies.get(0)).contains("Secure");
+        assertThat(cookies.get(0)).contains("SameSite=Strict");
+        assertThat(cookies.get(0)).contains("Path=/api");
+        assertThat(cookies.get(0)).contains("Max-Age=7200");
+        // M7 CSRF 双提交：登录配对签发 XSRF-TOKEN（JS 可读，非 HttpOnly）
+        assertThat(cookies.get(1)).startsWith("XSRF-TOKEN=");
+        assertThat(cookies.get(1)).doesNotContain("HttpOnly");
     }
 
     @Test
@@ -55,24 +58,29 @@ class AuthCookieServiceTest {
 
         service.writeAdminCookie(response, "admin-token");
 
-        assertThat(captureSetCookie(response)).contains("ADMIN_TOKEN=admin-token");
+        var cookies = captureAllSetCookies(response);
+        assertThat(cookies.get(0)).contains("ADMIN_TOKEN=admin-token");
+        assertThat(cookies.get(1)).startsWith("XSRF-TOKEN=");
     }
 
     @Test
-    @DisplayName("清 cookie：Max-Age=0（登出必须服务端清除）")
+    @DisplayName("清 cookie：Max-Age=0（登出必须服务端清除，含 XSRF 配对清除）")
     void clearCookie_expiresImmediately() {
         HttpServletResponse response = mock(HttpServletResponse.class);
 
         service.clearUserCookie(response);
 
-        String cookie = captureSetCookie(response);
-        assertThat(cookie).contains("USER_TOKEN=");
-        assertThat(cookie).contains("Max-Age=0");
+        var cookies = captureAllSetCookies(response);
+        assertThat(cookies.get(0)).contains("USER_TOKEN=");
+        assertThat(cookies.get(0)).contains("Max-Age=0");
+        assertThat(cookies.get(1)).startsWith("XSRF-TOKEN=");
+        assertThat(cookies.get(1)).contains("Max-Age=0");
     }
 
-    private String captureSetCookie(HttpServletResponse response) {
+    private java.util.List<String> captureAllSetCookies(HttpServletResponse response) {
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(response).addHeader(eq(HttpHeaders.SET_COOKIE), captor.capture());
-        return captor.getValue();
+        verify(response, org.mockito.Mockito.times(2))
+                .addHeader(eq(HttpHeaders.SET_COOKIE), captor.capture());
+        return captor.getAllValues();
     }
 }

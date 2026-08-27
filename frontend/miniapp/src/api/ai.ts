@@ -120,12 +120,19 @@ export async function sendMessageStream(
     }
   }
   try {
+    // CSRF 双提交（M7）：H5 下 SSE 走 Cookie 通道，写请求须回显 X-XSRF-TOKEN
+    let xsrfToken: string | null = null
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
+      xsrfToken = match ? decodeURIComponent(match[1]) : null
+    }
     const res = await fetch(`${base}/api/v1/ai/conversations/${conversationId}/messages/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
       },
       body: JSON.stringify({ content }),
     })

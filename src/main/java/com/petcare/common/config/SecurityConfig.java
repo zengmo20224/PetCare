@@ -56,7 +56,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   com.petcare.common.security.CsrfDoubleSubmitFilter csrfDoubleSubmitFilter) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
@@ -110,6 +111,8 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // M7 CSRF 双提交：仅约束 Cookie 通道写请求，注册在 JWT 之后
+                .addFilterAfter(csrfDoubleSubmitFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

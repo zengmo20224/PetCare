@@ -19,6 +19,15 @@ petcare:
     rate-limit:
       window-seconds: 60
       max-requests: 10000
+      # M5（2026-08-23）：管理端独立阈值同样放宽，避免集成用例密集登录误触发；
+      # 生产默认 5 次/分/IP，阈值逻辑由 RateLimitFilterTest 单元覆盖。
+      admin-max-requests: 10000
+    # M5（2026-08-23）：账号级失败锁定在测试态放宽（生产默认 USER 5 次 / ADMIN 3 次），
+    # 避免多测试类对同名种子账号的失败登录累积触发锁定；锁定逻辑由
+    # LoginAttemptServiceTest（单元）覆盖。
+    lockout:
+      user-max-failures: 10000
+      admin-max-failures: 10000
   wechat:
     # test 默认 disabled，保留 wechat-login 端点返回 422 的断言；
     # 需要联调建账号链路的用例用 @TestPropertySource(properties="petcare.wechat.mode=mock") 覆盖。

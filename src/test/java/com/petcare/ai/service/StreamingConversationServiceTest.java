@@ -3,9 +3,13 @@ package com.petcare.ai.service;
 import com.petcare.ai.domain.HighRiskSymptomDetector;
 import com.petcare.ai.dto.AiMessageCreateRequest;
 import com.petcare.ai.dto.AiMessageResponse;
+import com.petcare.common.exception.BusinessException;
+import com.petcare.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -18,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -169,6 +174,66 @@ class StreamingConversationServiceTest {
             SseEmitter emitter = assertDoesNotThrow(
                     () -> streaming.streamMessage(100L, 1L, req));
             assertNotNull(emitter);
+        }
+    }
+
+    @Nested
+    @DisplayName("并发与归属防护（2026-08-23 审计 M3）")
+    class ConcurrencyAndOwnership {
+
+        private final AiMessageCreateRequest req = new AiMessageCreateRequest("几点开门");
+
+        @Test
+        @DisplayName("同一用户并发流超过上限：第 N+1 个请求在开流前以 BusinessException 拒绝，完成后许可归还")
+        void perUserConcurrentStreams_exceeded_throwsBeforeOpeningStream() throws Exception {
+            AiConversationApplicationService svc = mock(AiConversationApplicationService.class);
+            CountDownLatch release = new CountDownLatch(1);
+            when(svc.sendMessage(anyLong(), anyLong(), any())).thenAnswer(inv -> {
+                release.await(5, TimeUnit.SECONDS);
+                return new AiMessageResponse(1L, 1L, "assistant", "好。", null);
+            });
+            StreamingConversationService streaming = new StreamingConversationService(svc);
+
+            SseEmitter first = streaming.streamMessage(100L, 1L, req);
+            SseEmitter second = streaming.streamMessage(100L, 1L, req);
+
+            // 上限 2：第 3 个并发流在开流前被拒
+            assertThrows(BusinessException.class, () -> streaming.streamMessage(100L, 1L, req));
+
+            release.countDown();
+            assertTrue(awaitEmitterComplete(first));
+            assertTrue(awaitEmitterComplete(second));
+
+            // 许可归还后可再次开流
+            SseEmitter third = assertDoesNotThrow(() -> streaming.streamMessage(100L, 1L, req));
+            assertNotNull(third);
+            assertTrue(awaitEmitterComplete(third));
+        }
+
+        @Test
+        @DisplayName("越权访问他人会话：同步归属校验在开流前拒绝，sendMessage 不被调用")
+        void ownershipViolation_rejectedBeforeStreamOpens() {
+            AiConversationApplicationService svc = mock(AiConversationApplicationService.class);
+            when(svc.getConversation(100L, 999L))
+                    .thenThrow(new BusinessException(ErrorCode.AI_CONVERSATION_FORBIDDEN, "无权访问"));
+            StreamingConversationService streaming = new StreamingConversationService(svc);
+
+            assertThrows(BusinessException.class,
+                    () -> streaming.streamMessage(100L, 999L, req));
+            verify(svc, never()).sendMessage(anyLong(), anyLong(), any());
+        }
+
+        @Test
+        @DisplayName("线程池饱和拒绝任务：抛业务异常且并发许可已归还")
+        void executorRejection_throwsBusinessException_andReleasesPermit() {
+            AiConversationApplicationService svc = mock(AiConversationApplicationService.class);
+            TaskExecutor rejectingExecutor = task -> {
+                throw new TaskRejectedException("saturated");
+            };
+            StreamingConversationService streaming = new StreamingConversationService(svc, rejectingExecutor);
+
+            assertThrows(BusinessException.class, () -> streaming.streamMessage(100L, 1L, req));
+            assertEquals(0, streaming.activeStreamsOf(100L), "拒绝路径必须归还并发许可");
         }
     }
 

@@ -233,6 +233,41 @@ class AiRateLimitFilterTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
+    @Test
+    @DisplayName("P2：POST /api/v1/ai/conversations（创建会话）纳入分钟限流")
+    void createConversationPath_isRateLimited() throws Exception {
+        ReflectionTestUtils.setField(filter, "maxRequestsPerMinute", 1L);
+
+        HttpServletResponse okResp = mock(HttpServletResponse.class);
+        when(okResp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+        FilterChain first = mockChain();
+        filter.doFilter(mockRequest("POST", "/api/v1/ai/conversations"), okResp, first);
+        verify(first).doFilter(any(), any());
+
+        HttpServletResponse limited = mock(HttpServletResponse.class);
+        StringWriter sw = new StringWriter();
+        when(limited.getWriter()).thenReturn(new PrintWriter(sw));
+        FilterChain chain = mockChain();
+        filter.doFilter(mockRequest("POST", "/api/v1/ai/conversations"), limited, chain);
+        verify(chain, never()).doFilter(any(), any());
+        verify(limited).setStatus(429);
+    }
+
+    @Test
+    @DisplayName("P2：分钟桶容量上限触发清扫，Map 有界（fail-open 放行不计数）")
+    void minuteBuckets_boundedUnderFlood() throws Exception {
+        ReflectionTestUtils.setField(filter, "maxKeys", 10);
+        for (int i = 0; i < 50; i++) {
+            HttpServletRequest req = mock(HttpServletRequest.class);
+            when(req.getMethod()).thenReturn("POST");
+            when(req.getRequestURI()).thenReturn("/api/v1/ai/conversations/1/messages");
+            when(req.getRemoteAddr()).thenReturn("10.9." + (i / 256) + "." + (i % 256));
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            filter.doFilter(req, resp, mockChain());
+        }
+        org.assertj.core.api.Assertions.assertThat(filter.trackedKeyCount()).isLessThanOrEqualTo(10);
+    }
     private FilterChain mockChain() {
         return mock(FilterChain.class);
     }

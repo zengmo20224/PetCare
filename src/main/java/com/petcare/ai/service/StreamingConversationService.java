@@ -3,15 +3,19 @@ package com.petcare.ai.service;
 import com.petcare.ai.domain.HighRiskSymptomDetector;
 import com.petcare.ai.dto.AiMessageCreateRequest;
 import com.petcare.ai.dto.AiMessageResponse;
+import com.petcare.common.exception.BusinessException;
+import com.petcare.common.exception.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 /**
@@ -43,6 +47,11 @@ public class StreamingConversationService {
     private static final long CHUNK_INTERVAL_MS = 30L;
     /** 单块最大字符数（防爆。超长句按此二次切分）。 */
     private static final int MAX_CHUNK_CHARS = 80;
+    /**
+     * 单用户并发 SSE 流上限（2026-08-23 审计 M3）。
+     * 超出即在开流前以业务异常拒绝，防止线程/连接被单用户耗尽。
+     */
+    private static final int MAX_CONCURRENT_STREAMS_PER_USER = 2;
 
     /** 句边界切分：。！？.!? 换行。保留分隔符。 */
     private static final Pattern SENTENCE_SPLIT = Pattern.compile(
@@ -50,9 +59,11 @@ public class StreamingConversationService {
 
     private final AiConversationApplicationService conversationService;
     private final TaskExecutor executor;
+    /** 每用户在途流计数（M3 并发防护）。key 在归零时移除，避免随注册用户数无界增长。 */
+    private final ConcurrentHashMap<Long, AtomicInteger> activeStreamsPerUser = new ConcurrentHashMap<>();
 
     public StreamingConversationService(AiConversationApplicationService conversationService) {
-        this(conversationService, new SimpleAsyncTaskExecutor("ai-sse-"));
+        this(conversationService, defaultExecutor());
     }
 
     StreamingConversationService(AiConversationApplicationService conversationService, TaskExecutor executor) {
@@ -61,9 +72,34 @@ public class StreamingConversationService {
     }
 
     /**
+     * 有界 SSE 线程池（2026-08-23 审计 M3）。
+     * <p>替代原 {@code SimpleAsyncTaskExecutor}——后者每任务新建线程且无上限，
+     * 并发开流即可耗尽线程资源。队列容量 0：满载时直接拒绝，
+     * 由 {@link #streamMessage} 转为业务异常而非无限排队。</p>
+     */
+    static TaskExecutor defaultExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setThreadNamePrefix("ai-sse-");
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(0);
+        executor.setDaemon(true);
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * 流式发送一条消息。
-     * <p>
-     * 流程：注册超时回调 → 提交后台任务 → 立即返回 emitter。
+     * <p>防护顺序（2026-08-23 审计 M3）：
+     * <ol>
+     *   <li><b>同步归属校验</b>：先经 {@code getConversation} 验证会话归属，
+     *       越权在开流前以业务异常拒绝（而非开流后发 error 事件）；</li>
+     *   <li><b>并发许可</b>：单用户在途流超过 {@value #MAX_CONCURRENT_STREAMS_PER_USER}
+     *       直接拒绝；许可在线程池拒绝、任务完成两条路径都保证归还；</li>
+     *   <li><b>有界线程池</b>：满载时 {@code execute} 抛出，转为业务异常，
+     *       GlobalExceptionHandler 在 SSE 开流前返回 JSON 错误。</li>
+     * </ol>
+     * 通过后：注册超时回调 → 提交后台任务 → 立即返回 emitter。
      * 后台任务内：前置护栏 → 同步生成完整回复（含后置护栏）→ 切分 → 逐块 SSE 发送 → complete。
      *
      * @param currentUserId  当前用户 ID（Controller 已解析，非空）
@@ -72,16 +108,51 @@ public class StreamingConversationService {
      * @return 配置好的 SseEmitter（调用方直接返回给 MVC）
      */
     public SseEmitter streamMessage(Long currentUserId, Long conversationId, AiMessageCreateRequest request) {
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
-        emitter.onTimeout(() -> log.warn("[AI] SSE timeout (conversation={})", conversationId));
-        try {
-            executor.execute(() -> runStream(emitter, currentUserId, conversationId, request));
-        } catch (RuntimeException e) {
-            // executor 拒绝（如关停中）：走缓存路径发降级文案（几乎不可达）
-            log.warn("[AI] SSE task rejected (conversation={}): {}", conversationId, e.getMessage());
-            sendErrorEvent(emitter, "AI 暂时无法回复，请稍后再试。");
+        // M3：同步归属校验——越权/不存在会话在此抛 BusinessException，不开流
+        conversationService.getConversation(currentUserId, conversationId);
+
+        AtomicInteger inFlight = activeStreamsPerUser.computeIfAbsent(currentUserId, k -> new AtomicInteger(0));
+        if (inFlight.incrementAndGet() > MAX_CONCURRENT_STREAMS_PER_USER) {
+            inFlight.decrementAndGet();
+            throw new BusinessException(ErrorCode.RATE_LIMIT_EXCEEDED,
+                    "AI 对话进行中，请等待当前对话完成");
         }
-        return emitter;
+
+        boolean submitted = false;
+        try {
+            SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+            emitter.onTimeout(() -> log.warn("[AI] SSE timeout (conversation={})", conversationId));
+            try {
+                executor.execute(() -> {
+                    try {
+                        runStream(emitter, currentUserId, conversationId, request);
+                    } finally {
+                        releaseStreamPermit(currentUserId);
+                    }
+                });
+                submitted = true;
+                return emitter;
+            } catch (RuntimeException e) {
+                // executor 拒绝（满载或关停中）：开流前转业务异常，前端收到明确错误
+                log.warn("[AI] SSE task rejected (conversation={}): {}", conversationId, e.getMessage());
+                throw new BusinessException(ErrorCode.RATE_LIMIT_EXCEEDED, "AI 对话繁忙，请稍后再试");
+            }
+        } finally {
+            if (!submitted) {
+                releaseStreamPermit(currentUserId);
+            }
+        }
+    }
+
+    private void releaseStreamPermit(Long userId) {
+        activeStreamsPerUser.computeIfPresent(userId, (k, counter) ->
+                counter.decrementAndGet() <= 0 ? null : counter);
+    }
+
+    /** 在途流观测（测试用，包内可见）。 */
+    int activeStreamsOf(long userId) {
+        AtomicInteger counter = activeStreamsPerUser.get(userId);
+        return counter == null ? 0 : counter.get();
     }
 
     private void runStream(SseEmitter emitter, Long currentUserId, Long conversationId,

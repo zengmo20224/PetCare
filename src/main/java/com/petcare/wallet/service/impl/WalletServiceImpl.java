@@ -4,20 +4,35 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.exception.BusinessException;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.common.exception.ErrorCode;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.user.entity.User;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.user.mapper.UserMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.dto.WalletDtos.WalletAccountRow;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.dto.WalletDtos.WalletResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.dto.WalletDtos.WalletTransactionResponse;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.entity.Wallet;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.entity.WalletTransaction;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.enums.WalletDirection;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.enums.WalletOperatorType;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.enums.WalletSourceType;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.mapper.WalletMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.mapper.WalletTransactionMapper;
+import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -346,9 +361,16 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
         }
     }
 
+    /** 单笔管理操作金额上限（2026-08-23 审计 M8）：DECIMAL(10,2) 容量内再设业务上限，
+     *  防止凭据滥用/误操作一次性注入巨款；配合强制审计日志形成事后追溯闭环。 */
+    private static final BigDecimal MAX_SINGLE_OPERATION_AMOUNT = new BigDecimal("1000000");
+
     private BigDecimal requirePositiveAmount(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException(ErrorCode.WALLET_AMOUNT_INVALID, "金额必须大于 0");
+        }
+        if (amount.compareTo(MAX_SINGLE_OPERATION_AMOUNT) > 0) {
+            throw new BusinessException(ErrorCode.WALLET_AMOUNT_INVALID, "单笔金额不能超过 100 万元");
         }
         return amount.setScale(2, RoundingMode.HALF_UP);
     }
@@ -402,13 +424,13 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
         LambdaQueryWrapper<User> q = Wrappers.<User>lambdaQuery()
                 .orderByDesc(User::getCreateTime);
         if (phoneKeyword != null && !phoneKeyword.isBlank()) {
-            q.like(User::getPhone, phoneKeyword.trim());
+            q.like(User::getPhone, SqlLikeUtils.escape(phoneKeyword.trim()));
         }
         if (userIdKeyword != null && !userIdKeyword.isBlank()) {
             // Snowflake IDs are 18-19 digit numbers; CAST(id AS CHAR) LIKE '%2076%' lets admins
             // find users by a remembered prefix/fragment. Trims whitespace from the input.
             String pattern = userIdKeyword.trim();
-            q.apply("CAST(id AS CHAR) LIKE {0}", "%" + pattern + "%");
+            q.apply("CAST(id AS CHAR) LIKE {0}", "%" + SqlLikeUtils.escape(pattern) + "%");
         }
         return q;
     }

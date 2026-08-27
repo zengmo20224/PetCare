@@ -99,3 +99,6 @@ models/**/*.safetensors
 
 # 迭代过程截图存档（本根目录散落 PNG 的归档处，不入库）
 .screenshots/
+
+# video-agent-kit MCP 插件本地缓存（不入库）
+.video_agent/

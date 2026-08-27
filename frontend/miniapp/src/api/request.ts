@@ -128,6 +128,24 @@ function clearToken(): void {
   }
 }
 
+/**
+ * CSRF 双提交（2026-08-23 M7）：H5 读 XSRF-TOKEN cookie 供写请求回显；
+ * 仅 H5 运行时有 document.cookie，MP 端走 Bearer 通道无需此头。
+ */
+function readXsrfTokenForH5(): string | null {
+  // #ifdef H5
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/)
+    return match ? decodeURIComponent(match[1]) : null
+  } catch {
+    return null
+  }
+  // #endif
+  // #ifndef H5
+  return null
+  // #endif
+}
+
 /** Show a toast message */
 function showToast(title: string, icon: 'none' | 'success' | 'error' | 'loading' = 'none'): void {
   uni.showToast({ title, icon, duration: 2000 })
@@ -141,6 +159,8 @@ export function request<T>(options: RequestOptions): Promise<ApiResponse<T>> {
   const token = getToken()
   const queryString = options.params ? buildQueryString(options.params) : ''
   const requestUrls = getRequestBaseUrls().map(baseUrl => `${baseUrl}${options.url}${queryString}`)
+  // 写请求回显 CSRF 令牌（H5 Cookie 通道；MP 端恒为 null 不注入）
+  const xsrfToken = (options.method || 'GET').toUpperCase() !== 'GET' ? readXsrfTokenForH5() : null
 
   return new Promise((resolve) => {
     const send = (urlIndex: number) => {
@@ -152,6 +172,7 @@ export function request<T>(options: RequestOptions): Promise<ApiResponse<T>> {
         header: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
           ...options.header,
         },
         success: (res) => {

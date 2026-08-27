@@ -103,6 +103,22 @@ class UploadRateLimitFilterTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
+    @Test
+    @DisplayName("P2：桶容量上限触发清扫，Map 有界（fail-open 放行不计数）")
+    void buckets_boundedUnderFlood() throws Exception {
+        ReflectionTestUtils.setField(filter, "maxKeys", 10);
+        for (int i = 0; i < 50; i++) {
+            HttpServletRequest req = mock(HttpServletRequest.class);
+            when(req.getMethod()).thenReturn("POST");
+            when(req.getRequestURI()).thenReturn("/api/v1/upload");
+            when(req.getRemoteAddr()).thenReturn("10.8." + (i / 256) + "." + (i % 256));
+            HttpServletResponse resp = mock(HttpServletResponse.class);
+            when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+            FilterChain chain = mock(FilterChain.class);
+            filter.doFilter(req, resp, chain);
+        }
+        assertThat(filter.trackedKeyCount()).isLessThanOrEqualTo(10);
+    }
     private HttpServletRequest request(String method, String uri) {
         HttpServletRequest req = mock(HttpServletRequest.class);
         when(req.getMethod()).thenReturn(method);

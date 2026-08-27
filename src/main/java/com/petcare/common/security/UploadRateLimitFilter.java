@@ -52,6 +52,12 @@ public class UploadRateLimitFilter extends OncePerRequestFilter {
     @Value("${petcare.upload.rate-limit-per-min:20}")
     private long maxRequestsPerMinute;
 
+    /** 桶容量上限（默认 50000）：达到后触发闲置清扫（2026-08-23 审计 P2 同款防护）。 */
+    @Value("${petcare.upload.rate-limit.max-keys:50000}")
+    private int maxKeys = 50_000;
+
+    private volatile long lastSweepSeconds;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** 桶：key = "upload|principal"。 */
@@ -75,6 +81,13 @@ public class UploadRateLimitFilter extends OncePerRequestFilter {
             return w;
         });
         if (window == null) {
+            // 容量门槛（2026-08-23 P2）：新桶且打满不可回收时放行不计数（fail-open）
+            sweepIfCrowded();
+            if (buckets.size() >= maxKeys) {
+                log.warn("Upload rate-limit buckets exhausted ({}), serving without counting", maxKeys);
+                filterChain.doFilter(request, response);
+                return;
+            }
             window = new SlidingWindow();
             SlidingWindow existing = buckets.putIfAbsent(key, window);
             if (existing != null) {
@@ -112,17 +125,39 @@ public class UploadRateLimitFilter extends OncePerRequestFilter {
         return "ip:" + request.getRemoteAddr();
     }
 
+    /** 桶数量观测（测试/运维用，包内可见）。 */
+    int trackedKeyCount() {
+        return buckets.size();
+    }
+
+    private void sweepIfCrowded() {
+        if (buckets.size() < maxKeys) {
+            return;
+        }
+        long now = System.currentTimeMillis() / 1000;
+        if (now - lastSweepSeconds < 60) {
+            return;
+        }
+        lastSweepSeconds = now;
+        long idleCutoff = now - 2L * WINDOW_SECONDS;
+        buckets.values().removeIf(w -> w.lastAccessSeconds <= idleCutoff);
+    }
+
     /** 滑动窗口计数器（与 {@link RateLimitFilter} 同范式）。 */
     private static final class SlidingWindow {
         private volatile long windowStartSeconds;
+        private volatile long lastAccessSeconds;
         private final AtomicLong count;
 
         SlidingWindow() {
-            this.windowStartSeconds = System.currentTimeMillis() / 1000;
+            long now = System.currentTimeMillis() / 1000;
+            this.windowStartSeconds = now;
+            this.lastAccessSeconds = now;
             this.count = new AtomicLong(0);
         }
 
         long incrementAndGet() {
+            lastAccessSeconds = System.currentTimeMillis() / 1000;
             return count.incrementAndGet();
         }
 
@@ -132,6 +167,7 @@ public class UploadRateLimitFilter extends OncePerRequestFilter {
                 windowStartSeconds = now;
                 count.set(0);
             }
+            lastAccessSeconds = now;
         }
     }
 }

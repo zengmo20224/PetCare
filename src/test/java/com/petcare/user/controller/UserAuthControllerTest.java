@@ -70,7 +70,7 @@ class UserAuthControllerTest {
     }
 
     @Test
-    @DisplayName("register with duplicate phone returns 422")
+    @DisplayName("register with duplicate phone returns 400 validation_error（A3 泛化：不暴露专属错误码）")
     void registerWithDuplicatePhoneReturns422() throws Exception {
         createUser("13900002222");
 
@@ -87,8 +87,8 @@ class UserAuthControllerTest {
                                     ]
                                 }
                                 """))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error.code").value("phone_already_registered"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("validation_error"));
     }
 
     @Test

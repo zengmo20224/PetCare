@@ -68,7 +68,30 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${petcare.security.rate-limit.max-requests:10}")
     private long maxRequests;
 
+    /**
+     * 管理员登录端点独立阈值（默认 5，2026-08-23 审计 M5）。
+     * 管理后台是爆破首要目标，IP 维度阈值应严于普通端点，
+     * 与 {@link LoginAttemptService} 的账号级锁定形成双层防护。
+     */
+    @Value("${petcare.security.rate-limit.admin-max-requests:5}")
+    private long adminMaxRequests = 5;
+
+    /**
+     * 桶容量上限（默认 50000，2026-08-23 审计 M1）。
+     * <p>达到上限时先清扫闲置桶；清扫后仍满则该请求放行但不计数（fail-open），
+     * 防止海量伪造 IP 以新桶撑爆堆内存（慢性 OOM DoS）。字段初始化保证非
+     * Spring 构造（单测）下同样有界。</p>
+     */
+    @Value("${petcare.security.rate-limit.max-buckets:50000}")
+    private int maxBuckets = 50_000;
+
+    /** 上次全量清扫时间戳（秒）。节流清扫频率，避免洪峰期每请求 O(n) 扫描。 */
+    private volatile long lastSweepSeconds;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** 多段 XFF 告警节流（60 秒一条），避免攻击者刷头打爆日志。 */
+    private volatile long lastMultiXffWarnSeconds;
 
     /** 桶：key = "ip|endpoint"，value = 滑动窗口计数器。 */
     private final Map<String, SlidingWindow> buckets = new ConcurrentHashMap<>();
@@ -86,6 +109,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String clientIp = resolveClientIp(request);
         String bucketKey = clientIp + "|" + endpoint;
 
+        if (!tryReserveBucketSlot()) {
+            log.warn("Rate-limit bucket capacity exhausted ({}), serving without counting: ip={}, endpoint={}",
+                    maxBuckets, clientIp, endpoint);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         SlidingWindow window = buckets.computeIfPresent(bucketKey, (k, w) -> {
             w.evictIfExpired(windowSeconds);
             return w;
@@ -99,14 +129,40 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         long count = window.incrementAndGet();
-        if (count > maxRequests) {
+        long limit = "/api/v1/admin/auth/login".equals(endpoint) ? adminMaxRequests : maxRequests;
+        if (count > limit) {
             log.warn("Rate limit exceeded: ip={}, endpoint={}, count={}, max={}",
-                    clientIp, endpoint, count, maxRequests);
+                    clientIp, endpoint, count, limit);
             writeRateLimited(response);
             return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 为新桶预留容量（2026-08-23 审计 M1）。
+     * <p>仅在需要创建新桶时调用：容量未满直接放行；已满则先清扫
+     * 闲置超过一个窗口的桶（清扫按窗口节流），清扫后仍有空位才算预留成功。
+     * 返回 false 表示容量耗尽，调用方应放行请求但不计数（fail-open，
+     * 避免 IP 洪泛演变为全站登录不可用）。既有桶的命中不受容量限制。</p>
+     */
+    private boolean tryReserveBucketSlot() {
+        if (buckets.size() < maxBuckets) {
+            return true;
+        }
+        long now = System.currentTimeMillis() / 1000;
+        if (now - lastSweepSeconds >= windowSeconds) {
+            lastSweepSeconds = now;
+            long idleCutoff = now - windowSeconds;
+            buckets.values().removeIf(w -> w.lastAccessSeconds <= idleCutoff);
+        }
+        return buckets.size() < maxBuckets;
+    }
+
+    /** 桶数量观测（测试/运维用，包内可见）。 */
+    int bucketCount() {
+        return buckets.size();
     }
 
     /**
@@ -139,6 +195,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private String resolveClientIp(HttpServletRequest request) {
         String xff = request.getHeader("X-Forwarded-For");
         if (xff != null && !xff.isBlank()) {
+            // B1/M4（2026-08-23）：生产链路（Caddy 覆盖写 + nginx 透传）应收到单值；
+            // 多段意味着反代配置偏离预期（追加式传递或多余代理层），限流键可能退化，告警提示排查。
+            if (xff.contains(",") && shouldWarnMultiSegmentXff()) {
+                log.warn("X-Forwarded-For has multiple segments ({}); expected single value "
+                        + "from the trusted reverse proxy. Check nginx 'proxy_set_header "
+                        + "X-Forwarded-For' config (must pass through, not append).", xff);
+            }
             int comma = xff.lastIndexOf(',');
             String last = comma > 0 ? xff.substring(comma + 1).trim() : xff.trim();
             if (!last.isEmpty()) {
@@ -146,6 +209,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
         }
         return request.getRemoteAddr();
+    }
+
+    private boolean shouldWarnMultiSegmentXff() {
+        long now = System.currentTimeMillis() / 1000;
+        if (now - lastMultiXffWarnSeconds < 60) {
+            return false;
+        }
+        lastMultiXffWarnSeconds = now;
+        return true;
     }
 
     /**
@@ -164,17 +236,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
     /**
      * 滑动窗口计数器：记录窗口起点与累计计数。
      * 过期后通过 evictIfExpired 重置（惰性清理）。
+     * lastAccessSeconds 供桶清扫判定闲置（M1 容量防护）。
      */
     private static final class SlidingWindow {
         private volatile long windowStartSeconds;
+        private volatile long lastAccessSeconds;
         private final AtomicLong count;
 
         SlidingWindow() {
-            this.windowStartSeconds = System.currentTimeMillis() / 1000;
+            long now = System.currentTimeMillis() / 1000;
+            this.windowStartSeconds = now;
+            this.lastAccessSeconds = now;
             this.count = new AtomicLong(0);
         }
 
         long incrementAndGet() {
+            lastAccessSeconds = System.currentTimeMillis() / 1000;
             return count.incrementAndGet();
         }
 
@@ -184,6 +261,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 windowStartSeconds = now;
                 count.set(0);
             }
+            lastAccessSeconds = now;
         }
     }
 }

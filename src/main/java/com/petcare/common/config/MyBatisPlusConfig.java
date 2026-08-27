@@ -22,7 +22,11 @@ public class MyBatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        // 2026-08-23 审计 M2：全局分页 size 上限，兜底所有未显式钳制的列表端点，
+        // 防止 ?size=100000 拖库（含匿名可达的 /api/v1/posts、/api/v1/products）。
+        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.MYSQL);
+        pagination.setMaxLimit(100L);
+        interceptor.addInnerInterceptor(pagination);
         return interceptor;
     }
 

@@ -26,14 +26,13 @@
 
 | 层 | 推荐 | 月成本 | 说明 |
 |---|---|---|---|
-| VPS | Vultr / Hetzner / DigitalOcean / 搬瓦工 任一 | $5-6 | 1 vCPU / 1-2GB RAM 即可跑起四件套 |
+| VPS | **支持支付宝的境外服务商**（见 §12 选型表） | $5-12 | **AI 已拍板开启 → 建议 2 vCPU / 2GB RAM 起**（MySQL8+PgVector+JVM+双 nginx 同机，1G 会 OOM） |
 | 系统 | Ubuntu 22.04 LTS | 0 | 文档命令按 Ubuntu 写 |
-| 域名 | 任意注册商（Namecheap / Cloudflare / Porkbun） | $1-10/年 | 国外域名无需备案 |
+| 域名 | Namecheap / Spaceship（均支持支付宝） | $1-10/年 | 国外域名无需备案 |
 | HTTPS | **Caddy**（自动 Let's Encrypt） | 0 | 比 nginx+certbot 简单一个数量级 |
 | 反代 | Caddy（同一个） | 0 | 把 :80/:443 转发到内部 :8080/:8081 |
-| 部署 | 项目自带的 `docker compose` | 0 | 已打包好，直接用 |
 
-**总成本：约 ¥40-50/月**（VPS）+ ¥10/年（域名）。
+**总成本：约 ¥60-90/月**（2G 内存 VPS，AI 开启配置）。
 
 ---
 
@@ -171,15 +170,20 @@ JWT_SECRET=<生成的JWT密钥>
 JWT_ISSUER=petcare-o2o-api
 JWT_EXPIRATION_MINUTES=120
 
-# AI Provider：VPS 演示场景默认关闭（未配 DEEPSEEK_API_KEY）；如需启用客服/分析，设 true 并配 key
-AI_PROVIDER_ENABLED=false
+# AI Provider（2026-08-23 拍板生产开启）：key 建议新购，本机开发用过的轮换废弃
+AI_PROVIDER_ENABLED=true
+DEEPSEEK_API_KEY=<你的 DeepSeek key>
 
-# V2 AI Agent：演示场景默认关闭；启用需同时起 postgres 容器并配 PgVector 密码
-AI_AGENT_ENABLED=false
-AI_RAG_ENABLED=false
+# V2 AI Agent：同步开启（RAG + 三类 Agent）
+AI_AGENT_ENABLED=true
+AI_RAG_ENABLED=true
 PGVECTOR_DB=petcare_ai
 PGVECTOR_USER=petcare
 PGVECTOR_PASSWORD=<生成的强密码3>
+
+# AI 额度兜底（上线加固）：GLOBAL 默认 0=关闭，多账号刷量兜底未生效——生产必须设有限值
+AI_AGENT_DAILY_LIMIT_PER_USER=50
+AI_AGENT_DAILY_LIMIT_GLOBAL=500
 
 # 关键：所有容器端口绑到 127.0.0.1，不暴露公网，由 Caddy 反代
 ADMIN_WEB_PORT=8080
@@ -378,8 +382,56 @@ sudo ufw deny 443/tcp
 
 ---
 
+## 12. 境外 VPS/域名支付方式选型（国内支付，2026-08-23 补充）
+
+需求：人在境内、用支付宝/微信付款买境外服务器与域名（免备案路线）。下表按"是否支持支付宝"筛选：
+
+| 服务商 | 角色 | 支付宝 | 微信 | 参考价位 | 备注 |
+|---|---|---|---|---|---|
+| **Vultr** | VPS | ✅ | ❌ | $12/mo（2C2G） | 结算页直接选 Alipay；机房选东京/新加坡延迟较好 |
+| **搬瓦工 BandwagonHost** | VPS | ✅ | 部分活动 | ~$50/年（1C1G）/更高配更贵 | CN2 GIA 线路好但常缺货；演示 1G 不够 AI 开启场景 |
+| **RackNerd** | VPS | ✅ | ❌ | $20-30/年 特价（2-2.5G） | 性价比最高，性能一般，演示足够 |
+| **CloudCone** | VPS | ✅ | ❌ | ~$25/月起（2C2G） | 美国机房 |
+| Hetzner / DigitalOcean / Linode | VPS | ❌（外卡/PayPal） | ❌ | — | 无外卡/PayPal 则跳过 |
+| **Namecheap / Spaceship** | 域名 | ✅ | 部分 | $6-10/年 .com | 注册商账户可再绑 PayPal |
+| 腾讯云国际 Lighthouse | VPS+域名 | ✅（微信也支持） | ✅ | 硅谷 2C2G ~$24/mo | 境内大厂国际站，中文工单，最省心；机房选境外即免备案 |
+
+> 支付渠道随时间变化，下单前以结算页实际选项为准。
+
+**推荐组合（二选一）**：
+1. 极致省钱：RackNerd 2.5G 年付特价 + Namecheap 域名 ≈ ¥250/年
+2. 省心稳妥：腾讯云国际 Lighthouse 硅谷 2C2G + 同站域名 ≈ ¥200/月
+
+---
+
+## 13. 生产首次引导：创建初始管理员（方案 A）
+
+生产 compose 不挂载种子数据，且 `AdminWeakCredentialStartupCheck` 会拒绝仓库公开的
+弱口令账号启动——空库无法登录管理端。用项目内置的一次性引导命令创建初始管理员：
+
+```bash
+cd ~/petcare
+docker compose run --rm \
+  -e BOOTSTRAP_ADMIN_USERNAME=opsadmin \
+  -e BOOTSTRAP_ADMIN_PASSWORD='<openssl rand -base64 18 生成>' \
+  api /bin/sh -c 'exec java $JAVA_OPTS -jar /app/app.jar --bootstrap-admin'
+```
+
+约束与行为：
+
+- 仅当传 `--bootstrap-admin` 时执行；凭据走环境变量（避免 ps/shell 历史泄露）
+- 密码 ≥8 位含字母数字，且拒绝 `admin123456` / `user123456` 种子口令
+- 用户名 3-32 位字母数字下划线；同名已存在则报错退出，不覆盖不改密
+- 创建成功输出 `[BOOTSTRAP] 初始管理员 'xxx' 创建成功`
+- 可重复执行以创建多个管理员；日常改密请走管理端流程
+
+执行后即可用该账号登录管理端（https://admin.<你的域名>）。
+
+---
+
 ## 修订记录
 
 | 版本 | 日期 | 作者 | 说明 |
 |---|---|---|---|
 | v1.0 | 2026-07-04 | Agent | 首版，针对课程演示 + 国外 VPS 场景 |
+| v1.1 | 2026-08-23 | Agent | 上线决策补充：支付宝可用服务商选型（§12）、AI 生产开启配置、首次引导方案 A（§13）、2G 内存建议；关联 docs/11 B1/B2/B3 代码侧修正 |

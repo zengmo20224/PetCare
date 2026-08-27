@@ -36,6 +36,10 @@ public class AuthCookieService {
     public static final String ADMIN_COOKIE_NAME = "ADMIN_TOKEN";
     public static final String USER_COOKIE_NAME = "USER_TOKEN";
 
+    /** CSRF 双提交令牌 Cookie 名——JS 必须可读（非 HttpOnly），回显到 X-XSRF-TOKEN 头。 */
+    public static final String XSRF_COOKIE_NAME = "XSRF-TOKEN";
+    public static final String XSRF_HEADER_NAME = "X-XSRF-TOKEN";
+
     /** 限 /api 前缀，避免静态资源请求携带认证 cookie。 */
     private static final String COOKIE_PATH = "/api";
 
@@ -46,21 +50,62 @@ public class AuthCookieService {
     @Value("${petcare.security.cookie.secure:true}")
     private boolean secure;
 
+    private final java.security.SecureRandom secureRandom = new java.security.SecureRandom();
+
     public void writeUserCookie(HttpServletResponse response, String token) {
         write(response, USER_COOKIE_NAME, token);
+        // CSRF 双提交：登录签发认证 cookie 时同步配对签发新 XSRF 令牌
+        writeXsrfCookie(response, newXsrfToken());
     }
 
     public void writeAdminCookie(HttpServletResponse response, String token) {
         write(response, ADMIN_COOKIE_NAME, token);
+        writeXsrfCookie(response, newXsrfToken());
     }
 
     /** 登出：maxAge=0 立即过期（HttpOnly cookie 前端 JS 无法删除，必须服务端清）。 */
     public void clearUserCookie(HttpServletResponse response) {
         clear(response, USER_COOKIE_NAME);
+        clearXsrfCookie(response);
     }
 
     public void clearAdminCookie(HttpServletResponse response) {
         clear(response, ADMIN_COOKIE_NAME);
+        clearXsrfCookie(response);
+    }
+
+    /**
+     * 生成 CSRF 双提交令牌：SecureRandom 32 字节 → base64url。
+     * 令牌本身无服务端状态（双提交通过 header==cookie 比对生效），
+     * 泄露面等同普通非 HttpOnly cookie，随机性按防猜测强度设计。
+     */
+    public String newXsrfToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /** 签发/轮换 XSRF cookie（非 HttpOnly）。 */
+    public void writeXsrfCookie(HttpServletResponse response, String token) {
+        ResponseCookie cookie = ResponseCookie.from(XSRF_COOKIE_NAME, token)
+                .httpOnly(false)
+                .secure(secure)
+                .sameSite("Strict")
+                .path(COOKIE_PATH)
+                .maxAge(Duration.ofMinutes(jwtExpirationMinutes))
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    public void clearXsrfCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(XSRF_COOKIE_NAME, "")
+                .httpOnly(false)
+                .secure(secure)
+                .sameSite("Strict")
+                .path(COOKIE_PATH)
+                .maxAge(Duration.ZERO)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private void write(HttpServletResponse response, String name, String token) {

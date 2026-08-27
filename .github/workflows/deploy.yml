@@ -72,11 +72,27 @@ jobs:
 
       - name: Ensure .env exists
         run: |
+          # B2/M6（2026-08-23）：不再自动回退 .env.example——changeme 弱凭据可静默
+          # 通过 compose ${VAR:?} 校验上生产。缺文件直接失败，强制人工准备。
           if [ ! -f .env ]; then
-            echo "⚠️  .env not found. Copying from .env.example — set real values before production!"
-            cp .env.example .env
+            echo "::error::.env not found on runner. Create it manually with strong "
+            echo "::error::credentials (openssl rand) before deploying. See docs/13 §4."
+            exit 1
           fi
-          # 用本次 tag 覆盖镜像版本
+          # B2/M6：tag 名未经消毒不得插值进 sed 表达式（git refname 允许 / ; 等字符，
+          # 恶意构造可触发 sed 任意命令执行）。白名单校验后再替换。
+          case "${IMAGE_TAG}" in
+            v[0-9A-Za-z._-]*)
+              if echo "${IMAGE_TAG}" | grep -qE '[^v0-9A-Za-z._-]'; then
+                echo "::error::IMAGE_TAG '${IMAGE_TAG}' contains unexpected characters"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::IMAGE_TAG '${IMAGE_TAG}' must start with 'v' followed by [0-9A-Za-z._-]"
+              exit 1
+              ;;
+          esac
           sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env
 
       - name: Pull image tarball (if offline)

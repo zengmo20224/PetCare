@@ -22,7 +22,7 @@ class JwtAuthenticationFilterAsyncDispatchTest {
     @DisplayName("shouldNotFilterAsyncDispatch 必须为 false（ASYNC dispatch 时重建 SecurityContext）")
     void jwtFilterMustRunOnAsyncDispatch() throws Exception {
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
-                null, null, null, null);
+                null, null, null, null, null);
         Method m = OncePerRequestFilterForTest.shouldNotFilterAsyncDispatch();
         boolean skip = (boolean) m.invoke(filter);
         assertFalse(skip, "JwtAuthenticationFilter 必须覆写 shouldNotFilterAsyncDispatch()=false，"

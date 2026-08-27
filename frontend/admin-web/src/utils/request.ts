@@ -9,6 +9,10 @@ import { getUserErrorMessage } from './feedback'
 const axiosInstance = axios.create({
   baseURL: '/api',
   timeout: 10000,
+  // CSRF 双提交（2026-08-23 M7）：读 XSRF-TOKEN cookie，写请求回显 X-XSRF-TOKEN 头
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+  withXSRFToken: true,
 })
 
 // HttpOnly Cookie 双轨改造（2026-08-15）：凭证由后端 Set-Cookie 承载，

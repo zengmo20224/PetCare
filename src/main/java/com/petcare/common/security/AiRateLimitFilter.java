@@ -61,6 +61,15 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
     /** AI 消息端点前缀（发消息 + SSE，A5 原覆盖范围）。 */
     private static final String CONVERSATIONS_PREFIX = "/api/v1/ai/conversations/";
 
+    /** 创建会话精确路径（2026-08-23 审计 P2：前缀带尾斜杠漏掉无尾斜杠的创建端点）。 */
+    private static final String CONVERSATIONS_CREATE_PATH = "/api/v1/ai/conversations";
+
+    /** 桶容量上限（默认 50000）：达到后触发闲置清扫，防内存慢性增长（与 RateLimitFilter 同款防护）。 */
+    @Value("${petcare.ai.rate-limit.max-keys:50000}")
+    private int maxKeys = 50_000;
+
+    private volatile long lastSweepSeconds;
+
     /** 帖子文案助手前缀（上线前审计补充：同走 DeepSeek 计费）。 */
     private static final String POST_ASSISTANT_PREFIX = "/api/v1/ai/post-assistant/";
 
@@ -115,8 +124,13 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
 
         String principal = resolvePrincipal(request);
 
-        // 1) 每分钟滑动窗口（A5 原有行为）
+        // 1) 每分钟滑动窗口（A5 原有行为）；新桶且打满不可回收时放行不计数（fail-open）
         SlidingWindow window = windowFor(principal);
+        if (window == null) {
+            log.warn("AI rate-limit buckets exhausted ({}), serving without counting", maxKeys);
+            filterChain.doFilter(request, response);
+            return;
+        }
         long minuteCount = window.incrementAndGet();
         if (minuteCount > maxRequestsPerMinute) {
             log.warn("AI rate limit exceeded: principal={}, count={}, max={}",
@@ -144,9 +158,34 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
 
     private boolean isProtected(String uri) {
         return uri.startsWith(CONVERSATIONS_PREFIX)
+                || CONVERSATIONS_CREATE_PATH.equals(uri)
                 || uri.startsWith(POST_ASSISTANT_PREFIX)
                 || uri.startsWith(ADMIN_AI_PREFIX)
                 || POSTS_PATH.equals(uri);
+    }
+
+    /** 桶数量观测（测试/运维用，包内可见）。 */
+    int trackedKeyCount() {
+        return buckets.size() + dailyBuckets.size();
+    }
+
+    /**
+     * 容量防护（2026-08-23 P2）：分钟桶闲置超过 2 个窗口、日桶闲置超过 2 天
+     * 即可回收；清扫按 60 秒节流。主体通常为登录账号，正常规模下远达不到上限。
+     */
+    private void sweepIfCrowded() {
+        if (buckets.size() + dailyBuckets.size() < maxKeys) {
+            return;
+        }
+        long now = System.currentTimeMillis() / 1000;
+        if (now - lastSweepSeconds < 60) {
+            return;
+        }
+        lastSweepSeconds = now;
+        long minuteCutoff = now - 2L * WINDOW_SECONDS;
+        buckets.values().removeIf(w -> w.lastAccessSeconds <= minuteCutoff);
+        long dailyCutoff = now - 2L * 86400;
+        dailyBuckets.values().removeIf(c -> c.lastAccessSeconds <= dailyCutoff);
     }
 
     /** 发帖只有触发文本审核（Provider 启用）才产生 AI 计费，关闭时不占额度。 */
@@ -168,17 +207,20 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
             w.evictIfExpired();
             return w;
         });
-        if (window == null) {
-            window = new SlidingWindow();
-            SlidingWindow existing = buckets.putIfAbsent(key, window);
-            if (existing != null) {
-                window = existing;
-            }
+        if (window != null) {
+            return window;
         }
-        return window;
+        sweepIfCrowded();
+        if (buckets.size() >= maxKeys) {
+            return null;
+        }
+        SlidingWindow created = new SlidingWindow();
+        SlidingWindow existing = buckets.putIfAbsent(key, created);
+        return existing != null ? existing : created;
     }
 
     private DailyCounter counterFor(String principal) {
+        sweepIfCrowded();
         String key = "ai-daily|" + principal;
         DailyCounter counter = dailyBuckets.computeIfPresent(key, (k, c) -> {
             c.evictIfExpired();
@@ -215,14 +257,18 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
     /** 滑动窗口计数器（与 {@link RateLimitFilter} 同范式）。 */
     private static final class SlidingWindow {
         private volatile long windowStartSeconds;
+        private volatile long lastAccessSeconds;
         private final AtomicLong count;
 
         SlidingWindow() {
-            this.windowStartSeconds = System.currentTimeMillis() / 1000;
+            long now = System.currentTimeMillis() / 1000;
+            this.windowStartSeconds = now;
+            this.lastAccessSeconds = now;
             this.count = new AtomicLong(0);
         }
 
         long incrementAndGet() {
+            lastAccessSeconds = System.currentTimeMillis() / 1000;
             return count.incrementAndGet();
         }
 
@@ -232,20 +278,24 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
                 windowStartSeconds = now;
                 count.set(0);
             }
+            lastAccessSeconds = now;
         }
     }
 
     /** 按自然日重置的计数器（日额度）。 */
     private static final class DailyCounter {
         private volatile long dayEpoch;
+        private volatile long lastAccessSeconds;
         private final AtomicLong count;
 
         DailyCounter() {
             this.dayEpoch = LocalDate.now().toEpochDay();
+            this.lastAccessSeconds = System.currentTimeMillis() / 1000;
             this.count = new AtomicLong(0);
         }
 
         long incrementAndGet() {
+            lastAccessSeconds = System.currentTimeMillis() / 1000;
             return count.incrementAndGet();
         }
 
@@ -255,6 +305,7 @@ public class AiRateLimitFilter extends OncePerRequestFilter {
                 dayEpoch = today;
                 count.set(0);
             }
+            lastAccessSeconds = System.currentTimeMillis() / 1000;
         }
     }
 }
