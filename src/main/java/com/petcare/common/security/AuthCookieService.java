@@ -43,6 +43,14 @@ public class AuthCookieService {
     /** 限 /api 前缀，避免静态资源请求携带认证 cookie。 */
     private static final String COOKIE_PATH = "/api";
 
+    /**
+     * XSRF cookie 必须用根 Path——页面 JS（document.cookie）只能看到 path 匹配当前页面
+     * 路径的 cookie；H5 页面挂在 /，若沿用 /api 则 JS 永远读不到令牌、无法回显
+     * X-XSRF-TOKEN 头，所有 Cookie 通道写请求会被 CSRF 过滤器 403（阿里云演示部署实测）。
+     * 令牌本身为随机值非敏感，随静态资源请求携带无风险。
+     */
+    private static final String XSRF_COOKIE_PATH = "/";
+
     @Value("${petcare.security.jwt-expiration-minutes:120}")
     private int jwtExpirationMinutes;
 
@@ -85,13 +93,13 @@ public class AuthCookieService {
         return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    /** 签发/轮换 XSRF cookie（非 HttpOnly）。 */
+    /** 签发/轮换 XSRF cookie（非 HttpOnly，Path=/ 供页面 JS 读取回显）。 */
     public void writeXsrfCookie(HttpServletResponse response, String token) {
         ResponseCookie cookie = ResponseCookie.from(XSRF_COOKIE_NAME, token)
                 .httpOnly(false)
                 .secure(secure)
                 .sameSite("Strict")
-                .path(COOKIE_PATH)
+                .path(XSRF_COOKIE_PATH)
                 .maxAge(Duration.ofMinutes(jwtExpirationMinutes))
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -102,7 +110,7 @@ public class AuthCookieService {
                 .httpOnly(false)
                 .secure(secure)
                 .sameSite("Strict")
-                .path(COOKIE_PATH)
+                .path(XSRF_COOKIE_PATH)
                 .maxAge(Duration.ZERO)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

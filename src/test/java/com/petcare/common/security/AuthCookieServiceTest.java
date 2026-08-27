@@ -49,6 +49,8 @@ class AuthCookieServiceTest {
         // M7 CSRF 双提交：登录配对签发 XSRF-TOKEN（JS 可读，非 HttpOnly）
         assertThat(cookies.get(1)).startsWith("XSRF-TOKEN=");
         assertThat(cookies.get(1)).doesNotContain("HttpOnly");
+        // Path 必须=/：页面在 / 路径，document.cookie 读不到 Path=/api 的 cookie（阿里云实测 403 根因）
+        assertThat(cookies.get(1)).contains("Path=/");
     }
 
     @Test
