@@ -71,9 +71,16 @@ public class CsrfDoubleSubmitFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         if (SAFE_METHODS.contains(method)) {
-            // 惰性迁移：Cookie 会话存在但 XSRF cookie 缺失（升级前登录的存量会话）→ 补发
-            if (hasAuthCookie(request) && !hasNonBlankXsrfCookie(request)) {
-                authCookieService.writeXsrfCookie(response, authCookieService.newXsrfToken());
+            if (hasAuthCookie(request)) {
+                List<String> xsrfValues = xsrfCookieValues(request);
+                boolean hasNonBlank = xsrfValues.stream().anyMatch(v -> v != null && !v.isBlank());
+                if (!hasNonBlank) {
+                    // 惰性迁移：Cookie 会话存在但 XSRF cookie 缺失（升级前登录的存量会话）→ 补发
+                    authCookieService.writeXsrfCookie(response, authCookieService.newXsrfToken());
+                } else if (xsrfValues.size() > 1) {
+                    // 新旧 XSRF cookie 共存（Path 修复前 /api 版残留）→ 作废旧证收敛为单张
+                    authCookieService.clearLegacyXsrfCookie(response);
+                }
             }
             filterChain.doFilter(request, response);
             return;
@@ -97,11 +104,20 @@ public class CsrfDoubleSubmitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String cookieToken = cookieValue(request, AuthCookieService.XSRF_COOKIE_NAME);
+        List<String> xsrfValues = xsrfCookieValues(request);
+        if (xsrfValues.size() > 1) {
+            authCookieService.clearLegacyXsrfCookie(response);
+        }
         String headerToken = request.getHeader(AuthCookieService.XSRF_HEADER_NAME);
-        if (!tokensMatch(cookieToken, headerToken)) {
-            log.warn("CSRF double-submit check failed: uri={}, hasHeader={}",
-                    request.getRequestURI(), headerToken != null && !headerToken.isBlank());
+        // 多值共存时按"任一匹配"放行（迁移宽限）：header 值恒来自页面 JS 可见的 Path=/ cookie，
+        // 只有本服务签发的令牌可能出现在 header 中，宽限不引入伪造面；旧证已在上方作废，
+        // 下一次请求 jar 收敛为单张后回到严格首值比对。
+        boolean matches = xsrfValues.stream().anyMatch(v -> tokensMatch(v, headerToken));
+        if (!matches) {
+            log.warn("CSRF double-submit check failed: uri={}, hasHeader={}, xsrfCookies={}",
+                    request.getRequestURI(),
+                    headerToken != null && !headerToken.isBlank(),
+                    xsrfValues.size());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
@@ -135,9 +151,19 @@ public class CsrfDoubleSubmitFilter extends OncePerRequestFilter {
                 || cookieValue(request, AuthCookieService.ADMIN_COOKIE_NAME) != null;
     }
 
-    private boolean hasNonBlankXsrfCookie(HttpServletRequest request) {
-        String v = cookieValue(request, AuthCookieService.XSRF_COOKIE_NAME);
-        return v != null && !v.isBlank();
+    /** 收集全部同名 XSRF cookie 值（新旧 Path 共存时会有多张，见 AuthCookieService#clearLegacyXsrfCookie）。 */
+    static List<String> xsrfCookieValues(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return List.of();
+        }
+        java.util.ArrayList<String> values = new java.util.ArrayList<>();
+        for (Cookie cookie : cookies) {
+            if (AuthCookieService.XSRF_COOKIE_NAME.equals(cookie.getName())) {
+                values.add(cookie.getValue());
+            }
+        }
+        return values;
     }
 
     static String cookieValue(HttpServletRequest request, String name) {

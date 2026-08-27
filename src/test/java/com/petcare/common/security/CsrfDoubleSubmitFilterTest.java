@@ -69,6 +69,45 @@ class CsrfDoubleSubmitFilterTest {
     }
 
     @Test
+    @DisplayName("Path 修复迁移：旧 /api 版与新 / 版 XSRF cookie 共存 + header 带新值 → 任一匹配放行并作废旧证")
+    void postWithLegacyAndNewXsrf_gracePassAndClearsLegacy() throws Exception {
+        String legacyXsrf = authCookieService.newXsrfToken();
+        String freshXsrf = authCookieService.newXsrfToken();
+        // 浏览器 Cookie 头按 Path 长度排序：旧 /api 版在前——服务端 first-match 会读到旧值
+        HttpServletRequest req = request("POST", "/api/v1/ai/conversations",
+                cookie(AuthCookieService.USER_COOKIE_NAME, "jwt"),
+                cookie(AuthCookieService.XSRF_COOKIE_NAME, legacyXsrf),
+                cookie(AuthCookieService.XSRF_COOKIE_NAME, freshXsrf));
+        when(req.getHeader(AuthCookieService.XSRF_HEADER_NAME)).thenReturn(freshXsrf);
+        HttpServletResponse resp = mock(HttpServletResponse.class);
+        FilterChain chain = mockChain();
+
+        filter.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp).addHeader(org.mockito.ArgumentMatchers.eq("Set-Cookie"),
+                org.mockito.ArgumentMatchers.contains("Path=/api"));
+    }
+
+    @Test
+    @DisplayName("共存时 header 与两张都不匹配：仍 403（宽限不等于免检）")
+    void postWithLegacyXsrf_headerMatchesNone_rejected() throws Exception {
+        HttpServletRequest req = request("POST", "/api/v1/ai/conversations",
+                cookie(AuthCookieService.USER_COOKIE_NAME, "jwt"),
+                cookie(AuthCookieService.XSRF_COOKIE_NAME, authCookieService.newXsrfToken()),
+                cookie(AuthCookieService.XSRF_COOKIE_NAME, authCookieService.newXsrfToken()));
+        when(req.getHeader(AuthCookieService.XSRF_HEADER_NAME)).thenReturn("forged-value");
+        HttpServletResponse resp = mock(HttpServletResponse.class);
+        when(resp.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
+        FilterChain chain = mockChain();
+
+        filter.doFilter(req, resp, chain);
+
+        verify(resp).setStatus(HttpServletResponse.SC_FORBIDDEN);
+        verify(chain, never()).doFilter(req, resp);
+    }
+
+    @Test
     @DisplayName("POST + Authorization Bearer 头：Bearer 通道免疫 CSRF，直接放行")
     void postWithBearer_passes() throws Exception {
         HttpServletRequest req = request("POST", "/api/v1/posts",

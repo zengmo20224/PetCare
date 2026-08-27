@@ -116,6 +116,24 @@ public class AuthCookieService {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
+    /**
+     * 清理历史遗留的 Path=/api 版 XSRF cookie（2026-08-28 Path 修复前签发）。
+     * 修复前后的 XSRF cookie 在浏览器 jar 内以不同 Path 共存：请求 Cookie 头两张都带
+     * 且旧 Path=/api 更长、排序在前，服务端 first-match 读到旧值；而页面 JS（document.cookie）
+     * 只能看到 Path=/ 的新值——双提交恒不匹配（阿里云演示部署实测 hasHeader=true 仍 403）。
+     * 过滤器检测到共存时调用本方法作废旧证，使 jar 收敛为单张。
+     */
+    public void clearLegacyXsrfCookie(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(XSRF_COOKIE_NAME, "")
+                .httpOnly(false)
+                .secure(secure)
+                .sameSite("Strict")
+                .path(COOKIE_PATH)
+                .maxAge(Duration.ZERO)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
     private void write(HttpServletResponse response, String name, String token) {
         ResponseCookie cookie = ResponseCookie.from(name, token)
                 .httpOnly(true)
