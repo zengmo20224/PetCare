@@ -97,11 +97,27 @@ sudo ufw enable
 
 ## 3. 域名 + DNS（10 分钟）
 
-### 3.1 买域名
+两条路线：**先跑通用方式一（sslip.io，零成本零注册）**；需要体面域名再切方式二。
 
-任意国外注册商买一个，例如 `petcare-demo.com`（举例）。
+### 3.1 方式一：sslip.io 免费解析（推荐先用，2026-08-27 拍板）
 
-### 3.2 加 A 记录
+`sslip.io` 是公共通配解析服务：把服务器公网 IP 直接写进子域名（**点改成横线**），它就自动解析回该 IP——**不用注册、不用付钱、不用配 DNS**。假设 VPS IP 是 `203.0.113.10`（示例）：
+
+| 域名 | 解析到 | 用途 |
+|---|---|---|
+| `203-0-113-10.sslip.io` | 203.0.113.10 | H5 主域名 |
+| `admin.203-0-113-10.sslip.io` | 203.0.113.10 | 管理端子域名 |
+
+要点：
+
+- Caddy 可为它正常走 HTTP-01 签发 Let's Encrypt 证书，`COOKIE_SECURE` 默认值与全部安全加固**原样生效**，无需改任何安全配置。
+- 域名里编码了 IP，**换 VPS/换 IP 后域名跟着变**，§4.4 的 `VITE_API_BASE_URL` 与 Caddyfile 都要同步改。
+- 验证：`dig +short 203-0-113-10.sslip.io` 应返回你的 IP。
+- 兜底：若 sslip.io 解析不稳或被当前网络环境拦截，换同类的 `203-0-113-10.nip.io`；仍不行则改走方式二花 $6-10/年 买真域名。
+
+### 3.2 方式二：购买域名 + A 记录
+
+任意国外注册商买一个，例如 `petcare-demo.com`（举例，$6-10/年，Namecheap / Spaceship 支持支付宝）。
 
 在注册商的 DNS 管理里加一条 A 记录，指向你 VPS 的公网 IP：
 
@@ -114,8 +130,9 @@ A     admin            <你的VPS IP>     Auto   （可选，给管理端单独�
 ### 3.3 等 DNS 生效（1-10 分钟）
 
 ```bash
-# 在本地或 VPS 上验证
+# 在本地或 VPS 上验证（按所选方式替换域名）
 dig +short petcare-demo.com
+dig +short 203-0-113-10.sslip.io
 # 应返回你的 VPS IP
 ```
 
@@ -196,6 +213,20 @@ MYSQL_PORT=3317
 > 无需再改本地文件；对外只留 Caddy。数据库密码等变量已改为 `${VAR:?}` 强制语法，
 > `.env` 缺 `MYSQL_ROOT_PASSWORD / DB_PASSWORD / PGVECTOR_PASSWORD / JWT_SECRET` 会直接拒绝启动。
 
+### 4.4 H5 生产 API 地址（构建镜像前必改）
+
+`frontend/miniapp/.env.production` 的 `VITE_API_BASE_URL` 默认为空占位，`docker compose up --build`
+会把该值打进 H5 镜像，**必须在构建前填好**（按 §3 所选方式替换域名）：
+
+```dotenv
+# 方式一（sslip.io，IP 点改横线）示例：
+VITE_API_BASE_URL=https://203-0-113-10.sslip.io
+# 方式二（购买域名）示例：
+# VITE_API_BASE_URL=https://petcare-demo.com
+```
+
+管理端**无需配置**：`admin-web` 请求层用相对路径 `/api`，经 Caddy 同域反代自动生效。
+
 ---
 
 ## 5. 启动后端服务栈
@@ -225,7 +256,7 @@ curl -s http://127.0.0.1:8082/api/v1/system/health
 sudo nano /etc/caddy/Caddyfile
 ```
 
-替换为以下内容（把域名换成你自己的）：
+替换为以下内容（把域名换成你自己的：方式一用 `203-0-113-10.sslip.io` / `admin.203-0-113-10.sslip.io` 形式，方式二用购买的真域名）：
 
 ```caddy
 # 用户端 H5 —— 主域名
@@ -435,3 +466,4 @@ docker compose run --rm \
 |---|---|---|---|
 | v1.0 | 2026-07-04 | Agent | 首版，针对课程演示 + 国外 VPS 场景 |
 | v1.1 | 2026-08-23 | Agent | 上线决策补充：支付宝可用服务商选型（§12）、AI 生产开启配置、首次引导方案 A（§13）、2G 内存建议；关联 docs/11 B1/B2/B3 代码侧修正 |
+| v1.2 | 2026-08-27 | Agent | 域名路线拍板：新增 sslip.io 零域名方式一（§3.1）+ H5 生产 API 地址构建前配置步骤（§4.4）；用户决策先不购买域名 |
