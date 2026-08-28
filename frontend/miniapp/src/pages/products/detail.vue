@@ -1,12 +1,6 @@
 <template>
   <view class="pc-page product-detail">
-    <PcPageHeader title="">
-      <template #action>
-        <view class="detail-cart-btn" @tap="goCart">
-          <text class="detail-cart-btn__text">购物车</text>
-        </view>
-      </template>
-    </PcPageHeader>
+    <PcPageHeader title="" />
 
     <PcStatePanel
       :status="pageStatus"
@@ -292,10 +286,6 @@ async function buyNow() {
   }
 }
 
-function goCart() {
-  uni.navigateTo({ url: '/pages/order/cart' })
-}
-
 onLoad((query) => {
   loadDetail(query?.id)
 })
@@ -304,18 +294,6 @@ onLoad((query) => {
 <style scoped>
 .product-detail {
   padding: 0 0 0;
-}
-
-.detail-cart-btn {
-  padding: 12rpx 24rpx;
-  border-radius: 1998rpx;
-  background: var(--pc-user-soft);
-}
-
-.detail-cart-btn__text {
-  color: var(--pc-user-primary);
-  font-size: 22rpx;
-  font-weight: 700;
 }
 
 /* Gallery swiper */
