@@ -1,22 +1,20 @@
 <template>
   <view class="pc-page home-page">
-    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
-    <PcHeroStrip
-      title="把每一份牵挂，都妥帖安放在这里"
-      highlight="牵挂"
-      desc="萌宠的每一刻，都有人温柔以待。"
-    />
-
-    <!-- 门店信息条（demo store-bar：门店名 + 地址 + 营业状态） -->
-    <view class="home-store-bar">
-      <view class="home-store-bar__info">
-        <text class="home-store-bar__name">萌宠家园 · 上海徐汇店</text>
-        <text class="home-store-bar__addr">徐汇区漕溪北路 88 号</text>
+    <!-- 品牌门店卡（V2 改版：Hero 收敛并入门店信息，全应用唯一大面积品牌渐变） -->
+    <view class="home-hero">
+      <view class="home-hero__glow" />
+      <view class="home-hero__row">
+        <text class="home-hero__name">萌宠家园 · 上海徐汇店</text>
+        <view
+          class="home-hero__status"
+          :class="storeStatus === 'OPEN' ? 'home-hero__status--open' : 'home-hero__status--closed'"
+        >
+          <view class="home-hero__dot" />
+          <text>{{ storeStatus === 'OPEN' ? '营业中' : '已休息' }}</text>
+        </view>
       </view>
-      <view class="home-store-bar__status" :class="storeStatus === 'OPEN' ? 'home-store-bar__status--open' : 'home-store-bar__status--closed'">
-        <view class="home-store-bar__dot" />
-        <text>{{ storeStatus === 'OPEN' ? '营业中' : '已休息' }}</text>
-      </view>
+      <text class="home-hero__addr">徐汇区漕溪北路 88 号</text>
+      <text class="home-hero__slogan">把每一份牵挂，都妥帖安放</text>
     </view>
 
     <!-- 公告条（demo notice-bar：扁平白底通栏，裸图标无底色方块） -->
@@ -166,8 +164,20 @@
       </PcStatePanel>
     </view>
 
-    <!-- AI 客服 FAB（demo 风格：右下角浮动按钮，用 demo 的 robot 图标） -->
-    <PcFab icon="robot" @press="goAiChat" />
+    <!-- AI 助手入口卡（V2 改版：全应用 FAB 唯一留给社区发帖，AI 收进内容流） -->
+    <view class="pc-section">
+      <view class="home-ai-card" @tap="goAiChat">
+        <view class="home-ai-card__icon">
+          <PcIcon name="robot" :size="22" color="#11796F" />
+        </view>
+        <view class="home-ai-card__body">
+          <text class="home-ai-card__title">AI 智能助手</text>
+          <text class="home-ai-card__hint">营业时间 / 服务价格 / 宠物日常，随时问</text>
+        </view>
+        <PcIcon name="arrow-right" :size="16" color="#B2B2B2" />
+      </view>
+    </view>
+
     <PcBottomNav current-path="pages/home/index" />
   </view>
 </template>
@@ -175,11 +185,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import PcHeroStrip from '@/components/PcHeroStrip.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcProductCard from '@/components/PcProductCard.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
-import PcFab from '@/components/PcFab.vue'
 import PcIcon from '@/components/PcIcon.vue'
 import { getPosts } from '@/api/community'
 import { getActivities } from '@/api/activity'
@@ -357,10 +365,10 @@ onShow(loadAnnouncement)
   padding: 0 0;
 }
 
-/* 各内容 section 左右留白（hero/store-bar/notice-bar 通栏不命中） */
+/* 各内容 section 左右留白（hero/notice-bar 通栏不命中） */
 .home-page .pc-section {
-  padding-left: 40rpx;
-  padding-right: 40rpx;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
   margin-bottom: 48rpx;
 }
 
@@ -371,9 +379,9 @@ onShow(loadAnnouncement)
 
 /* 横滚商品区：scroll-view 突破容器宽度，负边距对齐 */
 .home-page .home-products-scroll {
-  width: calc(100% + 80rpx);
-  margin-left: -40rpx;
-  margin-right: -40rpx;
+  width: calc(100% + 64rpx);
+  margin-left: -32rpx;
+  margin-right: -32rpx;
 }
 
 /* 底部留白：H5 端 fixed PcBottomNav 高 128rpx + 安全余量；小程序端用原生 tabBar（系统托起），
@@ -389,58 +397,86 @@ onShow(loadAnnouncement)
 }
 /* #endif */
 
-/* ─── 门店信息条（demo store-bar）─── */
-.home-store-bar {
+/* ─── 品牌门店卡（V2：Hero 收敛并入门店信息，渐变仅此处与钱包余额卡）─── */
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 24rpx 32rpx 0;
+  padding: 28rpx 28rpx 24rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #158470, #11796F 46%, #0C4D48);
+}
+
+/* 高光装饰（mp-weixin 不支持 ::before，用绝对定位 view） */
+.home-hero__glow {
+  position: absolute;
+  top: -60rpx;
+  right: -48rpx;
+  width: 220rpx;
+  height: 220rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.home-hero__row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 32rpx;
-  background: var(--pc-user-surface);
-  border-bottom: 1rpx solid #E5E5E5;
 }
 
-.home-store-bar__info {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.home-store-bar__name {
+.home-hero__name {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #FFFFFF;
 }
 
-.home-store-bar__addr {
-  font-size: 22rpx;
-  color: #999999;
-}
-
-.home-store-bar__status {
+.home-hero__status {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  padding: 6rpx 20rpx;
+  height: 40rpx;
+  padding: 0 16rpx;
   border-radius: 999rpx;
-  font-size: 22rpx;
+  background: rgba(255, 255, 255, 0.16);
   flex-shrink: 0;
 }
 
-.home-store-bar__status--open {
-  background: #E6F7EE;
-  color: #07C160;
+.home-hero__status text {
+  font-size: 20rpx;
+  color: #FFFFFF;
 }
 
-.home-store-bar__status--closed {
-  background: #FFF3E5;
-  color: #FA9D3B;
+.home-hero__status--open .home-hero__dot {
+  background: #7CE7A2;
 }
 
-.home-store-bar__dot {
-  width: 12rpx;
-  height: 12rpx;
+.home-hero__status--closed .home-hero__dot {
+  background: #FFD591;
+}
+
+.home-hero__dot {
+  width: 10rpx;
+  height: 10rpx;
   border-radius: 50%;
   background: currentColor;
+}
+
+.home-hero__addr {
+  position: relative;
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-hero__slogan {
+  position: relative;
+  display: block;
+  margin-top: 18rpx;
+  font-size: 24rpx;
+  letter-spacing: 1rpx;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* ─── 公告条（demo notice-bar：扁平白底通栏）─── */
@@ -693,13 +729,12 @@ onShow(loadAnnouncement)
   gap: 6rpx;
 }
 
-/* ─── 空状态引导按钮 ─── */
+/* ─── 空状态引导按钮（V2：圆角/投影与全局按钮统一）─── */
 .home-empty-cta {
   margin-top: 8rpx;
   padding: 16rpx 40rpx;
-  border-radius: 1998rpx;
+  border-radius: 16rpx;
   background: var(--pc-user-primary);
-  box-shadow: 0 8px 20px rgba(17, 121, 111, 0.18);
 }
 
 .home-empty-cta:active {
@@ -710,5 +745,50 @@ onShow(loadAnnouncement)
   font-size: 26rpx;
   font-weight: 700;
   color: var(--pc-user-surface);
+}
+
+/* ─── AI 助手入口卡（V2：替代首页 FAB）─── */
+.home-ai-card {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 24rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #F0F1F1;
+  border-radius: 24rpx;
+}
+
+.home-ai-card:active {
+  opacity: 0.85;
+}
+
+.home-ai-card__icon {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 20rpx;
+  background: #DFF2ED;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-ai-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.home-ai-card__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.home-ai-card__hint {
+  font-size: 22rpx;
+  color: #999999;
 }
 </style>

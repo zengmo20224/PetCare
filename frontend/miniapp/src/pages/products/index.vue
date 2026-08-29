@@ -1,13 +1,6 @@
 <template>
   <view class="pc-page products-page">
-    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
-    <PcHeroStrip
-      title="把每一件好物，都精挑细选给它的健康"
-      highlight="好物"
-      desc="主粮 · 零食 · 玩具 · 用品，店长亲测推荐。"
-    />
-
-    <!-- 搜索栏（demo search-bar） -->
+    <!-- 搜索栏（demo search-bar；V2 改版：营销通栏移除，进页即搜索） -->
     <view class="products-search">
       <view class="products-search__input">
         <PcIcon name="search" :size="16" color="#B2B2B2" />
@@ -26,27 +19,36 @@
       </view>
     </view>
 
-    <!-- Category Tabs (horizontal scroll) -->
-    <scroll-view class="products-tabs" scroll-x>
-      <view class="products-tabs__track">
-        <view
-          class="products-tab"
-          :class="{ 'products-tab--active': activeCategoryId === '' }"
-          @tap="switchCategory('')"
-        >
-          <text>全部</text>
+    <!-- 分类行 + 购物车入口（V2 改版：购物车由悬浮 FAB 改为分类行右侧胶囊，不再遮挡商品卡） -->
+    <view class="products-toolbar">
+      <scroll-view class="products-tabs" scroll-x>
+        <view class="products-tabs__track">
+          <view
+            class="products-tab"
+            :class="{ 'products-tab--active': activeCategoryId === '' }"
+            @tap="switchCategory('')"
+          >
+            <text>全部</text>
+          </view>
+          <view
+            v-for="cat in categories"
+            :key="cat.id"
+            class="products-tab"
+            :class="{ 'products-tab--active': activeCategoryId === cat.id }"
+            @tap="switchCategory(cat.id)"
+          >
+            <text>{{ cat.name }}</text>
+          </view>
         </view>
-        <view
-          v-for="cat in categories"
-          :key="cat.id"
-          class="products-tab"
-          :class="{ 'products-tab--active': activeCategoryId === cat.id }"
-          @tap="switchCategory(cat.id)"
-        >
-          <text>{{ cat.name }}</text>
+      </scroll-view>
+      <view class="products-cart-pill" @tap="goCart">
+        <PcIcon name="cart" :size="16" color="#333333" />
+        <text class="products-cart-pill__text">购物车</text>
+        <view v-if="cartCount > 0" class="products-cart-pill__badge">
+          <text>{{ cartCount > 99 ? '99+' : cartCount }}</text>
         </view>
       </view>
-    </scroll-view>
+    </view>
 
     <PcStatePanel
       :status="listStatus"
@@ -67,8 +69,6 @@
         />
       </view>
     </PcStatePanel>
-    <!-- 购物车 FAB（demo 风格：右下角浮动按钮 + 角标） -->
-    <PcFab icon="cart" :badge="cartCount || undefined" @press="goCart" />
     <PcBottomNav current-path="pages/products/index" />
   </view>
 </template>
@@ -76,9 +76,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import PcHeroStrip from '@/components/PcHeroStrip.vue'
 import PcIcon from '@/components/PcIcon.vue'
-import PcFab from '@/components/PcFab.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcProductCard from '@/components/PcProductCard.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
@@ -244,14 +242,61 @@ onShow(() => {
   font-size: 26rpx;
 }
 
-/* ─── 分类 pills（demo cat-pills：8rpx 圆角小 pill）─── */
-.products-tabs {
-  white-space: nowrap;
-  width: 100%;
+/* ─── 分类行 + 购物车胶囊（V2 改版）─── */
+.products-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
   padding: 0 32rpx 24rpx;
+}
+
+.products-tabs {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
   box-sizing: border-box;
 }
 
+.products-cart-pill {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 60rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E5E5E5;
+  flex-shrink: 0;
+}
+
+.products-cart-pill:active {
+  opacity: 0.8;
+}
+
+.products-cart-pill__text {
+  font-size: 24rpx;
+  color: #333333;
+}
+
+.products-cart-pill__badge {
+  min-width: 30rpx;
+  height: 30rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  background: #FA5151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.products-cart-pill__badge text {
+  font-size: 18rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+/* ─── 分类 pills（demo cat-pills：8rpx 圆角小 pill）─── */
 .products-tabs__track {
   display: inline-flex;
   gap: 16rpx;

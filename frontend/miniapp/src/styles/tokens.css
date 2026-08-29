@@ -15,13 +15,13 @@ page {
   --pc-user-primary: #11796F;
   --pc-user-dark: #0C4D48;
   --pc-user-soft: #DFF2ED;
-  --pc-user-cream: #FAF8F3;
-  --pc-user-accent: #F5A623;
+  --pc-user-cream: #F7F7F7;
+  --pc-user-accent: #FA9D3B;
   --pc-user-accent-soft: #FFF0D1;
-  --pc-user-danger: #D84D4D;
-  --pc-user-ink: #19322E;
-  --pc-user-muted: #71817D;
-  --pc-user-line: #E2E9E6;
+  --pc-user-danger: #FA5151;
+  --pc-user-ink: #1A1A1A;
+  --pc-user-muted: #666666;
+  --pc-user-line: #E5E5E5;
   --pc-user-surface: #FFFFFF;
   --pc-user-surface-soft: #F3F7F5;
   --pc-user-coral: #E97951;
@@ -45,8 +45,8 @@ page {
 
   /* ─── Border Radius ─── */
 
-  --pc-radius-card: 16px;
-  --pc-radius-card-lg: 20px;
+  --pc-radius-card: 12px;
+  --pc-radius-card-lg: 16px;
   --pc-radius-pill: 999px;
 
   /* ─── Typography ─── */
@@ -63,24 +63,24 @@ page {
 
   /* ─── Elevation ─── */
 
-  --pc-shadow-card: 0 8px 24px rgba(25, 50, 46, 0.08);
+  --pc-shadow-card: 0 1px 3px rgba(20, 40, 36, 0.04);
   --pc-shadow-raised: 0 16px 40px rgba(12, 77, 72, 0.16);
 
   /* ─── Wot Design Uni 主题对齐 ─── */
   /* 把 wot 的主题色锚定到 PetCare 品牌青绿色，所有 type="primary" 组件自动跟随。 */
 
   --wot-color-theme: #11796F;
-  --wot-color-success: #34d19d;
-  --wot-color-warning: #f0883a;
-  --wot-color-danger: #D84D4D;
+  --wot-color-success: #07C160;
+  --wot-color-warning: #FA9D3B;
+  --wot-color-danger: #FA5151;
 
   /* 辅助色对齐品牌调性 */
   --wot-color-blue: #4777C8;
-  --wot-color-yellow: #F5A623;
+  --wot-color-yellow: #FA9D3B;
   --wot-color-purple: #8268de;
 
   /* 圆角统一（wot 默认偏小，贴合 PetCare 大圆角风格）*/
-  --wot-button-large-radius: 16px;
-  --wot-button-medium-radius: 12px;
+  --wot-button-large-radius: 10px;
+  --wot-button-medium-radius: 10px;
   --wot-button-small-radius: 8px;
 }

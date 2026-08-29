@@ -51,7 +51,7 @@ describe('Design Tokens Integrity', () => {
     expect(tokensContent).toContain('#11796F')
   })
 
-  it('uses correct cream background', () => {
-    expect(tokensContent).toContain('#FAF8F3')
+  it('uses correct page background (V2 unified #F7F7F7)', () => {
+    expect(tokensContent).toContain('#F7F7F7')
   })
 })

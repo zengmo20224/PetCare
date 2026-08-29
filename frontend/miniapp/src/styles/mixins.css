@@ -5,9 +5,10 @@
 /* Card base */
 .pc-card {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(25, 50, 46, 0.06);
+  border: 1px solid #F0F1F1;
+  box-shadow: 0 1px 3px rgba(20, 40, 36, 0.04);
 }
 
 /* Page section */
@@ -26,7 +27,7 @@
   height: 48px;
   background: #11796F;
   color: #fff;
-  border-radius: 16px;
+  border-radius: 10px;
   font-size: 16px;
   font-weight: 600;
   display: flex;
@@ -38,9 +39,9 @@
 /* Accent button */
 .pc-btn-accent {
   height: 48px;
-  background: #F5A623;
+  background: #FA9D3B;
   color: #fff;
-  border-radius: 16px;
+  border-radius: 10px;
   font-size: 16px;
   font-weight: 600;
   display: flex;

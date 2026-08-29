@@ -389,7 +389,7 @@ onShow(() => {
 
 .confirm-item__subtotal {
   font-size: 28rpx;
-  color: var(--pc-user-accent);
+  color: var(--pc-user-danger);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -525,7 +525,7 @@ onShow(() => {
 .confirm-total__amount {
   font-size: 40rpx;
   font-weight: 700;
-  color: var(--pc-user-accent);
+  color: var(--pc-user-danger);
 }
 
 .confirm-action {

@@ -4,6 +4,7 @@
     type="primary"
     size="large"
     block
+    :round="false"
     :disabled="disabled"
     :loading="loading"
     @click="handleClick"
@@ -39,19 +40,20 @@ function handleClick() {
 </script>
 
 <style scoped>
-/* 品牌主色通过设计令牌引用（tokens.css 的 --pc-user-primary），跨 H5/小程序统一 */
+/* 品牌主色通过设计令牌引用（tokens.css 的 --pc-user-primary），跨 H5/小程序统一。
+   V2 改版：圆角统一 20rpx（10px），与全局按钮体系一致，不再用 32rpx 胶囊。 */
 .pc-primary-button {
   background: var(--pc-user-primary);
   height: 96rpx;
   min-height: 96rpx;
-  border-radius: 32rpx;
+  border-radius: 20rpx;
   font-size: 32rpx;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* wot 内部按钮高度对齐 */
 :deep(.wd-button) {
   height: 96rpx;
-  border-radius: 32rpx;
+  border-radius: 20rpx;
 }
 </style>

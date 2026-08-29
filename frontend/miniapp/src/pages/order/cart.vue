@@ -246,7 +246,7 @@ onShow(() => {
 
 .cart-item__price {
   font-size: 28rpx;
-  color: var(--pc-user-accent);
+  color: var(--pc-user-danger);
   font-weight: 600;
 }
 
@@ -330,7 +330,7 @@ onShow(() => {
 .cart-bar__total-amount {
   font-size: 36rpx;
   font-weight: 700;
-  color: var(--pc-user-accent);
+  color: var(--pc-user-danger);
 }
 
 .cart-bar__btn {

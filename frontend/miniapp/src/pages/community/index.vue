@@ -1,13 +1,6 @@
 <template>
   <view class="pc-page community-page">
-    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
-    <PcHeroStrip
-      title="把每一份日常，都分享成温暖的陪伴"
-      highlight="日常"
-      desc="记录成长 · 交换经验 · 让爱宠心意被看见。"
-    />
-
-    <!-- 搜索栏（demo search-bar） -->
+    <!-- 搜索栏（demo search-bar；V2 改版：营销通栏移除，进页即搜索） -->
     <view class="community-search">
       <view class="community-search__input">
         <PcIcon name="search" :size="16" color="#B2B2B2" />
@@ -139,7 +132,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import PcHeroStrip from '@/components/PcHeroStrip.vue'
 import PcIcon from '@/components/PcIcon.vue'
 import PcFab from '@/components/PcFab.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
@@ -546,13 +538,12 @@ onShow(() => {
   color: #999999;
 }
 
-/* ─── 空状态引导按钮 ─── */
+/* ─── 空状态引导按钮（V2：圆角/投影与全局按钮统一）─── */
 .community-empty-cta {
   margin-top: 8rpx;
   padding: 16rpx 40rpx;
-  border-radius: 999rpx;
+  border-radius: 16rpx;
   background: #11796F;
-  box-shadow: 0 8px 20px rgba(17, 121, 111, 0.18);
 }
 
 .community-empty-cta:active {

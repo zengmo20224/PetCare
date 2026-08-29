@@ -509,7 +509,7 @@ onShow(() => {
 
 .booking-service__price {
   font-size: 28rpx;
-  color: var(--pc-user-accent);
+  color: var(--pc-user-danger);
   font-weight: 700;
 }
 

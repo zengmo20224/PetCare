@@ -116,14 +116,16 @@ describe('mp-weixin UI page contracts', () => {
     }
 
     // 2026-08 UI 改版：浮动操作统一为 PcFab 组件，fixed + rpx 定位收拢在组件内，
-    // 页面里不再散落 FAB 定位样式。
+    // 页面里不再散落 FAB 定位样式。V2 改版（2026-08-29）：FAB 全应用唯一留给社区发帖，
+    // 商品页购物车入口改为分类行右侧胶囊（products-cart-pill）。
     expect(fab).toContain('position: fixed')
     expect(fab).toContain('right: 32rpx')
     expect(fab).toContain('bottom: 164rpx')
     expect(communityPage).toContain('<PcFab icon="edit"')
-    expect(productsPage).toContain('<PcFab icon="cart"')
+    expect(productsPage).toContain('products-cart-pill')
     expect(productsPage).not.toContain('products-fab')
     expect(productsPage).not.toContain('products-cart-entry')
+    expect(productsPage).not.toContain('<PcFab')
     expect(productCard).toContain('height: 276rpx')
   })
 
@@ -200,15 +202,17 @@ describe('mp-weixin UI page contracts', () => {
 
   it('keeps the restored service, community and product visual shells in mp-weixin', () => {
     expect(heroCard).toContain('linear-gradient(135deg, #16877C, #0B3D39)')
-    // 2026-08 改版：页首通栏改用 PcHeroStrip；横向轨道保留
-    expect(servicesPage).toContain('PcHeroStrip')
+    // V2 改版（2026-08-29）：Tab 页营销通栏（PcHeroStrip）移除，标题交还导航栏，
+    // 进页即搜索；首页改为渐变品牌门店卡（home-hero）。横向轨道保留。
+    expect(servicesPage).toContain('svc-search-bar')
     expect(servicesPage).toContain('services-categories__track')
-    expect(communityPage).toContain('PcHeroStrip')
+    expect(servicesPage).not.toContain('PcHeroStrip')
     expect(communityPage).toContain('community-post')
     expect(communityPage).toContain('<PcFab icon="edit"')
+    expect(communityPage).not.toContain('PcHeroStrip')
     expect(productsPage).toContain('products-tabs__track')
     expect(productsPage).toContain('products-grid')
-    expect(productsPage).toContain('<PcFab icon="cart"')
+    expect(productsPage).not.toContain('PcHeroStrip')
   })
 
   it('keeps marketing activity pages tolerant of missing association arrays', () => {

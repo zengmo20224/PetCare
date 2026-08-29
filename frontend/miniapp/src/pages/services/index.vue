@@ -1,13 +1,6 @@
 <template>
   <view class="pc-page services-page">
-    <!-- Hero 温情宣传栏（demo 风格：90px 通栏纯文字） -->
-    <PcHeroStrip
-      title="把每一次托付，都交给温柔专业的人"
-      highlight="托付"
-      desc="洗护、美容、上门照护与寄养，让陪伴始终如一。"
-    />
-
-    <!-- 搜索栏（demo search-bar） -->
+    <!-- 搜索栏（demo search-bar；V2 改版：营销通栏移除，进页即搜索） -->
     <view class="svc-search-bar">
       <view class="svc-search-bar__input">
         <PcIcon name="search" :size="16" color="#B2B2B2" />
@@ -128,7 +121,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import PcHeroStrip from '@/components/PcHeroStrip.vue'
 import PcIcon from '@/components/PcIcon.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcServiceCard from '@/components/PcServiceCard.vue'
@@ -503,7 +495,7 @@ onShow(loadCatalog)
 .size-picker {
   width: 100%;
   background: var(--pc-user-surface);
-  border-radius: 40rpx 40rpx 0 0;
+  border-radius: 24rpx 24rpx 0 0;
   padding: 40rpx 32rpx 64rpx;
 }
 
@@ -537,7 +529,7 @@ onShow(loadCatalog)
   align-items: center;
   justify-content: space-between;
   padding: 32rpx;
-  border-radius: 24rpx;
+  border-radius: 16rpx;
   background: var(--pc-user-cream);
   margin-bottom: 16rpx;
 }
@@ -568,7 +560,7 @@ onShow(loadCatalog)
 .size-picker__option-price {
   font-size: 32rpx;
   font-weight: 700;
-  color: var(--pc-user-accent);
+  color: var(--pc-user-danger);
 }
 
 .size-picker__option-arrow {
