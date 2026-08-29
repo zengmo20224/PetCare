@@ -408,15 +408,19 @@ if (typeof window !== 'undefined') {
 .ai-chat {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background: #faf8f3;
+  /* H5 端 100vh 含导航栏（--window-top=44px），不扣除会整页溢出：外层出现第二根滚动条、
+     输入栏脱离底部并露出白条。mp-weixin 无此变量，回退 0（其 windowHeight 本就不含导航栏）。 */
+  height: calc(100vh - var(--window-top, 0px));
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #F7F7F7;
 }
 
 .ai-chat__tabs {
   display: flex;
   align-items: center;
   background: #fff;
-  border-bottom: 1rpx solid #eef0ed;
+  border-bottom: 1rpx solid #ECEDED;
   flex-shrink: 0;
   padding-right: 16rpx;
 }
@@ -426,7 +430,7 @@ if (typeof window !== 'undefined') {
   padding: 24rpx 0;
   text-align: center;
   font-size: 28rpx;
-  color: #71817d;
+  color: #666666;
   position: relative;
 }
 
@@ -483,7 +487,7 @@ if (typeof window !== 'undefined') {
 
 .ai-chat__login-desc {
   font-size: 26rpx;
-  color: #71817d;
+  color: #666666;
 }
 
 .ai-chat__login-btn {
@@ -514,6 +518,14 @@ if (typeof window !== 'undefined') {
   padding: 24rpx;
 }
 
+/* #ifdef H5 */
+/* 消息区滚动条与原生聊天一致：不可见（外层滚动条已随根容器高度修复消失） */
+.ai-chat__messages :deep(.uni-scroll-view::-webkit-scrollbar) {
+  display: none;
+  width: 0;
+}
+/* #endif */
+
 .ai-chat__hint {
   padding: 120rpx 32rpx;
   text-align: center;
@@ -521,7 +533,7 @@ if (typeof window !== 'undefined') {
 
 .ai-chat__hint-text {
   font-size: 26rpx;
-  color: #71817d;
+  color: #666666;
 }
 
 .ai-chat__error {
@@ -583,7 +595,7 @@ if (typeof window !== 'undefined') {
 
 .ai-chat__bubble--ai {
   background: #fff;
-  border: 1rpx solid #eef0ed;
+  border: 1rpx solid #ECEDED;
   border-top-left-radius: 4rpx;
 }
 
@@ -656,7 +668,7 @@ if (typeof window !== 'undefined') {
 }
 
 .ai-chat__bubble-text--muted {
-  color: #71817d;
+  color: #666666;
 }
 
 /* Input bar: always visible. */
@@ -665,7 +677,7 @@ if (typeof window !== 'undefined') {
   align-items: center;
   padding: 16rpx 24rpx 32rpx;
   background: #fff;
-  border-top: 1rpx solid #eef0ed;
+  border-top: 1rpx solid #ECEDED;
   flex-shrink: 0;
 }
 
