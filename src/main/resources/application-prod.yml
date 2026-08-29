@@ -54,6 +54,13 @@ petcare:
       read-timeout: ${DEEPSEEK_READ_TIMEOUT:60000}
       max-tokens: ${DEEPSEEK_MAX_TOKENS:1024}
       max-retries: ${DEEPSEEK_MAX_RETRIES:1}
+  # 订单/预约超时自动治理（每 10 分钟一轮）。测试 profile 不含此配置，
+  # 定时任务 bean 不创建；多实例部署前需先引入分布式锁。
+  order-timeout:
+    enabled: true
+    cron: "0 */10 * * * *"
+    booking-unpaid-grace-hours: 2
+    product-unpaid-minutes: 1440
 
 # 服务器配置
 server:
