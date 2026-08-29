@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PetCare 用户端 UI 统一化改版提案 V2（纯静态设计稿）</title>
+<style>
+/* ============================================================
+   PetCare UI 改版提案 V2 —— 设计稿自用样式（非小程序代码）
+   规则：本文件为纯静态设计稿，不接后端、不修改 src/ 任何文件。
+   ============================================================ */
+:root{
+  /* —— V2 提案色板（与 §2 色卡一致）—— */
+  --brand:#11796F; --brand-deep:#0C4D48; --brand-soft:#DFF2ED;
+  --ok:#07C160; --warn:#FA9D3B; --danger:#FA5151; --info:#10AEFF;
+  --ink1:#1A1A1A; --ink2:#333333; --ink3:#666666; --ink4:#999999; --ink5:#B2B2B2;
+  --line:#E5E5E5; --bg:#F7F7F7; --card:#FFFFFF;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#E9ECEC;color:var(--ink1);
+  font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:0 auto;padding:34px 22px 90px}
+a{color:var(--brand);text-decoration:none}
+
+/* —— 文档框架 —— */
+.doc-head{background:linear-gradient(135deg,#11796F,#0C4D48);border-radius:16px;color:#fff;padding:30px 32px}
+.doc-head h1{margin:0 0 8px;font-size:24px;font-weight:700;letter-spacing:.5px}
+.doc-head p{margin:4px 0;font-size:13.5px;opacity:.88;line-height:1.7}
+.doc-head .chips{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+.doc-head .chip{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+  border-radius:999px;padding:4px 12px;font-size:12px}
+h2.sec{font-size:20px;margin:46px 2px 6px;display:flex;align-items:center;gap:10px}
+h2.sec .no{width:26px;height:26px;border-radius:8px;background:var(--brand);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.sec-sub{color:var(--ink3);font-size:13px;margin:0 2px 14px;line-height:1.7}
+.panel{background:#fff;border:1px solid #E5E8E8;border-radius:14px;padding:22px 24px;margin:14px 0}
+.panel h3{margin:0 0 12px;font-size:15.5px}
+.panel h3 small{color:var(--ink4);font-weight:400;margin-left:8px;font-size:12px}
+table.doc{width:100%;border-collapse:collapse;font-size:12.8px;line-height:1.6}
+table.doc th{background:#F4F6F6;text-align:left;padding:8px 10px;font-weight:600;color:var(--ink2);
+  border:1px solid #ECEFEF;white-space:nowrap}
+table.doc td{padding:8px 10px;border:1px solid #ECEFEF;color:var(--ink2);vertical-align:top}
+table.doc td code, .inl{background:#F4F6F6;border-radius:4px;padding:1px 5px;font-size:11.5px;
+  font-family:Consolas,Menlo,monospace;color:#0C4D48}
+.bad{color:#C0392B} .good{color:#0E7A4E}
+
+/* —— 通用线性图标（24 viewBox / stroke 1.7 / 圆头）—— */
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+
+/* ============================================================
+   一、手机 mockup 框架（390 宽）
+   ============================================================ */
+.gallery{display:flex;flex-wrap:wrap;gap:38px 30px;align-items:flex-start}
+.shot{width:390px}
+.shot-cap{margin:10px 4px 0;font-size:12.5px;color:var(--ink3)}
+.shot-cap b{color:var(--ink1);margin-right:8px}
+.phone{width:390px;background:var(--bg);border:1px solid #DFE3E3;border-radius:30px;
+  box-shadow:0 18px 44px rgba(15,40,36,.13);overflow:hidden;position:relative}
+.p-status{height:30px;background:var(--brand);color:#fff;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;font-size:11px;font-weight:600}
+.nav{height:46px;background:var(--brand);color:#fff;display:flex;align-items:center;
+  justify-content:center;position:relative;font-size:16.5px;font-weight:600;flex:none}
+.nav .lft{position:absolute;left:10px;display:flex;align-items:center;color:#fff}
+.nav .lft .ic{width:21px;height:21px}
+.nav .rgt{position:absolute;right:12px;display:flex;align-items:center}
+.bd{padding:12px 14px 18px}
+.bd>*+*{margin-top:12px}
+.bd>.sh{margin-top:18px;margin-bottom:2px}
+.bd>.gt{margin-top:18px}
+
+/* 底部 tab（5 页） */
+.tabbar{display:flex;background:#fff;border-top:1px solid #ECEDED;padding:7px 0 13px;flex:none}
+.tbi{flex:1;display:flex;flex-direction:column;align-items:center;gap:2.5px;color:#9AA2A1;font-size:10.5px}
+.tbi .ic{width:22px;height:22px}
+.tbi.on{color:var(--brand);font-weight:600}
+
+/* 卡片与排版 */
+.card{background:#fff;border:1px solid #F0F1F1;border-radius:12px;padding:13px;box-shadow:0 1px 3px rgba(20,40,36,.03)}
+.card.flush{padding:0;overflow:hidden}
+.sh{display:flex;align-items:baseline;justify-content:space-between}
+.sh b{font-size:16px;font-weight:600;color:var(--ink1)}
+.sh a,.sh .more{font-size:12.5px;color:var(--brand);display:inline-flex;align-items:center;gap:1px}
+.sh .more .ic{width:13px;height:13px}
+.gt{font-size:12.5px;color:var(--ink4);margin:0 2px}
+.pr{color:var(--danger);font-weight:700}
+.pr .rmb{font-size:.72em;margin-right:1px}
+
+/* 搜索行 */
+.search{display:flex;gap:8px;align-items:center}
+.search .inp{flex:1;height:36px;border-radius:10px;background:#fff;border:1px solid #ECEDED;
+  display:flex;align-items:center;gap:7px;padding:0 11px;color:var(--ink5);font-size:13px}
+.search .inp .ic{width:15px;height:15px}
+.sbtn{height:36px;padding:0 16px;border-radius:10px;background:var(--brand);color:#fff;
+  font-size:13.5px;font-weight:600;display:flex;align-items:center;flex:none}
+
+/* pill / 下划线 tab */
+.pills{display:flex;gap:8px;flex-wrap:nowrap;overflow:hidden}
+.pill{height:30px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:#fff;
+  color:var(--ink3);font-size:12.5px;display:inline-flex;align-items:center;flex:none}
+.pill.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.utabs{display:flex;gap:26px;padding:0 2px;border-bottom:1px solid #EFEFEF}
+.ut{font-size:14px;color:var(--ink3);padding:7px 2px 9px;position:relative}
+.ut.on{color:var(--brand);font-weight:600}
+.ut.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-1px;
+  width:18px;height:3px;border-radius:2px;background:var(--brand)}
+
+/* 按钮 */
+.btn{height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:600;gap:6px}
+.btn.pri{background:var(--brand);color:#fff}
+.btn.gho{border:1px solid var(--brand);color:var(--brand);background:#fff}
+.btn.wechat{border:1px solid var(--ok);color:var(--ok);background:#fff}
+.btn.dis{background:#F2F3F3;color:var(--ink5)}
+.btn.sm{height:34px;font-size:13px;border-radius:8px;padding:0 16px}
+.btn .ic{width:16px;height:16px}
+
+/* tag */
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;
+  padding:2.5px 8px;border-radius:6px;line-height:1.25;white-space:nowrap}
+.t-green{background:#DFF2ED;color:#0C4D48}
+.t-orange{background:#FFF3E5;color:#C9701E}
+.t-red{background:#FFEBEB;color:#E5484D}
+.t-gray{background:#F2F3F3;color:#999999}
+.t-blue{background:#E6F4FF;color:#2492D6}
+
+/* 列表单元格（我的 / 信息行） */
+.cell{display:flex;align-items:center;gap:11px;padding:12.5px 2px;border-bottom:1px solid #F4F5F5}
+.cell:last-child{border-bottom:none}
+.cell .ci{width:21px;height:21px;color:var(--brand)}
+.cell .ct{flex:1;font-size:14.5px;color:var(--ink1)}
+.cell .cv{font-size:12.5px;color:var(--ink4)}
+.cell>.ic{width:16px;height:16px;color:#C2C7C6}
+.kv{display:flex;align-items:center;padding:11.5px 2px;border-bottom:1px solid #F4F5F5;font-size:13.5px}
+.kv:last-child{border-bottom:none}
+.kv label{width:88px;color:var(--ink4);flex:none}
+.kv .val{flex:1;color:var(--ink1)}
+.kv .val.pr{font-size:15px}
+
+/* 表单 */
+.frow{display:flex;align-items:center;padding:12px 2px;border-bottom:1px solid #F3F4F4}
+.frow:last-child{border-bottom:none}
+.frow label{width:72px;font-size:14px;color:var(--ink3);flex:none}
+.frow .val{flex:1;font-size:14.5px;color:var(--ink1)}
+.frow .val.hold{color:var(--ink5);font-weight:400}
+.ftop{padding:12px 2px;border-bottom:1px solid #F3F4F4}
+.ftop:last-child{border-bottom:none}
+.ftop label{display:block;font-size:12px;color:var(--ink3);margin-bottom:7px}
+.ftop .val{display:flex;align-items:center;font-size:15.5px;color:var(--ink1);font-weight:500}
+.ftop .val .ic{margin-left:auto;width:17px;height:17px;color:#C2C7C6}
+
+/* 选择块 / 日期 / 时段 */
+.choices{display:flex;gap:10px}
+.choice{flex:1;height:44px;border-radius:10px;border:1px solid #E6E7E7;background:#fff;
+  display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;color:var(--ink2)}
+.choice .ckm{display:none}
+.choice.on{border-color:var(--brand);background:#EDF6F3;color:var(--brand);font-weight:600}
+.choice.on .ckm{display:inline-flex}
+.choice .ckm{width:13px;height:13px;stroke-width:2.4}
+.dates{display:flex;gap:8px}
+.dt{flex:1;height:60px;border-radius:10px;border:1px solid #E6E7E7;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.dt small{font-size:10.5px;color:var(--ink4)}
+.dt b{font-size:14px;font-weight:600;color:var(--ink1)}
+.dt.on{background:var(--brand);border-color:var(--brand)}
+.dt.on small,.dt.on b{color:#fff}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.slot{height:52px;border-radius:10px;border:1px solid #E6E7E7;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.slot b{font-size:13.5px;font-weight:600;color:var(--ink1)}
+.slot small{font-size:10px;color:var(--ink4)}
+.slot.on{background:var(--brand);border-color:var(--brand)}
+.slot.on b,.slot.on small{color:#fff}
+.slot.off{background:#F4F5F5;border-color:#F4F5F5}
+.slot.off b,.slot.off small{color:var(--ink5)}
+
+/* 勾选 / 数量 */
+.ck{width:18px;height:18px;border-radius:50%;border:1.5px solid #D8DCDC;background:#fff;flex:none;
+  display:flex;align-items:center;justify-content:center;color:#fff}
+.ck.on{background:var(--brand);border-color:var(--brand)}
+.ck .ic{width:11px;height:11px;stroke-width:2.8;display:none}
+.ck.on .ic{display:block}
+.step{display:inline-flex;align-items:center;border:1px solid #E8E9E9;border-radius:8px;
+  overflow:hidden;background:#fff}
+.step .pm{width:27px;height:27px;display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+.step .pm .ic{width:13px;height:13px}
+.step .num{width:28px;text-align:center;font-size:13px;color:var(--ink1)}
+
+/* 图片占位 / 头像 */
+.ph{background:#F1F3F3;display:flex;align-items:center;justify-content:center;color:#C7CDCC}
+.ph .ic{stroke-width:1.3}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.av{border-radius:50%;background:linear-gradient(135deg,#DFF2ED,#C7E5DD);color:#0F6E64;
+  display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+
+/* 底部操作栏 / FAB */
+.bbar{background:#fff;border-top:1px solid #ECEDED;padding:10px 14px;display:flex;
+  align-items:center;gap:10px;flex:none}
+.bbar .sp{flex:1}
+.fab{position:absolute;right:16px;bottom:92px;width:50px;height:50px;border-radius:50%;
+  background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(17,121,111,.35)}
+.fab .ic{width:22px;height:22px;stroke-width:2}
+
+/* —— 首页专用 —— */
+.hero{border-radius:14px;background:linear-gradient(135deg,#158470 0%,var(--brand) 46%,var(--brand-deep) 100%);
+  color:#fff;padding:15px 15px 13px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-36px;top:-48px;width:140px;height:140px;
+  border-radius:50%;background:rgba(255,255,255,.07)}
+.hero .row1{display:flex;align-items:center;justify-content:space-between}
+.hero .shop{font-size:15.5px;font-weight:600}
+.hero .addr{font-size:11.5px;opacity:.72;margin-top:3px}
+.hero .slogan{font-size:12px;opacity:.85;margin-top:10px;letter-spacing:.5px}
+.open{display:inline-flex;align-items:center;gap:4px;height:21px;padding:0 8px;border-radius:999px;
+  background:rgba(255,255,255,.16);font-size:10.5px;align-items:center}
+.open i{width:5px;height:5px;border-radius:50%;background:#7CE7A2;display:inline-block}
+.notice{display:flex;align-items:center;gap:9px;padding:10px 12px}
+.notice .icb{width:30px;height:30px;border-radius:8px;background:var(--brand-soft);color:var(--brand);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.notice .icb .ic{width:16px;height:16px}
+.notice .tx{flex:1;font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notice .dot{width:7px;height:7px;border-radius:50%;background:var(--danger);flex:none}
+.entries{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ent{background:#fff;border:1px solid #F0F1F1;border-radius:12px;padding:12px 6px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:7px}
+.ent .icb{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.ent .icb .ic{width:21px;height:21px}
+.ent .lb{font-size:12px;color:var(--ink1)}
+.ent .sub{font-size:10px;color:var(--ink4)}
+.hscroll{display:flex;gap:10px;overflow:hidden}
+.hcard{width:122px;background:#fff;border:1px solid #F0F1F1;border-radius:12px;overflow:hidden;flex:none}
+.hcard .ph{height:88px;border-radius:0}
+.hcard .nm{font-size:12.5px;color:var(--ink1);padding:8px 9px 2px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.hcard .ft{display:flex;align-items:baseline;justify-content:space-between;padding:0 9px 9px}
+.hcard .pr{font-size:13.5px}
+.hcard .sl{font-size:10px;color:var(--ink4)}
+.acard{display:flex;gap:11px;align-items:center}
+.acard .ph{width:92px;height:68px;border-radius:8px;flex:none}
+.acard .nm{font-size:14px;font-weight:600;color:var(--ink1)}
+.acard .tm{font-size:11px;color:var(--ink4);margin:4px 0 6px}
+.mini-post{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 2px;border-bottom:1px solid #F4F5F5}
+.mini-post:last-child{border-bottom:none}
+.mini-post .t{flex:1;font-size:13.5px;font-weight:500;color:var(--ink1);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-post .c{font-size:11px;color:var(--ink4);display:flex;gap:9px;align-items:center;flex:none}
+.mini-post .c .ic{width:13px;height:13px}
+.aicard{display:flex;align-items:center;gap:11px}
+.aicard .icb{width:40px;height:40px;border-radius:11px;background:var(--brand-soft);color:var(--brand);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.aicard .tt{font-size:14.5px;font-weight:600;color:var(--ink1)}
+.aicard .ss{font-size:11.5px;color:var(--ink4);margin-top:2px}
+.aicard>.ic{margin-left:auto;width:16px;height:16px;color:#C2C7C6}
+/* 首页购物车胶囊（商品页也用） */
+.cart-pill{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;
+  background:#fff;border:1px solid #ECEDED;color:var(--ink2);font-size:13px;flex:none}
+.cart-pill .ic{width:16px;height:16px}
+.bdg{min-width:15px;height:15px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;padding:0 4px;font-weight:600}
+
+/* —— 帖子卡 —— */
+.pcard .hd{display:flex;align-items:center;gap:9px}
+.pcard .hd .av{width:38px;height:38px;font-size:14px}
+.pcard .hd .nm{font-size:13.5px;font-weight:600;color:var(--ink2)}
+.pcard .hd .pdt{margin-left:auto;font-size:11px;color:var(--ink4)}
+.pcard .tt{font-size:15.5px;font-weight:600;color:var(--ink1);margin-top:10px;line-height:1.45}
+.pcard .ex{font-size:13.5px;color:var(--ink2);line-height:1.65;margin-top:6px;display:
+  -webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .tags{display:flex;gap:6px;margin-top:9px}
+.pcard .tags .tag{font-size:10.5px;padding:2px 7px}
+.ig3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:9px}
+.ig3 .ph{aspect-ratio:1/1;border-radius:8px}
+.ig3 .ph .ic{width:22px;height:22px}
+.pact{display:flex;border-top:1px solid #F4F5F5;margin-top:11px;padding-top:9px}
+.pact .ai2{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
+  font-size:12.5px;color:var(--ink3)}
+.pact .ai2 .ic{width:16px;height:16px}
+
+/* —— 详情页 —— */
+.cover{border-radius:12px;overflow:hidden}
+.cover .ph{height:190px;border-radius:0}
+.cover .ph .ic{width:44px;height:44px}
+.dtitle{font-size:17px;font-weight:600;color:var(--ink1);line-height:1.45}
+.dtitle-row{display:flex;align-items:center;gap:8px}
+.bigprice{display:flex;align-items:baseline;gap:9px}
+.bigprice .pr{font-size:23px}
+.bigprice .sl{font-size:11.5px;color:var(--ink4)}
+.pdimg{border-radius:12px;overflow:hidden}
+.pdimg .ph{height:250px;border-radius:0}
+.pdimg .ph .ic{width:46px;height:46px}
+
+/* —— 购物车 —— */
+.crow{display:flex;gap:10px;align-items:flex-start}
+.crow .ph{width:76px;height:76px;border-radius:10px;flex:none}
+.crow .ph .ic{width:26px;height:26px}
+.crow .inf{flex:1;min-width:0}
+.crow .nm{font-size:13.5px;color:var(--ink1);line-height:1.45;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.crow .ft{display:flex;align-items:center;margin-top:8px}
+.crow .del{font-size:11.5px;color:var(--danger);display:flex;align-items:center;gap:3px;margin-left:12px}
+.crow .del .ic{width:13px;height:13px}
+
+/* —— 确认订单 —— */
+.orow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid #F4F5F5}
+.orow:last-child{border-bottom:none}
+.orow .ph{width:52px;height:52px;border-radius:9px;flex:none}
+.orow .ph .ic{width:20px;height:20px}
+.orow .nm{flex:1;font-size:13px;color:var(--ink1)}
+.orow .un{font-size:11px;color:var(--ink4)}
+.orow .sub{font-size:13.5px}
+
+/* —— 钱包 —— */
+.wcard{border-radius:14px;background:linear-gradient(135deg,#158470 0%,var(--brand) 46%,var(--brand-deep) 100%);
+  color:#fff;padding:17px 16px 15px;position:relative;overflow:hidden}
+.wcard::after{content:"";position:absolute;right:-30px;top:-52px;width:130px;height:130px;
+  border-radius:50%;background:rgba(255,255,255,.07)}
+.wcard .lb{font-size:11.5px;opacity:.78}
+.wcard .amt{font-size:31px;font-weight:700;margin-top:5px}
+.wcard .amt .rmb{font-size:.55em;margin-right:2px;opacity:.85}
+.wcard .bts{display:flex;gap:9px;margin-top:13px}
+.wbtn{height:33px;border-radius:9px;font-size:12.5px;font-weight:600;display:flex;
+  align-items:center;justify-content:center;padding:0 15px}
+.wbtn.fill{background:#fff;color:var(--brand-deep)}
+.wbtn.line{border:1px solid rgba(255,255,255,.55);color:#fff}
+.tx{display:flex;align-items:center;gap:10px;padding:10.5px 2px;border-bottom:1px solid #F4F5F5}
+.tx:last-child{border-bottom:none}
+.tx .inf{flex:1}
+.tx .t{font-size:13.5px;color:var(--ink1)}
+.tx .d{font-size:10.5px;color:var(--ink4);margin-top:2px}
+.tx .amt{font-size:14.5px;font-weight:700}
+.tx .amt.up{color:var(--ok)}
+.tx .amt.down{color:var(--danger)}
+.tipbar{background:#FFF8E7;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#8A6A1B;
+  display:flex;gap:7px;align-items:flex-start;line-height:1.6}
+.tipbar .ic{width:14px;height:14px;margin-top:2px;color:#D9A514}
+
+/* —— 聊天 —— */
+.chat{display:flex;flex-direction:column;gap:12px;padding:14px 12px}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg .av{width:30px;height:30px;font-size:10.5px;border-radius:50%}
+.msg .av.ai2{background:var(--brand);color:#fff}
+.msg .av.me2{background:#F2F3F3;color:var(--ink3)}
+.msg.me{flex-direction:row-reverse}
+.bub{max-width:74%;padding:10px 12px;border-radius:13px;font-size:13.5px;line-height:1.6}
+.bub.ai{background:#F2F3F3;color:var(--ink1);border-top-left-radius:4px}
+.bub.me{background:var(--brand);color:#fff;border-top-right-radius:4px}
+.bub .thin{color:var(--ink4)}
+.typebar{display:flex;gap:8px;align-items:center;background:#fff;border-top:1px solid #ECEDED;
+  padding:9px 12px}
+.typebar .inp{flex:1;height:36px;border-radius:10px;background:#F2F3F3;display:flex;
+  align-items:center;padding:0 12px;color:var(--ink5);font-size:13px}
+.typebar .send{height:36px;padding:0 15px;border-radius:10px;background:var(--brand);color:#fff;
+  font-size:13.5px;font-weight:600;display:flex;align-items:center}
+.chat-tabs{display:flex;align-items:center;gap:20px;background:#fff;border-bottom:1px solid #ECEDED;
+  padding:0 14px;height:42px;flex:none}
+.chat-tabs .ut{padding:0 2px;height:42px;display:flex;align-items:center}
+.chat-tabs .ut.on::after{bottom:5px}
+.chat-tabs .newc{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--brand);
+  font-size:12.5px;font-weight:600}
+.chat-tabs .newc .ic{width:14px;height:14px}
+
+/* —— 规范展示区（非手机） —— */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px}
+.sw{border:1px solid #EEF0F0;border-radius:10px;overflow:hidden}
+.sw .chip{height:46px;display:flex;align-items:flex-end;justify-content:flex-end;padding:6px 8px}
+.sw .chip span{font-size:10.5px;font-family:Consolas,Menlo,monospace;background:rgba(255,255,255,.85);
+  border-radius:4px;padding:1px 5px;color:#333}
+.sw .cap{padding:7px 9px;font-size:11.5px;color:var(--ink3);line-height:1.5}
+.sw .cap b{display:block;color:var(--ink1);font-size:12px}
+.typerow{display:flex;align-items:baseline;gap:14px;padding:9px 2px;border-bottom:1px dashed #ECEFEF}
+.typerow:last-child{border-bottom:none}
+.typerow .demo{width:220px;flex:none}
+.typerow .meta{font-size:11.5px;color:var(--ink4);font-family:Consolas,Menlo,monospace}
+.icogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
+.icogrid .ig{border:1px solid #EEF0F0;border-radius:10px;padding:12px 6px 8px;display:flex;
+  flex-direction:column;align-items:center;gap:7px;color:var(--ink2)}
+.icogrid .ig .ic{width:22px;height:22px}
+.icogrid .ig span{font-size:10.5px;color:var(--ink4)}
+.demorow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.t1{font-size:13.5px;color:var(--ink2)}
+.t2{font-size:11.5px;color:var(--ink4)}
+.tri .card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 12px}
+.sk{border-radius:8px;background:linear-gradient(90deg,#F0F2F2 25%,#E7EAEA 37%,#F0F2F2 63%)}
+.empty .ic{width:46px;height:46px;color:#D3D9D8;stroke-width:1.3}
+
+/* 现状截图条 */
+.before{display:flex;gap:14px;flex-wrap:wrap}
+.before figure{margin:0;width:158px}
+.before img{width:158px;border-radius:12px;border:1px solid #E0E4E4;display:block}
+.before figcaption{font-size:11px;color:var(--ink4);text-align:center;margin-top:6px}
+.movelist{counter-reset:mv;margin:0;padding:0;list-style:none;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.movelist li{counter-increment:mv;background:#FBFCFC;border:1px solid #ECEFEF;border-radius:12px;
+  padding:13px 15px 13px 46px;position:relative;font-size:13px;line-height:1.7;color:var(--ink2)}
+.movelist li::before{content:counter(mv);position:absolute;left:13px;top:13px;width:22px;height:22px;
+  border-radius:7px;background:var(--brand);color:#fff;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+.movelist li b{color:var(--ink1)}
+.foot{margin-top:52px;padding:18px 22px;background:#fff;border:1px solid #E5E8E8;border-radius:14px;
+  font-size:12.5px;color:var(--ink3);line-height:1.8}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SVG 线性图标集（单一来源 · stroke 1.7 · 圆头） ═══════════ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.2 12 4.8l8 6.4V19a1.6 1.6 0 0 1-1.6 1.6h-4.1v-5.2h-4.6v5.2H5.6A1.6 1.6 0 0 1 4 19z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10.2h16M8.6 3.4v4M15.4 3.4v4"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M12 4.4c-4.7 0-8.5 3.2-8.5 7.2 0 2.3 1.2 4.3 3.2 5.6l-.7 3.3 3.4-1.6c.8.2 1.7.3 2.6.3 4.7 0 8.5-3.2 8.5-7.2S16.7 4.4 12 4.4z"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3.4 4.4h2.1l2.2 10.5a1.6 1.6 0 0 0 1.6 1.3h7.5a1.6 1.6 0 0 0 1.6-1.2l1.6-6.6H6.2"/><circle cx="10" cy="19.8" r="1.4"/><circle cx="16.7" cy="19.8" r="1.4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.8 20c.9-3.4 3.8-5.4 7.2-5.4s6.3 2 7.2 5.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.2"/><path d="m19.5 19.5-3.8-3.8"/></symbol>
+  <symbol id="i-cr" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+  <symbol id="i-cl" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 4a5.4 5.4 0 0 0-5.4 5.4c0 4.2-1.6 5.4-1.6 5.4h14s-1.6-1.2-1.6-5.4A5.4 5.4 0 0 0 12 4z"/><path d="M10 18.4a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.7C7.2 16.1 4.6 12.9 4.6 10A3.9 3.9 0 0 1 12 8.7 3.9 3.9 0 0 1 19.4 10c0 2.9-2.6 6.1-7.4 9.7z"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M6.5 5.6c0-.6.5-1.1 1.1-1.1h8.8c.6 0 1.1.5 1.1 1.1V20l-5.5-3-5.5 3z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m14.6 5.4 4 4L8.2 19.8H4.2v-4z"/><path d="m12.6 7.4 4 4"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.4-6.5-10a6.5 6.5 0 0 1 13 0c0 4.6-6.5 10-6.5 10z"/><circle cx="12" cy="10.8" r="2.3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.8"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4.6 9.4 6 4.6h12l1.4 4.8"/><path d="M4.6 9.4a2.3 2.3 0 0 0 4.6 0 2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.6 0"/><path d="M5.6 12.6V19a1 1 0 0 0 1 1h10.8a1 1 0 0 0 1-1v-6.4"/><path d="M9.6 20v-4.4h4.8V20"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11.5 4.5 13 8.9l4.4 1.5L13 12l-1.5 4.4L10 12l-4.4-1.5L10 8.9z"/><path d="m18.2 15.2.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3.5" y="6.5" width="17" height="13" rx="2.5"/><path d="M16 11.4h4.5v2.8H16a1.4 1.4 0 0 1 0-2.8z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3.6 20 7.6v8.8l-8 4-8-4V7.6z"/><path d="m4 7.6 8 4 8-4M12 11.6v8.9"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.6-3 7.6-7 9-4-1.4-7-4.4-7-9V6z"/><path d="m9.2 11.8 2 2 3.6-3.9"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5M12 14.3v2.2"/></symbol>
+  <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="7.9" cy="9.2" r="1.7"/><circle cx="12" cy="7.5" r="1.8"/><circle cx="16.1" cy="9.2" r="1.7"/><path d="M12 11.4c2.6 0 4.7 2 4.7 4.2 0 1.6-1.2 2.6-2.6 2.6-.8 0-1.4-.3-2.1-.3s-1.3.3-2.1.3c-1.4 0-2.6-1-2.6-2.6 0-2.2 2.1-4.2 4.7-4.2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5.5 12.5 4.2 4.2L18.5 8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3.5 12S6.8 6.5 12 6.5 20.5 12 20.5 12 17.2 17.5 12 17.5 3.5 12 3.5 12z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="i-horn" viewBox="0 0 24 24"><path d="M6 9.6v4.8h3l6 4.1V5.5l-6 4.1z"/><path d="M18.2 9.4a4.2 4.2 0 0 1 0 5.2"/></symbol>
+  <symbol id="i-scis" viewBox="0 0 24 24"><circle cx="6.4" cy="7" r="2.2"/><circle cx="6.4" cy="17" r="2.2"/><path d="M8.3 8.3 19 17M8.3 15.7 19 7"/></symbol>
+  <symbol id="i-bath" viewBox="0 0 24 24"><path d="M4.5 12.2h15v2.3a4 4 0 0 1-4 4h-7a4 4 0 0 1-4-4z"/><path d="M6.2 12.2V6.4a1.8 1.8 0 0 1 3.5-.6"/><path d="M6.6 18.5l-1 2M17.4 18.5l1 2"/></symbol>
+  <symbol id="i-robot" viewBox="0 0 24 24"><rect x="5" y="8.2" width="14" height="10" rx="2.6"/><path d="M12 8.2V5.4M9.4 5.4h5.2"/><circle cx="9.4" cy="12.6" r="1"/><circle cx="14.6" cy="12.6" r="1"/><path d="M9.7 15.6h4.6"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4.6 21 19.4H3z"/><path d="M12 10.2v4.3M12 17.1v.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5.5 7h13M9.6 7V5.5A1.5 1.5 0 0 1 11.1 4h1.8a1.5 1.5 0 0 1 1.5 1.5V7M7 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7"/></symbol>
+</svg>
+
+<div class="wrap">
+
+  <!-- ═══════════ 文档头 ═══════════ -->
+  <header class="doc-head">
+    <h1>PetCare 用户端 · UI 统一化改版提案 V2</h1>
+    <p>基于 2026-08 现行界面的多模态扫描（5 张 Tab 页实拍 + <code style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:4px">tokens.css / uni.scss / mixins.css</code> 令牌审读），提炼一套<b>更统一、更协调、更贴近小程序设计规范</b>的界面方案。</p>
+    <p>本稿为<b>纯静态设计 Demo</b>：未接后端接口、数据为演示占位，<b>不修改 frontend/miniapp/src 下任何在用界面</b>，供讨论评估后再决定是否分阶段落地。</p>
+    <div class="chips">
+      <span class="chip">390 宽移动视口</span>
+      <span class="chip">14 屏全覆盖</span>
+      <span class="chip">单一线性图标集</span>
+      <span class="chip">微信小程序规范对齐</span>
+      <span class="chip">零代码侵入</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ §0 五个改版动作 ═══════════ -->
+  <h2 class="sec"><span class="no">0</span>一页看懂：五个改版动作</h2>
+  <p class="sec-sub">不改品牌基因（青绿主色、彩色宫格、卡片信息流全部保留），只收敛"不统一"的部分。</p>
+  <div class="panel">
+    <ul class="movelist">
+      <li><b>背景与中性色并轨</b>：页面底色统一 <code class="inl">#F7F7F7</code>，文字统一纯灰阶（#1A1A1A→#B2B2B2）。现行代码里 <code class="inl">uni.scss</code> 的米白 <code class="inl">#FAF8F3</code> + 墨绿系文字（#19322E/#71817D）与 <code class="inl">reset.css</code> 已生效的 #F7F7F7 双轨并存，提案全部并到灰阶轨，<b>青绿退出中性色、只负责操作与选中</b>。</li>
+      <li><b>功能色一锤定音</b>：成功绿三套（wot #34d19d / uni #2E7D32 / demo #07C160）→ 统一 <code class="inl">#07C160</code>；红两套（#D84D4D / 价红 #FA5151）→ 统一 <code class="inl">#FA5151</code> 兼价格色；警告 #FA9D3B、信息 #10AEFF 各归其位。</li>
+      <li><b>页头减负</b>：现行 5 个 Tab 中 4 页有大面积深绿营销 banner（黄字强调），首页却没有，模式不一。V2：<b>仅首页保留品牌 Hero（收敛高度并并入门店信息）</b>，其余页面标题交还导航栏，进页即搜索/内容。</li>
+      <li><b>悬浮层唯一</b>：现行同时存在 3 种 FAB（首页 AI、商品页购物车、社区页发帖）。V2：全应用<b>只保留社区发帖一个 FAB</b>；购物车改为列表工具行胶囊入口（图标+角标），AI 改为首页内容流末尾的"AI 助手卡"。</li>
+      <li><b>图标与圆角归一</b>：全部功能图标使用<b>同一套线性 SVG（1.7px 圆头）</b>，emoji 退出功能位、只留空状态；圆角统一为 <b>卡 12px / 控件 10px / 筛选胶囊全圆</b>（现行 16px 卡 + 混用胶囊）。卡片默认轻投影+1px 细边，替代现行大投影。</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════ §1 现状诊断 ═══════════ -->
+  <h2 class="sec"><span class="no">1</span>现状扫描诊断（2026-08 运行版实拍）</h2>
+  <p class="sec-sub">截图取自 README 的运行中应用实拍（docs/assets/screenshots/，390×844）。先讲做对了的，再列不统一的。</p>
+
+  <div class="panel">
+    <h3>1.1 已经统一、V2 保持不动的部分 <small>改版不推倒重来</small></h3>
+    <table class="doc">
+      <tr><th>维度</th><th>现状（截图证据）</th><th>V2 处理</th></tr>
+      <tr><td>品牌主色</td><td>青绿 #11796F 贯穿导航栏/选中态/搜索按钮</td><td class="good">保留</td></tr>
+      <tr><td>价格色</td><td>列表/详情价格均为红色</td><td class="good">保留，并把色值统一锚定为 #FA5151</td></tr>
+      <tr><td>筛选 pill</td><td>选中青绿实底白字，未选白底描边</td><td class="good">保留，作为唯一筛选样式</td></tr>
+      <tr><td>二级页签</td><td>服务页"全部/狗狗/猫咪"已用下划线 tab</td><td class="good">保留并推广到 AI 会话类型切换</td></tr>
+      <tr><td>宫格彩色编码</td><td>常用服务 4 色浅底块（青/橙/蓝/粉）</td><td class="good">保留色码，图标统一线性化</td></tr>
+      <tr><td>社区互动栏</td><td>心形/评论/收藏已是线性图标</td><td class="good">保留，纳入统一图标集</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>1.2 不统一的问题清单 <small>多模态目检 + 令牌审读交叉确认</small></h3>
+    <div class="before" style="margin-bottom:16px">
+      <figure><img src="../../docs/assets/screenshots/home.png" alt="首页现状"><figcaption>首页：无 banner，绿色 AI 圆形 FAB</figcaption></figure>
+      <figure><img src="../../docs/assets/screenshots/services.png" alt="服务页现状"><figcaption>服务：大 banner（黄字强调）+ 双列卡</figcaption></figure>
+      <figure><img src="../../docs/assets/screenshots/products.png" alt="商品页现状"><figcaption>商品：大 banner + 右下购物车 FAB</figcaption></figure>
+      <figure><img src="../../docs/assets/screenshots/community.png" alt="社区页现状"><figcaption>社区：大 banner + 右下发帖 FAB</figcaption></figure>
+      <figure><img src="../../docs/assets/screenshots/profile.png" alt="我的页现状"><figcaption>我的：分组菜单 + 青绿线性图标</figcaption></figure>
+    </div>
+    <table class="doc">
+      <tr><th>#</th><th>问题</th><th>证据</th><th>影响</th></tr>
+      <tr><td>P1</td><td><b>页面背景双轨</b></td><td><code class="inl">uni.scss</code> 定义 <code class="inl">$uni-bg-color:#FAF8F3</code>，但 <code class="inl">reset.css</code> 实际生效 <code class="inl">page{background:#F7F7F7}</code>；组件里还残留 <code class="inl">--pc-user-cream</code></td><td>米白与冷灰并存，部分组件底色和页面底色打架</td></tr>
+      <tr><td>P2</td><td><b>中性文字双轨</b></td><td>令牌里同时存在墨绿系（#19322E/#71817D/#E2E9E6）与纯灰系（--pc-demo-*），同一页面两套灰混用</td><td>文字色相不统一，灰绿灰黑跳变</td></tr>
+      <tr><td>P3</td><td><b>成功绿三套</b></td><td>wot #34d19d / uni #2E7D32 / demo 别名 #07C160</td><td>"营业中/成功"反馈色不一致</td></tr>
+      <tr><td>P4</td><td><b>红两套</b></td><td>--pc-user-danger #D84D4D 与 --pc-demo-price #FA5151</td><td>错误提示红和价格红深浅不一</td></tr>
+      <tr><td>P5</td><td><b>页头模式不一</b></td><td>服务/商品/社区页有大营销 banner（黄字高亮），首页是门店条，我的页直接内容</td><td>首屏节奏不一致，营销 banner 挤压内容（约占首屏 1/4）</td></tr>
+      <tr><td>P6</td><td><b>FAB 三语义并存</b></td><td>首页 AI 客服、商品页购物车、社区页发帖三种圆形悬浮</td><td>用户无法建立"FAB=?"的心智；购物车 FAB 遮挡商品卡</td></tr>
+      <tr><td>P7</td><td><b>图标三来源混用</b></td><td>wd-icon（组件库）+ emoji（互动/公告）+ 自绘，粗细与圆头不一致</td><td>细节精度参差，最影响"精致感"</td></tr>
+      <tr><td>P8</td><td><b>圆角/投影体系松散</b></td><td>卡 16px + 0 8px 24px 大投影；按钮 8/12/16 三档；筛选胶囊全圆</td><td>卡片之间边界发虚，整体偏"网页感"而非"小程序感"</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════ §2 设计语言 V2 ═══════════ -->
+  <h2 class="sec"><span class="no">2</span>设计语言 V2（提案令牌）</h2>
+  <p class="sec-sub">一套可直接翻译回 <code class="inl">tokens.css</code> 变量的令牌体系。命名沿用现行 <code class="inl">--pc-*</code> 前缀，便于迁移。</p>
+
+  <div class="panel">
+    <h3>2.1 色彩系统 <small>品牌绿只管操作，灰阶管信息，功能色管状态</small></h3>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#11796F"><span>#11796F</span></div><div class="cap"><b>品牌主色</b>主按钮 / 选中态 / 链接 / tab 选中</div></div>
+      <div class="sw"><div class="chip" style="background:#0C4D48"><span>#0C4D48</span></div><div class="cap"><b>主色深</b>按下态 / 渐变收尾 / 深底文字</div></div>
+      <div class="sw"><div class="chip" style="background:#DFF2ED"><span>#DFF2ED</span></div><div class="cap"><b>主色浅底</b>选中块底 / tag 底 / 图标底块</div></div>
+      <div class="sw"><div class="chip" style="background:#07C160"><span>#07C160</span></div><div class="cap"><b>成功（唯一绿）</b>营业中 / 支付成功 / 收入金额</div></div>
+      <div class="sw"><div class="chip" style="background:#FA9D3B"><span>#FA9D3B</span></div><div class="cap"><b>警告</b>待确认 / 库存紧张 / 加入购物车按钮</div></div>
+      <div class="sw"><div class="chip" style="background:#FA5151"><span>#FA5151</span></div><div class="cap"><b>危险 / 价格（唯一红）</b>价格 / 删除 / 角标 / 取消</div></div>
+      <div class="sw"><div class="chip" style="background:#10AEFF"><span>#10AEFF</span></div><div class="cap"><b>信息</b>服务中 / 辅助链接</div></div>
+      <div class="sw"><div class="chip" style="background:#1A1A1A"><span>#1A1A1A</span></div><div class="cap"><b>一级文字</b>标题 / 商品名 / 金额数字</div></div>
+      <div class="sw"><div class="chip" style="background:#333333"><span>#333333</span></div><div class="cap"><b>正文</b>帖子正文 / 列表主文案</div></div>
+      <div class="sw"><div class="chip" style="background:#666666"><span>#666666</span></div><div class="cap"><b>次要</b>描述 / 功能图标默认色 / 输入 label</div></div>
+      <div class="sw"><div class="chip" style="background:#999999"><span>#999999</span></div><div class="cap"><b>辅助</b>时间 / 销量 / placeholder</div></div>
+      <div class="sw"><div class="chip" style="background:#E5E5E5"><span>#E5E5E5</span></div><div class="cap"><b>分隔线/描边</b>列表 1px 细线 / 控件描边</div></div>
+      <div class="sw"><div class="chip" style="background:#F7F7F7;border-bottom:1px solid #E5E5E5"><span>#F7F7F7</span></div><div class="cap"><b>页面底色（唯一）</b>所有页面外层</div></div>
+      <div class="sw"><div class="chip" style="background:#FFFFFF;border:1px solid #E5E5E5;box-sizing:border-box"><span>#FFFFFF</span></div><div class="cap"><b>卡片</b>白卡 + 1px #F0F1F1 细边</div></div>
+      <div class="sw"><div class="chip" style="background:linear-gradient(135deg,#DFF2ED,#FCE9EF)"><span>四色编码</span></div><div class="cap"><b>分类宫格浅底</b>洗护 #DFF2ED / 美容 #FFF0D1 / 上门 #E8F0FE / 寄养 #FCE9EF</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>2.2 字阶（px @390 视口） <small>导航栏承担页面标题，页内不再出现 24px 大标题</small></h3>
+    <div class="typerow"><div class="demo" style="font-size:31px;font-weight:700;color:#1A1A1A">¥128.50</div><div class="meta">28px/700 · 钱包余额、Hero 大数字</div></div>
+    <div class="typerow"><div class="demo" style="font-size:17px;font-weight:600;color:#1A1A1A">基础洗护（详情页标题）</div><div class="meta">17px/600 · 详情标题、价格大字</div></div>
+    <div class="typerow"><div class="demo" style="font-size:16px;font-weight:600;color:#1A1A1A">精选好物（章节标题）</div><div class="meta">16px/600 · 章节标题 + 右侧"更多 ›" 12.5px</div></div>
+    <div class="typerow"><div class="demo" style="font-size:15px;font-weight:600;color:#1A1A1A">皇家成猫主粮 1.5kg</div><div class="meta">15px/600 · 卡片标题</div></div>
+    <div class="typerow"><div class="demo" style="font-size:14px;color:#333">正文内容，用于描述与列表主文案</div><div class="meta">14px/400 · 正文</div></div>
+    <div class="typerow"><div class="demo" style="font-size:12.5px;color:#666">辅助信息 · 时间 · 销量</div><div class="meta">12.5px · 辅助</div></div>
+    <div class="typerow"><div class="demo" style="font-size:11px;color:#999">标签徽章 · 极小说明</div><div class="meta">11px · 说明/badge</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>2.3 圆角 / 间距 / 投影</h3>
+    <div class="demorow">
+      <div style="width:120px;height:64px;border-radius:12px;background:#fff;border:1px solid #F0F1F1;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666">卡片 12px</div>
+      <div style="width:120px;height:44px;border-radius:10px;background:#11796F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">按钮 10px</div>
+      <div style="width:120px;height:44px;border-radius:10px;background:#fff;border:1px solid #E6E7E7;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666">选择块 10px</div>
+      <div style="height:30px;padding:0 16px;border-radius:999px;background:#11796F;color:#fff;display:flex;align-items:center;font-size:12px">筛选胶囊 999</div>
+      <div style="width:44px;height:44px;border-radius:50%;background:#11796F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">FAB</div>
+      <div style="flex:1;min-width:200px;font-size:12.5px;color:#666;line-height:1.8">投影只留两档：卡片 <code class="inl">0 1px 3px rgba(20,40,36,.03)</code>；悬浮层（FAB/底栏/弹层）<code class="inl">0 6px 16px rgba(17,121,111,.35)</code>。间距网格 4 的倍数：8/12/16/20，页面左右边距 14px。</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>2.4 按钮体系 <small>主操作青绿 · 次操作描边 · 并列主次用青绿+橙区分</small></h3>
+    <div class="demorow">
+      <div class="btn pri" style="width:170px">主按钮</div>
+      <div class="btn gho" style="width:170px">次按钮</div>
+      <div class="btn wechat" style="width:170px"><svg class="ic"><use href="#i-msg"/></svg>微信登录（描边绿）</div>
+      <div class="btn dis" style="width:170px">禁用</div>
+      <div class="btn pri" style="width:150px;height:40px;background:#FA9D3B">加入购物车（橙）</div>
+      <div class="sbtn">搜 索</div>
+    </div>
+    <p style="font-size:12.5px;color:#666;margin:12px 2px 0;line-height:1.8">规则：一屏只有一个青绿实底主按钮；商品详情"加入购物车 / 立即购买"并列时，加购用警告橙、购买用品牌青绿，主次一眼可分；搜索按钮与主按钮同规格，不再自成一派。</p>
+  </div>
+
+  <div class="panel">
+    <h3>2.5 状态 tag 体系 <small>预约/订单/营业状态共用一套五色</small></h3>
+    <div class="demorow">
+      <span class="tag t-orange">待确认</span>
+      <span class="tag t-green">已确认</span>
+      <span class="tag t-blue">服务中</span>
+      <span class="tag t-gray">已完成</span>
+      <span class="tag t-red">已取消</span>
+      <span class="tag t-orange">仅限自提</span>
+      <span class="tag t-green">#日常</span>
+      <span class="tag t-gray">人气好物</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>2.6 图标集（单一来源 · 线性 1.7px 圆头） <small>功能图标禁止 emoji；emoji 仅空状态情感位</small></h3>
+    <div class="icogrid">
+      <div class="ig"><svg class="ic"><use href="#i-home"/></svg><span>home</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-cal"/></svg><span>calendar</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-msg"/></svg><span>message</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-cart"/></svg><span>cart</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-user"/></svg><span>user</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-search"/></svg><span>search</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-bell"/></svg><span>bell</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-heart"/></svg><span>heart</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-mark"/></svg><span>bookmark</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-edit"/></svg><span>edit</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-pin"/></svg><span>location</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-clock"/></svg><span>clock</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-store"/></svg><span>store</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-spark"/></svg><span>sparkles(AI)</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-wallet"/></svg><span>wallet</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-box"/></svg><span>order</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-shield"/></svg><span>shield</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-lock"/></svg><span>lock</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-paw"/></svg><span>paw</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-plus"/></svg><span>plus</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-check"/></svg><span>check</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-x"/></svg><span>close</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-eye"/></svg><span>eye</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-horn"/></svg><span>notice</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-scis"/></svg><span>grooming</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-bath"/></svg><span>bath</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-robot"/></svg><span>robot</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-warn"/></svg><span>warning</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-trash"/></svg><span>trash</span></div>
+      <div class="ig"><svg class="ic"><use href="#i-cr"/></svg><span>chevron-r</span></div>
+    </div>
+    <p style="font-size:12.5px;color:#666;margin:12px 2px 0;line-height:1.8">使用规则：① 导航/操作层图标（tab、cell、FAB、按钮内）用 <b>brand 青</b>或白色；② 信息层小图标（时长/到店/销量前缀）用 <b>#999</b>；③ 危险操作（删除）用 <b>#FA5151</b>。同一个图标不因页面不同而换粗细。</p>
+  </div>
+
+  <div class="panel">
+    <h3>2.7 全局三态 <small>空 / 加载 / 失败，一套样式全项目复用</small></h3>
+    <div class="tri">
+      <div class="card empty"><svg class="ic"><use href="#i-paw"/></svg><div class="t1">还没有内容</div><div class="t2">去逛逛，发现第一份好物</div><div class="btn gho sm" style="margin-top:4px">去逛逛</div></div>
+      <div class="card" style="justify-content:center;display:flex;flex-direction:column;gap:10px;padding:22px 16px">
+        <div class="sk" style="height:14px;width:70%"></div>
+        <div class="sk" style="height:14px;width:92%"></div>
+        <div class="sk" style="height:88px;width:100%;border-radius:10px"></div>
+        <div style="text-align:center;font-size:11.5px;color:#999">骨架屏（列表加载）</div>
+      </div>
+      <div class="card empty"><svg class="ic"><use href="#i-warn"/></svg><div class="t1">加载失败</div><div class="t2">网络不太顺畅，请重试</div><div class="btn gho sm" style="margin-top:4px">重新加载</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ §3 十四屏 mockup ═══════════ -->
+  <h2 class="sec"><span class="no">3</span>全部界面 · 总体布局 Demo（14 屏）</h2>
+  <p class="sec-sub">纯 HTML/CSS 静态渲染，未接后端；图片为占位灰块。按「Tab 主页 5 → 详情 3 → 流程 4 → AI 与登录 2」分组。</p>
+
+  <div class="gallery">
+
+    <!-- ───────── H1 首页 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav">PetCare</div>
+        <div class="bd">
+          <div class="hero">
+            <div class="row1">
+              <span class="shop">萌宠家园 · 上海徐汇店</span>
+              <span class="open"><i></i>营业中</span>
+            </div>
+            <div class="addr">徐汇区漕溪北路 88 号 · 09:00-21:00</div>
+            <div class="slogan">把每一份牵挂，都妥帖安放</div>
+          </div>
+          <div class="card notice">
+            <div class="icb"><svg class="ic"><use href="#i-horn"/></svg></div>
+            <span class="tx">周末预约较满，建议提前 1 天安排洗护</span>
+            <span class="dot"></span>
+            <svg class="ic" style="width:14px;height:14px;color:#C2C7C6"><use href="#i-cr"/></svg>
+          </div>
+          <div class="sh"><b>常用服务</b></div>
+          <div class="entries">
+            <div class="ent"><div class="icb" style="background:#DFF2ED;color:#0F6E64"><svg class="ic"><use href="#i-bath"/></svg></div><span class="lb">洗护</span><span class="sub">¥58 起</span></div>
+            <div class="ent"><div class="icb" style="background:#FFF0D1;color:#B97D10"><svg class="ic"><use href="#i-scis"/></svg></div><span class="lb">美容</span><span class="sub">¥98 起</span></div>
+            <div class="ent"><div class="icb" style="background:#E8F0FE;color:#4777C8"><svg class="ic"><use href="#i-home"/></svg></div><span class="lb">上门照护</span><span class="sub">省心到家</span></div>
+            <div class="ent"><div class="icb" style="background:#FCE9EF;color:#C4547A"><svg class="ic"><use href="#i-paw"/></svg></div><span class="lb">安心寄养</span><span class="sub">¥80/天</span></div>
+          </div>
+          <div class="sh"><b>精选好物</b><span class="more">逛逛商店<svg class="ic"><use href="#i-cr"/></svg></span></div>
+          <div class="hscroll">
+            <div class="hcard"><div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div><div class="nm">皇家中型犬成犬粮 2kg</div><div class="ft"><span class="pr"><span class="rmb">¥</span>128</span><span class="sl">售 321</span></div></div>
+            <div class="hcard"><div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div><div class="nm">冻干鸡胸训练零食</div><div class="ft"><span class="pr"><span class="rmb">¥</span>35</span><span class="sl">售 120</span></div></div>
+            <div class="hcard"><div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div><div class="nm">不锈钢双碗食盆</div><div class="ft"><span class="pr"><span class="rmb">¥</span>38</span><span class="sl">售 88</span></div></div>
+          </div>
+          <div class="sh"><b>门店活动</b><span class="more">查看全部<svg class="ic"><use href="#i-cr"/></svg></span></div>
+          <div class="card acard">
+            <div class="ph"><svg class="ic" style="width:24px;height:24px"><use href="#i-horn"/></svg></div>
+            <div>
+              <div class="nm">宠物食品节 · 全场 8 折</div>
+              <div class="tm">08.10 - 08.31</div>
+              <span class="tag t-orange">8 折</span> <span class="tag t-gray">4 件商品</span>
+            </div>
+          </div>
+          <div class="sh"><b>社区动态</b></div>
+          <div class="card" style="padding:3px 13px">
+            <div class="mini-post"><span class="t">猫咪睡姿大赛报名：liquid cat 现场直击</span><span class="c"><svg class="ic"><use href="#i-heart"/></svg>83</span></div>
+            <div class="mini-post"><span class="t">周中遛狗偶遇柯基军团，豆豆玩疯了</span><span class="c"><svg class="ic"><use href="#i-heart"/></svg>46</span></div>
+          </div>
+          <div class="card aicard">
+            <div class="icb"><svg class="ic"><use href="#i-spark"/></svg></div>
+            <div><div class="tt">AI 智能助手</div><div class="ss">营业时间 / 价格 / 宠物日常，随时问</div></div>
+            <svg class="ic"><use href="#i-cr"/></svg>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tbi on"><svg class="ic"><use href="#i-home"/></svg>首页</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cal"/></svg>预约</div>
+          <div class="tbi"><svg class="ic"><use href="#i-msg"/></svg>社区</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cart"/></svg>商品</div>
+          <div class="tbi"><svg class="ic"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>H1 首页</b>品牌 Hero 收敛（并入门店条）· 无 FAB（AI 入口收进内容流）· 宫格/横滑/活动/动态结构保留</div>
+    </div>
+
+    <!-- ───────── H2 服务 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav">服务</div>
+        <div class="bd">
+          <div class="search">
+            <div class="inp"><svg class="ic"><use href="#i-search"/></svg>搜索服务名称</div>
+            <div class="sbtn">搜索</div>
+          </div>
+          <div class="pills">
+            <span class="pill on">全部服务</span><span class="pill">洗护</span><span class="pill">美容</span><span class="pill">上门照护</span><span class="pill">寄养</span>
+          </div>
+          <div class="utabs">
+            <span class="ut on">全部</span><span class="ut">狗狗</span><span class="ut">猫咪</span>
+          </div>
+          <div class="g2" style="margin-top:2px">
+            <div class="card flush">
+              <div class="ph" style="height:112px"><svg class="ic" style="width:28px;height:28px"><use href="#i-paw"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:14.5px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">上门遛狗(30分钟)</div>
+                <div style="display:flex;gap:10px;font-size:11.5px;color:#999;margin-top:6px">
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>30分钟</span>
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-home"/></svg>上门</span>
+                </div>
+                <div style="margin-top:7px"><span class="pr" style="font-size:17px"><span class="rmb">¥</span>50</span></div>
+              </div>
+            </div>
+            <div class="card flush">
+              <div class="ph" style="height:112px"><svg class="ic" style="width:28px;height:28px"><use href="#i-paw"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:14.5px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">犬类洗护</div>
+                <div style="display:flex;gap:10px;font-size:11.5px;color:#999;margin-top:6px">
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>1小时</span>
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-store"/></svg>到店</span>
+                </div>
+                <div style="margin-top:7px"><span class="pr" style="font-size:17px"><span class="rmb">¥</span>68</span><span style="font-size:11px;color:#999;margin-left:2px">起</span></div>
+              </div>
+            </div>
+            <div class="card flush">
+              <div class="ph" style="height:112px"><svg class="ic" style="width:28px;height:28px"><use href="#i-paw"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:14.5px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">精致美容造型</div>
+                <div style="display:flex;gap:10px;font-size:11.5px;color:#999;margin-top:6px">
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>90分钟</span>
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-store"/></svg>到店</span>
+                </div>
+                <div style="margin-top:7px"><span class="pr" style="font-size:17px"><span class="rmb">¥</span>98</span><span style="font-size:11px;color:#999;margin-left:2px">起</span></div>
+              </div>
+            </div>
+            <div class="card flush">
+              <div class="ph" style="height:112px"><svg class="ic" style="width:28px;height:28px"><use href="#i-paw"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:14.5px;font-weight:600;color:#1A1A1A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">日间寄养</div>
+                <div style="display:flex;gap:10px;font-size:11.5px;color:#999;margin-top:6px">
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-clock"/></svg>8小时</span>
+                  <span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-store"/></svg>到店</span>
+                </div>
+                <div style="margin-top:7px"><span class="pr" style="font-size:17px"><span class="rmb">¥</span>80</span><span style="font-size:11px;color:#999;margin-left:2px">/天</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tbi"><svg class="ic"><use href="#i-home"/></svg>首页</div>
+          <div class="tbi on"><svg class="ic"><use href="#i-cal"/></svg>预约</div>
+          <div class="tbi"><svg class="ic"><use href="#i-msg"/></svg>社区</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cart"/></svg>商品</div>
+          <div class="tbi"><svg class="ic"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>H2 服务预约</b>去营销 banner · 进页即搜索 → 分类 pill → 下划线 tab → 双列卡（现状结构保留）</div>
+    </div>
+
+    <!-- ───────── H3 商品 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav">商品</div>
+        <div class="bd">
+          <div class="search">
+            <div class="inp"><svg class="ic"><use href="#i-search"/></svg>搜索商品名称</div>
+            <div class="sbtn">搜索</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="pills" style="flex:1">
+              <span class="pill on">全部</span><span class="pill">主粮</span><span class="pill">零食</span><span class="pill">玩具</span>
+            </div>
+            <div class="cart-pill"><svg class="ic"><use href="#i-cart"/></svg>购物车<span class="bdg">3</span></div>
+          </div>
+          <div class="g2" style="margin-top:2px">
+            <div class="card flush">
+              <div class="ph" style="height:118px"><svg class="ic" style="width:28px;height:28px"><use href="#i-box"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:13.5px;color:#1A1A1A;line-height:1.45;height:39px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">皇家中型犬成犬粮 2kg</div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:6px">
+                  <span class="pr" style="font-size:16px"><span class="rmb">¥</span>128</span>
+                  <span style="font-size:10.5px;color:#999">售 321</span>
+                </div>
+              </div>
+            </div>
+            <div class="card flush">
+              <div class="ph" style="height:118px"><svg class="ic" style="width:28px;height:28px"><use href="#i-box"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:13.5px;color:#1A1A1A;line-height:1.45;height:39px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">冻干鸡胸肉训练零食 100g</div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:6px">
+                  <span class="pr" style="font-size:16px"><span class="rmb">¥</span>35</span>
+                  <span class="tag t-gray" style="transform:scale(.92);transform-origin:right">人气</span>
+                </div>
+              </div>
+            </div>
+            <div class="card flush">
+              <div class="ph" style="height:118px"><svg class="ic" style="width:28px;height:28px"><use href="#i-box"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:13.5px;color:#1A1A1A;line-height:1.45;height:39px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">宠物不锈钢双碗食盆</div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:6px">
+                  <span class="pr" style="font-size:16px"><span class="rmb">¥</span>38</span>
+                  <span style="font-size:10.5px;color:#999">售 88</span>
+                </div>
+              </div>
+            </div>
+            <div class="card flush">
+              <div class="ph" style="height:118px"><svg class="ic" style="width:28px;height:28px"><use href="#i-box"/></svg></div>
+              <div style="padding:10px 11px 11px">
+                <div style="font-size:13.5px;color:#1A1A1A;line-height:1.45;height:39px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">主食猫罐头 吞拿鱼 85g×6</div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:6px">
+                  <span class="pr" style="font-size:16px"><span class="rmb">¥</span>45</span>
+                  <span style="font-size:10.5px;color:#999">售 56</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tbi"><svg class="ic"><use href="#i-home"/></svg>首页</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cal"/></svg>预约</div>
+          <div class="tbi"><svg class="ic"><use href="#i-msg"/></svg>社区</div>
+          <div class="tbi on"><svg class="ic"><use href="#i-cart"/></svg>商品</div>
+          <div class="tbi"><svg class="ic"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>H3 商品零售</b>购物车由 FAB 改为<b>分类行右侧胶囊入口</b>（图标+角标），不再遮挡商品卡</div>
+    </div>
+
+    <!-- ───────── H4 社区 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav">社区</div>
+        <div class="bd">
+          <div class="search">
+            <div class="inp"><svg class="ic"><use href="#i-search"/></svg>搜索帖子标题或内容</div>
+            <div class="sbtn">搜索</div>
+          </div>
+          <div class="pills">
+            <span class="pill on">全部</span><span class="pill">#日常</span><span class="pill">#求助</span><span class="pill">#晒宠</span><span class="pill">#攻略</span>
+          </div>
+          <div class="card pcard">
+            <div class="hd">
+              <div class="av">猫</div>
+              <span class="nm">两只猫的打工人</span>
+              <span class="pdt">8月15日</span>
+            </div>
+            <div class="tt">猫咪睡姿大赛报名：liquid cat 现场直击</div>
+            <div class="ex">芝麻最近解锁了新睡姿：摊成一滩。第一张是标准仰面大字型，第二张直接流进纸箱里，第三张是教科书级液体猫姿势。每次想拍照它就换姿势，相册里全是它……</div>
+            <div class="tags"><span class="tag t-green">#日常</span><span class="tag t-green">#晒宠</span></div>
+            <div class="ig3">
+              <div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div>
+            </div>
+            <div class="pact">
+              <span class="ai2"><svg class="ic"><use href="#i-heart"/></svg>83</span>
+              <span class="ai2"><svg class="ic"><use href="#i-msg"/></svg>4</span>
+              <span class="ai2"><svg class="ic"><use href="#i-mark"/></svg>12</span>
+            </div>
+          </div>
+          <div class="card pcard">
+            <div class="hd">
+              <div class="av">李</div>
+              <span class="nm">爱狗的小李</span>
+              <span class="pdt">8月14日</span>
+            </div>
+            <div class="tt">周中遛狗偶遇柯基军团，豆豆玩疯了</div>
+            <div class="ex">平时都是晚上遛，今天请了半天假下午去公园，结果赶上柯基聚会。豆豆一个 28 公斤的大狗被四只柯基围追堵截，全程被压着打，尾巴摇得特别开心……</div>
+            <div class="pact">
+              <span class="ai2"><svg class="ic"><use href="#i-heart"/></svg>46</span>
+              <span class="ai2"><svg class="ic"><use href="#i-msg"/></svg>9</span>
+              <span class="ai2"><svg class="ic"><use href="#i-mark"/></svg>3</span>
+            </div>
+          </div>
+        </div>
+        <div class="fab"><svg class="ic"><use href="#i-edit"/></svg></div>
+        <div class="tabbar">
+          <div class="tbi"><svg class="ic"><use href="#i-home"/></svg>首页</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cal"/></svg>预约</div>
+          <div class="tbi on"><svg class="ic"><use href="#i-msg"/></svg>社区</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cart"/></svg>商品</div>
+          <div class="tbi"><svg class="ic"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>H4 社区互动</b>全应用<b>唯一 FAB</b>（发帖）· 帖子卡：作者行 / 标题 / 摘要 / 图网格 / 细线互动栏</div>
+    </div>
+
+    <!-- ───────── H5 我的 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav">我的</div>
+        <div class="bd">
+          <div class="card" style="display:flex;align-items:center;gap:12px;padding:15px 13px">
+            <div class="av" style="width:52px;height:52px;font-size:18px">李</div>
+            <div style="flex:1">
+              <div style="font-size:16.5px;font-weight:600;color:#1A1A1A">爱狗的小李</div>
+              <div style="font-size:12px;color:#999;margin-top:3px">138****8001</div>
+            </div>
+            <svg class="ic" style="width:16px;height:16px;color:#C2C7C6"><use href="#i-cr"/></svg>
+          </div>
+          <div class="gt">我的订单</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="cell"><svg class="ic ci"><use href="#i-cal"/></svg><span class="ct">我的预约</span><svg class="ic"><use href="#i-cr"/></svg></div>
+            <div class="cell"><svg class="ic ci"><use href="#i-box"/></svg><span class="ct">我的订单</span><svg class="ic"><use href="#i-cr"/></svg></div>
+            <div class="cell"><svg class="ic ci"><use href="#i-wallet"/></svg><span class="ct">我的钱包</span><span class="cv">¥128.50</span><svg class="ic"><use href="#i-cr"/></svg></div>
+          </div>
+          <div class="gt">我的档案</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="cell"><svg class="ic ci"><use href="#i-paw"/></svg><span class="ct">我的宠物</span><span class="cv">2 只</span><svg class="ic"><use href="#i-cr"/></svg></div>
+            <div class="cell"><svg class="ic ci"><use href="#i-pin"/></svg><span class="ct">我的地址</span><svg class="ic"><use href="#i-cr"/></svg></div>
+            <div class="cell"><svg class="ic ci"><use href="#i-msg"/></svg><span class="ct">我的社区</span><svg class="ic"><use href="#i-cr"/></svg></div>
+          </div>
+          <div class="gt">消息与安全</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="cell"><svg class="ic ci"><use href="#i-bell"/></svg><span class="ct">消息通知</span><span class="bdg">3</span><svg class="ic"><use href="#i-cr"/></svg></div>
+            <div class="cell"><svg class="ic ci"><use href="#i-shield"/></svg><span class="ct">密保管理</span><svg class="ic"><use href="#i-cr"/></svg></div>
+            <div class="cell"><svg class="ic ci"><use href="#i-lock"/></svg><span class="ct">修改密码</span><svg class="ic"><use href="#i-cr"/></svg></div>
+          </div>
+          <div class="card" style="padding:0">
+            <div style="height:46px;display:flex;align-items:center;justify-content:center;color:#FA5151;font-size:14.5px;font-weight:500">退出登录</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tbi"><svg class="ic"><use href="#i-home"/></svg>首页</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cal"/></svg>预约</div>
+          <div class="tbi"><svg class="ic"><use href="#i-msg"/></svg>社区</div>
+          <div class="tbi"><svg class="ic"><use href="#i-cart"/></svg>商品</div>
+          <div class="tbi on"><svg class="ic"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>H5 我的</b>三组单元格保留现状信息架构 · 行内直接透出<b>钱包余额 / 宠物数 / 未读角标</b>，少一次点击</div>
+    </div>
+
+    <!-- ───────── D1 服务详情 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>服务详情</div>
+        <div class="bd">
+          <div class="cover"><div class="ph"><svg class="ic"><use href="#i-bath"/></svg></div></div>
+          <div class="dtitle-row">
+            <span class="dtitle">基础洗护</span>
+            <span class="tag t-green">到店</span>
+          </div>
+          <div class="card" style="padding:2px 13px">
+            <div class="kv"><label>服务时长</label><span class="val">60 分钟</span></div>
+            <div class="kv"><label>适用宠物</label><span class="val">犬类 · 全体型</span></div>
+            <div class="kv"><label>服务方式</label><span class="val">到店</span></div>
+            <div class="kv"><label>参考价格</label><span class="val pr"><span class="rmb" style="font-size:.75em">¥</span>58 起</span></div>
+          </div>
+          <div class="sh"><b>服务详情</b></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:9px">
+            <div style="font-size:13.5px;color:#333;line-height:1.7">包含洗澡、吹干、耳道清洁、剪指甲、基础梳毛。洗护过程全程可透过门店玻璃观看，结束后附护理反馈单。</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="ph" style="height:86px;border-radius:9px"><svg class="ic" style="width:22px;height:22px"><use href="#i-bath"/></svg></div>
+              <div class="ph" style="height:86px;border-radius:9px"><svg class="ic" style="width:22px;height:22px"><use href="#i-bath"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="bbar">
+          <div style="flex:1">
+            <div style="font-size:10.5px;color:#999">参考价格</div>
+            <span class="pr" style="font-size:19px"><span class="rmb">¥</span>58<span style="font-size:11px;color:#999;font-weight:400;margin-left:2px">起</span></span>
+          </div>
+          <div class="btn pri" style="flex:1.6">立即预约</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>D1 服务详情</b>封面 → 标题+方式 tag → label-value 信息卡 → 图文 → 底部固定操作栏（价格+主按钮）</div>
+    </div>
+
+    <!-- ───────── D2 商品详情 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>商品详情</div>
+        <div class="bd">
+          <div class="pdimg"><div class="ph"><svg class="ic"><use href="#i-box"/></svg></div></div>
+          <div class="bigprice">
+            <span class="pr"><span class="rmb" style="font-size:.6em">¥</span>128.00</span>
+            <span class="sl">已售 321 件</span>
+            <span class="tag t-orange">仅限自提</span>
+          </div>
+          <div class="dtitle">皇家中型犬成犬粮 2kg</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="kv"><label>分类</label><span class="val">主粮</span></div>
+            <div class="kv"><label>库存</label><span class="val">200 件</span></div>
+          </div>
+          <div class="sh"><b>商品详情</b></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:9px">
+            <div style="font-size:13.5px;color:#333;line-height:1.7">专为中型成犬设计，添加益生菌配方，帮助消化吸收；颗粒大小适中，适合 10-25kg 犬种。</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="ph" style="height:86px;border-radius:9px"><svg class="ic" style="width:22px;height:22px"><use href="#i-box"/></svg></div>
+              <div class="ph" style="height:86px;border-radius:9px"><svg class="ic" style="width:22px;height:22px"><use href="#i-box"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="bbar">
+          <div class="step">
+            <span class="pm"><svg class="ic"><use href="#i-minus"/></svg></span>
+            <span class="num">1</span>
+            <span class="pm"><svg class="ic"><use href="#i-plus"/></svg></span>
+          </div>
+          <div class="btn sm" style="flex:1;background:#FA9D3B;color:#fff">加入购物车</div>
+          <div class="btn sm pri" style="flex:1">立即购买</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>D2 商品详情</b>尊重现行决策：<b>不放购物车入口</b> · 底栏数量步进器 + 加购(橙)/购买(青绿) 主次双色</div>
+    </div>
+
+    <!-- ───────── D3 帖子详情 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>帖子详情</div>
+        <div class="bd">
+          <div class="card pcard">
+            <div class="hd">
+              <div class="av">猫</div>
+              <span class="nm">两只猫的打工人</span>
+              <span class="pdt">8月15日</span>
+            </div>
+            <div class="tt">猫咪睡姿大赛报名：liquid cat 现场直击</div>
+            <div class="ex" style="-webkit-line-clamp:99">芝麻最近解锁了新睡姿：摊成一滩。第一张是标准仰面大字型，第二张直接流进纸箱里，第三张是教科书级液体猫姿势。每次想拍照它就换姿势，相册里全是它的"犯罪证据"。</div>
+            <div class="ig3">
+              <div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-paw"/></svg></div>
+            </div>
+            <div class="tags"><span class="tag t-green">#日常</span><span class="tag t-green">#晒宠</span></div>
+            <div style="font-size:11.5px;color:#999;margin-top:9px">83 赞 · 4 评论 · 128 浏览</div>
+            <div class="pact">
+              <span class="ai2"><svg class="ic"><use href="#i-heart"/></svg>赞</span>
+              <span class="ai2"><svg class="ic"><use href="#i-mark"/></svg>收藏</span>
+            </div>
+          </div>
+          <div class="sh"><b>评论 (4)</b></div>
+          <div class="card" style="padding:2px 13px">
+            <div style="display:flex;gap:9px;padding:11px 0;border-bottom:1px solid #F4F5F5">
+              <div class="av" style="width:30px;height:30px;font-size:11px">橘</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:baseline"><span style="font-size:12.5px;color:#666">橘座本座</span><span style="margin-left:auto;font-size:10.5px;color:#999">8月15日</span></div>
+                <div style="font-size:14px;color:#1A1A1A;margin-top:4px">第三张也太液了吧，学到了！</div>
+                <div style="display:flex;gap:14px;margin-top:6px;font-size:11px;color:#999"><span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-heart"/></svg>3</span><span>回复</span></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:9px;padding:11px 0">
+              <div class="av" style="width:30px;height:30px;font-size:11px">李</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:baseline"><span style="font-size:12.5px;color:#666">爱狗的小李</span><span style="margin-left:auto;font-size:10.5px;color:#999">8月15日</span></div>
+                <div style="font-size:14px;color:#1A1A1A;margin-top:4px"><span style="color:#11796F">回复 @橘座本座：</span>同款纸箱同款猫</div>
+                <div style="display:flex;gap:14px;margin-top:6px;font-size:11px;color:#999"><span style="display:flex;align-items:center;gap:3px"><svg class="ic" style="width:12px;height:12px"><use href="#i-heart"/></svg>1</span><span>回复</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="typebar">
+          <div class="inp">写下你的评论…</div>
+          <div class="send">发送</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>D3 帖子详情</b>内容卡（赞/收藏等分+细线）→ 评论列表 → 底部固定输入栏</div>
+    </div>
+
+    <!-- ───────── F1 创建预约 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>创建预约</div>
+        <div class="bd">
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 13px">
+            <span style="font-size:14.5px;font-weight:600;color:#1A1A1A">基础洗护</span>
+            <span class="pr" style="font-size:16px"><span class="rmb">¥</span>58<span style="font-size:11px;color:#999;font-weight:400"> 起</span></span>
+          </div>
+          <div class="gt">服务方式</div>
+          <div class="choices">
+            <div class="choice on">到店服务<svg class="ic ckm"><use href="#i-check"/></svg></div>
+            <div class="choice">上门服务<svg class="ic ckm"><use href="#i-check"/></svg></div>
+          </div>
+          <div class="gt">选择日期</div>
+          <div class="dates">
+            <div class="dt on"><small>今天</small><b>8.29</b></div>
+            <div class="dt"><small>明天</small><b>8.30</b></div>
+            <div class="dt"><small>周日</small><b>8.31</b></div>
+            <div class="dt"><small>周一</small><b>9.1</b></div>
+            <div class="dt"><small>周二</small><b>9.2</b></div>
+          </div>
+          <div class="gt">可预约时段</div>
+          <div class="slots">
+            <div class="slot"><b>09:00</b><small>3 人可选</small></div>
+            <div class="slot on"><b>10:00</b><small>2 人可选</small></div>
+            <div class="slot off"><b>11:00</b><small>已满</small></div>
+            <div class="slot"><b>14:00</b><small>4 人可选</small></div>
+            <div class="slot"><b>15:00</b><small>1 人可选</small></div>
+            <div class="slot"><b>16:00</b><small>5 人可选</small></div>
+          </div>
+          <div class="gt">选择宠物</div>
+          <div class="card" style="padding:0">
+            <div class="cell"><span class="ct">旺财（狗 · 金毛）</span><svg class="ic"><use href="#i-cr"/></svg></div>
+          </div>
+          <div class="gt">联系人信息</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="frow"><label>姓名</label><span class="val">张三</span></div>
+            <div class="frow"><label>电话</label><span class="val">13812345678</span></div>
+          </div>
+          <div class="gt">支付方式</div>
+          <div class="choices">
+            <div class="choice on">到店支付<svg class="ic ckm"><use href="#i-check"/></svg></div>
+            <div class="choice">钱包余额<svg class="ic ckm"><use href="#i-check"/></svg></div>
+          </div>
+          <div style="font-size:11.5px;color:#999;text-align:right">钱包余额 ¥128.50</div>
+        </div>
+        <div class="bbar"><div class="btn pri" style="flex:1">提交预约</div></div>
+      </div>
+      <div class="shot-cap"><b>F1 创建预约</b>分组表单：方式/日期方块/时段网格(含已满禁用)/picker/联系人/支付 · 底部固定提交栏</div>
+    </div>
+
+    <!-- ───────── F2 购物车 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>购物车</div>
+        <div class="bd">
+          <div class="card">
+            <div class="crow">
+              <div class="ck on"><svg class="ic"><use href="#i-check"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-box"/></svg></div>
+              <div class="inf">
+                <div class="nm">皇家中型犬成犬粮 2kg</div>
+                <div class="pr" style="font-size:15px;margin-top:4px"><span class="rmb">¥</span>128.00</div>
+                <div class="ft">
+                  <div class="step">
+                    <span class="pm"><svg class="ic"><use href="#i-minus"/></svg></span>
+                    <span class="num">1</span>
+                    <span class="pm"><svg class="ic"><use href="#i-plus"/></svg></span>
+                  </div>
+                  <span class="del"><svg class="ic"><use href="#i-trash"/></svg>删除</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="crow">
+              <div class="ck"><svg class="ic"><use href="#i-check"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-box"/></svg></div>
+              <div class="inf">
+                <div class="nm">冻干鸡胸肉训练零食 100g</div>
+                <div class="pr" style="font-size:15px;margin-top:4px"><span class="rmb">¥</span>35.00</div>
+                <div class="ft">
+                  <div class="step">
+                    <span class="pm"><svg class="ic"><use href="#i-minus"/></svg></span>
+                    <span class="num">2</span>
+                    <span class="pm"><svg class="ic"><use href="#i-plus"/></svg></span>
+                  </div>
+                  <span class="del"><svg class="ic"><use href="#i-trash"/></svg>删除</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="crow">
+              <div class="ck on"><svg class="ic"><use href="#i-check"/></svg></div>
+              <div class="ph"><svg class="ic"><use href="#i-box"/></svg></div>
+              <div class="inf">
+                <div class="nm">拉绳玩具 · 耐咬棉绳</div>
+                <div class="pr" style="font-size:15px;margin-top:4px"><span class="rmb">¥</span>45.00</div>
+                <div class="ft">
+                  <div class="step">
+                    <span class="pm"><svg class="ic"><use href="#i-minus"/></svg></span>
+                    <span class="num">1</span>
+                    <span class="pm"><svg class="ic"><use href="#i-plus"/></svg></span>
+                  </div>
+                  <span class="del"><svg class="ic"><use href="#i-trash"/></svg>删除</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bbar">
+          <div class="ck on"><svg class="ic"><use href="#i-check"/></svg></div>
+          <span style="font-size:13px;color:#666">全选</span>
+          <div class="sp"></div>
+          <span style="font-size:12.5px;color:#666">合计</span>
+          <span class="pr" style="font-size:19px"><span class="rmb">¥</span>173.00</span>
+          <div class="btn pri sm" style="height:38px;padding:0 18px">去结算(2)</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>F2 购物车</b>圆形勾选框（青绿）+ 步进器 + 红色删除 · 底部结算栏：全选 / 合计红字 / 主按钮带件数</div>
+    </div>
+
+    <!-- ───────── F3 确认订单 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>确认订单</div>
+        <div class="bd">
+          <div class="gt">商品清单</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="orow">
+              <div class="ph"><svg class="ic"><use href="#i-box"/></svg></div>
+              <span class="nm">皇家中型犬成犬粮 2kg</span>
+              <span class="un">¥128 ×1</span>
+              <span class="sub pr">¥128.00</span>
+            </div>
+            <div class="orow">
+              <div class="ph"><svg class="ic"><use href="#i-box"/></svg></div>
+              <span class="nm">拉绳玩具 · 耐咬棉绳</span>
+              <span class="un">¥45 ×1</span>
+              <span class="sub pr">¥45.00</span>
+            </div>
+          </div>
+          <div class="gt">配送方式</div>
+          <div class="choices">
+            <div class="choice on">到店自提<svg class="ic ckm"><use href="#i-check"/></svg></div>
+            <div class="choice">快递配送<svg class="ic ckm"><use href="#i-check"/></svg></div>
+          </div>
+          <div class="gt">自提门店</div>
+          <div class="card" style="padding:0">
+            <div class="cell" style="align-items:flex-start;padding:12px 2px">
+              <svg class="ic ci" style="margin-top:2px"><use href="#i-store"/></svg>
+              <div style="flex:1">
+                <div style="font-size:14px;color:#1A1A1A">萌宠家园 · 上海徐汇店</div>
+                <div style="font-size:11.5px;color:#999;margin-top:2px">徐汇区漕溪北路 88 号</div>
+              </div>
+              <svg class="ic" style="width:16px;height:16px;color:#C2C7C6"><use href="#i-cr"/></svg>
+            </div>
+          </div>
+          <div class="gt">支付方式</div>
+          <div class="choices">
+            <div class="choice on">到店支付<svg class="ic ckm"><use href="#i-check"/></svg></div>
+            <div class="choice">钱包余额<svg class="ic ckm"><use href="#i-check"/></svg></div>
+          </div>
+          <div class="gt">联系人信息</div>
+          <div class="card" style="padding:2px 13px">
+            <div class="frow"><label>姓名</label><span class="val">张三</span></div>
+            <div class="frow"><label>电话</label><span class="val">13812345678</span></div>
+            <div class="frow"><label>备注</label><span class="val hold">选填</span></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px;margin-top:2px">
+            <span style="font-size:12.5px;color:#666">合计 (2 件)</span>
+            <span class="pr" style="font-size:19px"><span class="rmb">¥</span>173.00</span>
+          </div>
+        </div>
+        <div class="bbar"><div class="btn pri" style="flex:1">提交订单</div></div>
+      </div>
+      <div class="shot-cap"><b>F3 确认订单</b>清单 / 配送 / 门店 / 支付 / 联系人 / 合计右对齐红字 · 与创建预约同一套选择块语言</div>
+    </div>
+
+    <!-- ───────── F4 钱包 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>我的钱包</div>
+        <div class="bd">
+          <div class="wcard">
+            <div class="lb">可用余额（元）</div>
+            <div class="amt"><span class="rmb">¥</span>128.50</div>
+            <div class="bts">
+              <div class="wbtn fill">充值</div>
+              <div class="wbtn line">余额明细</div>
+            </div>
+          </div>
+          <div class="sh"><b>最近明细</b><span class="more">全部<svg class="ic"><use href="#i-cr"/></svg></span></div>
+          <div class="card" style="padding:2px 13px">
+            <div class="tx">
+              <div class="inf"><div class="t">服务消费 · 基础洗护</div><div class="d">2026-08-28 10:30</div></div>
+              <span class="amt down">-¥58.00</span>
+            </div>
+            <div class="tx">
+              <div class="inf"><div class="t">充值</div><div class="d">2026-08-25 14:20</div></div>
+              <span class="amt up">+¥200.00</span>
+            </div>
+            <div class="tx">
+              <div class="inf"><div class="t">商品消费 · 主粮订单</div><div class="d">2026-08-23 16:45</div></div>
+              <span class="amt down">-¥128.00</span>
+            </div>
+          </div>
+          <div class="tipbar">
+            <svg class="ic"><use href="#i-warn"/></svg>
+            <span>充值由门店工作人员在管理端操作。钱包为门店手工台账：不计息、不可提现、不可转账。</span>
+          </div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>F4 我的钱包</b>全应用唯一大面积品牌渐变卡 · 收入 #07C160 / 支出 #FA5151 · 浅黄提示条</div>
+    </div>
+
+    <!-- ───────── A1 AI 客服 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>智能客服</div>
+        <div class="chat-tabs">
+          <span class="ut on">智能客服</span>
+          <span class="ut">宠物闲聊</span>
+          <span class="newc"><svg class="ic"><use href="#i-spark"/></svg>新对话</span>
+        </div>
+        <div class="chat">
+          <div class="msg">
+            <div class="av ai2">AI</div>
+            <div class="bub ai">你好，我是 PetCare 智能助手。营业时间、服务价格、上门范围都可以问我。<span class="thin">（建议仅供参考，不构成诊疗意见）</span></div>
+          </div>
+          <div class="msg me">
+            <div class="av me2">我</div>
+            <div class="bub me">你们周末营业吗？洗护要预约吗？</div>
+          </div>
+          <div class="msg">
+            <div class="av ai2">AI</div>
+            <div class="bub ai">周末正常营业（9:00-21:00）。洗护建议提前 1 天预约，本周六上午时段已较满，推荐 14:00 之后。</div>
+          </div>
+          <div class="msg">
+            <div class="av ai2">AI</div>
+            <div class="bub ai" style="color:#999">正在思考…</div>
+          </div>
+        </div>
+        <div class="typebar">
+          <div class="inp">问点什么…</div>
+          <div class="send">发送</div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>A1 AI 客服</b>下划线会话类型 tab + "新对话" · AI 灰气泡左 / 用户青绿气泡右 · SSE 流式追加</div>
+    </div>
+
+    <!-- ───────── A2 登录 ───────── -->
+    <div class="shot">
+      <div class="phone">
+        <div class="p-status"><span>9:41</span><span>5G ▪▪▪</span></div>
+        <div class="nav"><span class="lft"><svg class="ic"><use href="#i-cl"/></svg></span>登录</div>
+        <div class="bd">
+          <div style="text-align:center;padding:18px 0 6px">
+            <div style="font-size:21px;font-weight:700;color:#1A1A1A">欢迎回来</div>
+            <div style="font-size:12.5px;color:#999;margin-top:6px">登录后即可预约服务、管理爱宠档案</div>
+          </div>
+          <div class="card" style="padding:2px 15px">
+            <div class="ftop">
+              <label>手机号</label>
+              <div class="val">13812345678</div>
+            </div>
+            <div class="ftop">
+              <label>密码</label>
+              <div class="val">••••••••<svg class="ic"><use href="#i-eye"/></svg></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:0 2px">
+            <a href="javascript:void 0">没有账号？去注册</a>
+            <a href="javascript:void 0">忘记密码</a>
+          </div>
+          <div class="btn pri">登 录</div>
+          <div style="display:flex;align-items:center;gap:12px;color:#999;font-size:11.5px">
+            <div style="flex:1;height:1px;background:#E5E5E5"></div>或<div style="flex:1;height:1px;background:#E5E5E5"></div>
+          </div>
+          <div class="btn wechat"><svg class="ic"><use href="#i-msg"/></svg>微信一键登录（小程序端）</div>
+          <div class="empty" style="padding:14px 0 2px">
+            <svg class="ic" style="width:30px;height:30px"><use href="#i-paw"/></svg>
+            <div class="t2">演示说明：本页为纯静态稿，不发起任何请求</div>
+          </div>
+        </div>
+      </div>
+      <div class="shot-cap"><b>A2 登录</b>label 上 / 输入下的表单行 · 主按钮唯一青绿实底 · 微信登录描边绿（与品牌色区分）</div>
+    </div>
+
+  </div><!-- /gallery -->
+
+  <!-- ═══════════ §4 对照与落地 ═══════════ -->
+  <h2 class="sec"><span class="no">4</span>新旧对照与落地建议</h2>
+  <p class="sec-sub">全部为令牌级/组件级替换，不涉及业务逻辑与接口改动；可按「令牌 → Tab 页 → 详情 → 流程」四批落地，每批独立可回退。</p>
+
+  <div class="panel">
+    <h3>4.1 令牌映射表（现状代码 → V2 提案）</h3>
+    <table class="doc">
+      <tr><th>维度</th><th>现状（代码出处）</th><th>V2 提案</th><th>理由</th></tr>
+      <tr><td>页面背景</td><td class="bad">#FAF8F3（uni.scss）与 #F7F7F7（reset.css）双轨</td><td class="good">统一 #F7F7F7</td><td>消灭双轨，冷灰更贴小程序</td></tr>
+      <tr><td>中性文字</td><td class="bad">#19322E / #71817D / #E2E9E6（墨绿系）与 --pc-demo-* 灰系并存</td><td class="good">#1A1A1A→#B2B2B2 纯灰阶</td><td>品牌绿退出信息层，只管操作</td></tr>
+      <tr><td>成功绿</td><td class="bad">#34d19d(wot) / #2E7D32(uni) / #07C160(demo)</td><td class="good">统一 #07C160</td><td>微信原生成功色，认知零成本</td></tr>
+      <tr><td>危险/价格红</td><td class="bad">#D84D4D 与 #FA5151 并存</td><td class="good">统一 #FA5151</td><td>错误与价格同源，少一套红</td></tr>
+      <tr><td>营销橙</td><td>#F5A623（按钮/高亮）+ banner 黄字</td><td class="good">#FA9D3B 仅用于警告态与"加购"次操作</td><td>橙不再与红抢"价格/强调"语义</td></tr>
+      <tr><td>卡片</td><td class="bad">16px 圆角 + 0 8px 24px 大投影</td><td class="good">12px + 1px #F0F1F1 细边 + 0 1px 3px 微投影</td><td>边界清爽，信息密度提升</td></tr>
+      <tr><td>按钮圆角</td><td class="bad">8 / 12 / 16 三档混用</td><td class="good">统一 10px（sm 8px）</td><td>一套规则好记好查</td></tr>
+      <tr><td>页头</td><td class="bad">4/5 Tab 有大营销 banner</td><td class="good">仅首页品牌 Hero；标题交还导航栏</td><td>首屏让给内容，节奏一致</td></tr>
+      <tr><td>FAB</td><td class="bad">AI / 购物车 / 发帖 三处</td><td class="good">仅发帖一处；购物车→工具行胶囊；AI→内容卡</td><td>单一语义，不再遮挡内容</td></tr>
+      <tr><td>图标</td><td class="bad">wd-icon + emoji + 自绘 混用</td><td class="good">单一线性集（stroke 1.7 圆头）；emoji 仅空状态</td><td>精度统一，最直接的"精致感"来源</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>4.2 落地路线（供讨论，本稿不实施）</h3>
+    <table class="doc">
+      <tr><th>批次</th><th>内容</th><th>涉及</th><th>风险控制</th></tr>
+      <tr><td>① 令牌层</td><td>tokens.css 重锚定（背景/灰阶/功能色/圆角/投影），uni.scss 与 wot 变量同步</td><td>styles/ 三件套 + uni.scss</td><td>纯样式，全量契约测试回归</td></tr>
+      <tr><td>② 组件层</td><td>Pc* 组件（卡片/按钮/tag/FAB/底栏）对齐新令牌；新增统一图标组件或 SVG 雪碧图</td><td>components/</td><td>组件契约测试重锚（参考 2026-08 已有 160 例重锚经验）</td></tr>
+      <tr><td>③ Tab 五页</td><td>首页 Hero 收敛、去各页营销 banner、购物车入口迁移、AI 卡替换 FAB</td><td>pages/home|services|products|community|profile</td><td>每页独立提交，可单页回退</td></tr>
+      <tr><td>④ 详情与流程</td><td>详情页底部操作栏、表单页选择块/时段网格统一</td><td>pages/*/detail, booking, order, wallet, ai, auth</td><td>跟随 ③ 的组件自动生效，仅微调</td></tr>
+    </table>
+    <p style="font-size:12.5px;color:#666;margin:12px 2px 0;line-height:1.8">注意：现行 <code class="inl">src/pages/design-demo/</code> 是更早的一版应用内 demo 页（微信原生风方向），本稿与其互不影响；若采纳 V2，可将两版对比后再定稿。</p>
+  </div>
+
+  <div class="foot">
+    <b>性质声明</b>：本页为纯静态设计稿（单个 HTML 文件，无构建、无网络请求、无后端依赖），位于 design/ui-refresh-2026-08/，<b>未修改 frontend/miniapp/src 下任何在用界面与测试</b>。所有界面数据均为演示占位；图片以灰块+图标占位示意。验收方式：浏览器直接打开本文件即可，与仓库其余部分零耦合。
+  </div>
+
+</div>
+</body>
+</html>
