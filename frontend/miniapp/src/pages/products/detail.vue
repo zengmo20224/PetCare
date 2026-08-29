@@ -61,14 +61,14 @@
         <view v-if="product.description || detailImages.length > 0" class="detail-desc">
           <text class="detail-desc__title">商品详情</text>
           <text v-if="product.description" class="detail-desc__content" decode>{{ product.description }}</text>
-          <view v-if="detailImages.length > 0" class="detail-desc__images" :class="imagesLayoutClass(detailImages.length)">
+          <view v-if="detailImages.length > 0" class="detail-desc__images">
             <view
               v-for="(url, index) in detailImages"
               :key="index"
               class="detail-desc__image-wrap"
               @tap="previewDetailImage(index)"
             >
-              <image class="detail-desc__image" :src="url" mode="aspectFill" />
+              <image class="detail-desc__image" :src="url" mode="widthFix" />
             </view>
           </view>
         </view>
@@ -181,14 +181,7 @@ function previewDetailImage(index: number) {
   })
 }
 
-/** Adaptive grid layout class by image count (same rules as community detail). */
-function imagesLayoutClass(count: number): string {
-  if (count === 1) return 'detail-desc__images--single'
-  if (count === 2) return 'detail-desc__images--double'
-  if (count === 4) return 'detail-desc__images--four'
-  return 'detail-desc__images--grid3'
-}
-
+/** 介绍图统一直接排列（与预约服务详情一致：单张通栏、widthFix 保持比例）。 */
 function changeQty(delta: number) {
   const next = quantity.value + delta
   const max = product.value?.stock ?? 1
@@ -338,7 +331,7 @@ onLoad((query) => {
 
 .detail-price {
   font-size: 48rpx;
-  color: var(--pc-user-coral);
+  color: var(--pc-user-danger);
   font-weight: 800;
 }
 
@@ -430,43 +423,23 @@ onLoad((query) => {
   margin-bottom: 24rpx;
 }
 
-/* Description image grid (mixed text+image layout) */
+/* 介绍图：与预约服务详情同款排版——单张通栏、widthFix 自适应高度 */
 .detail-desc__images {
   display: grid;
-  gap: 12rpx;
-}
-
-.detail-desc__images--single {
   grid-template-columns: 1fr;
-}
-
-.detail-desc__images--double {
-  grid-template-columns: 1fr 1fr;
-}
-
-.detail-desc__images--four {
-  grid-template-columns: 1fr 1fr;
-}
-
-.detail-desc__images--grid3 {
-  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16rpx;
 }
 
 .detail-desc__image-wrap {
   width: 100%;
-  height: 208rpx;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
   overflow: hidden;
   background: #f5f5f5;
 }
 
-.detail-desc__images--single .detail-desc__image-wrap {
-  height: 360rpx;
-}
-
 .detail-desc__image {
   width: 100%;
-  height: 100%;
+  display: block;
   cursor: pointer;
 }
 

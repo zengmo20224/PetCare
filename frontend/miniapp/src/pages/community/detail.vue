@@ -46,13 +46,15 @@
             <text class="community-detail__stat">{{ post.viewCount }} 浏览</text>
           </view>
 
-          <!-- Action Buttons -->
+          <!-- Action Buttons（V2：统一线性图标，激活态用色区分，不再用 emoji 拟物） -->
           <view class="community-detail__actions">
             <view class="community-detail__action-btn" @tap="handleLike">
-              <text>{{ hasLiked ? '❤️' : '🤍' }} 赞</text>
+              <PcIcon name="heart" :size="16" :color="hasLiked ? '#FA5151' : '#666666'" />
+              <text>赞</text>
             </view>
             <view class="community-detail__action-btn" @tap="handleFavorite">
-              <text>{{ hasFavorited ? '⭐' : '☆' }} 收藏</text>
+              <PcIcon name="bookmark" :size="16" :color="hasFavorited ? '#11796F' : '#666666'" />
+              <text>收藏</text>
             </view>
           </view>
         </view>
@@ -96,7 +98,8 @@
                     <text class="comment-item__time">{{ formatTime(comment.createTime) }}</text>
                     <view class="comment-item__actions">
                       <view class="comment-item__action" @tap="handleLikeComment(comment)">
-                        <text>{{ likedCommentIds.has(comment.id) ? '❤️' : '🤍' }} {{ comment.likeCount }}</text>
+                        <PcIcon name="heart" :size="13" :color="likedCommentIds.has(comment.id) ? '#FA5151' : '#999999'" />
+                        <text>{{ comment.likeCount }}</text>
                       </view>
                       <view v-if="isLoggedIn" class="comment-item__action" @tap="startReply(comment)">
                         <text>回复</text>
@@ -120,6 +123,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import PcStatePanel from '@/components/PcStatePanel.vue'
+import PcIcon from '@/components/PcIcon.vue'
 import {
   getPostDetail, getPostCommentsFlat,
   createComment, deleteComment, likeComment, unlikeComment,
@@ -412,8 +416,11 @@ function goTag(tag: string) {
 }
 
 .community-detail__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
   padding: 12rpx 32rpx;
-  border-radius: 32rpx;
+  border-radius: 20rpx;
   background: var(--pc-user-soft);
   font-size: 28rpx;
   color: var(--pc-user-primary);
@@ -603,6 +610,12 @@ function goTag(tag: string) {
 .comment-item__actions {
   display: flex;
   gap: 28rpx;
+}
+
+.comment-item__action {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
 }
 
 .comment-item__action text {

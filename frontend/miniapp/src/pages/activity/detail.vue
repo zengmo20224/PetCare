@@ -292,7 +292,7 @@ function serviceModeLabel(mode: string): string {
 .activity-detail__related-price {
   font-size: 26rpx;
   font-weight: 800;
-  color: var(--pc-user-coral);
+  color: var(--pc-user-danger);
 }
 
 .activity-detail__related-meta {

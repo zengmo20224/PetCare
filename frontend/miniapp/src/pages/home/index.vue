@@ -29,6 +29,20 @@
       <PcIcon name="arrow-right" :size="14" color="#B2B2B2" />
     </view>
 
+    <!-- AI 助手入口卡（产品服务速览窗口，置于首屏公告条下方，不让用户找） -->
+    <view class="pc-section">
+      <view class="home-ai-card" @tap="goAiChat">
+        <view class="home-ai-card__icon">
+          <PcIcon name="robot" :size="22" color="#11796F" />
+        </view>
+        <view class="home-ai-card__body">
+          <text class="home-ai-card__title">AI 智能助手</text>
+          <text class="home-ai-card__hint">营业时间 / 服务价格 / 宠物日常，随时问</text>
+        </view>
+        <PcIcon name="arrow-right" :size="16" color="#B2B2B2" />
+      </view>
+    </view>
+
     <!-- 常用服务宫格（demo grid-4：4列、48px 圆角图标方块） -->
     <view class="pc-section">
       <view class="home-section-title">常用服务</view>
@@ -162,20 +176,6 @@
           </view>
         </view>
       </PcStatePanel>
-    </view>
-
-    <!-- AI 助手入口卡（V2 改版：全应用 FAB 唯一留给社区发帖，AI 收进内容流） -->
-    <view class="pc-section">
-      <view class="home-ai-card" @tap="goAiChat">
-        <view class="home-ai-card__icon">
-          <PcIcon name="robot" :size="22" color="#11796F" />
-        </view>
-        <view class="home-ai-card__body">
-          <text class="home-ai-card__title">AI 智能助手</text>
-          <text class="home-ai-card__hint">营业时间 / 服务价格 / 宠物日常，随时问</text>
-        </view>
-        <PcIcon name="arrow-right" :size="16" color="#B2B2B2" />
-      </view>
     </view>
 
     <PcBottomNav current-path="pages/home/index" />
@@ -747,14 +747,14 @@ onShow(loadAnnouncement)
   color: var(--pc-user-surface);
 }
 
-/* ─── AI 助手入口卡（V2：替代首页 FAB）─── */
+/* ─── AI 助手入口卡（品牌浅底强化，置于首屏）─── */
 .home-ai-card {
   display: flex;
   align-items: center;
   gap: 20rpx;
   padding: 24rpx;
-  background: #FFFFFF;
-  border: 1rpx solid #F0F1F1;
+  background: linear-gradient(135deg, #F0F9F6, #E2F3ED);
+  border: 1rpx solid #D5EBE3;
   border-radius: 24rpx;
 }
 
@@ -766,7 +766,7 @@ onShow(loadAnnouncement)
   width: 76rpx;
   height: 76rpx;
   border-radius: 20rpx;
-  background: #DFF2ED;
+  background: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
