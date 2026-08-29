@@ -117,8 +117,8 @@ function renderChart() {
   }
   chart.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['服务营业额', '商品营业额', '有效订单数'] },
-    grid: { left: 60, right: 60, top: 40, bottom: 40 },
+    legend: { data: ['服务营业额', '商品营业额', '有效订单数'], top: 0 },
+    grid: { left: 60, right: 60, top: 48, bottom: 56 },
     xAxis: { type: 'category', data: trend.value.map(p => p.statDate) },
     yAxis: [
       { type: 'value', name: '营业额（元）' },
