@@ -1,5 +1,6 @@
 package com.petcare.booking.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.petcare.common.entity.BaseEntity;
@@ -92,4 +93,11 @@ public class ServiceBooking extends BaseEntity {
 
     @TableField("cancel_reason")
     private String cancelReason;
+
+    /** 操作人审计列，由 MetaObjectHandler 填充（admin:{id}/user:{id}，系统写为 NULL）。 */
+    @TableField(value = "create_by", fill = FieldFill.INSERT)
+    private String createBy;
+
+    @TableField(value = "update_by", fill = FieldFill.INSERT_UPDATE)
+    private String updateBy;
 }
