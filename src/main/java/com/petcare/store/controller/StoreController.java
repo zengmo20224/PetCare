@@ -1,6 +1,5 @@
 package com.petcare.store.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.petcare.common.api.ApiResponse;
 import com.petcare.common.exception.BusinessException;
 import com.petcare.common.exception.ErrorCode;
@@ -32,12 +31,7 @@ public class StoreController {
     /** List open stores (sorted by id ascending for stable ordering). */
     @GetMapping
     public ApiResponse<List<StoreResponse>> listStores() {
-        LambdaQueryWrapper<Store> wrapper = new LambdaQueryWrapper<Store>()
-                .eq(Store::getStatus, "OPEN")
-                .eq(Store::getDeleted, 0)
-                .orderByAsc(Store::getId);
-        List<Store> stores = storeService.list(wrapper);
-        List<StoreResponse> items = stores.stream()
+        List<StoreResponse> items = storeService.listOpenStores().stream()
                 .map(this::toResponse)
                 .toList();
         return ApiResponse.ok(items);
@@ -46,8 +40,8 @@ public class StoreController {
     /** Get a single store by id. */
     @GetMapping("/{id}")
     public ApiResponse<StoreResponse> getStore(@PathVariable Long id) {
-        Store store = storeService.getById(id);
-        if (store == null || store.getDeleted() == 1) {
+        Store store = storeService.getOpenStore(id);
+        if (store == null) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "门店不存在");
         }
         return ApiResponse.ok(toResponse(store));

@@ -3,6 +3,9 @@
 # 主数据源仍走 H2（纯 PgVector 测试）或由 tc-mysql profile 提供（双库组合测试）
 
 spring:
+  # 测试态关闭缓存：Caffeine 不随事务回滚，防跨测试类假命中（见 HotReadCacheTest）
+  cache:
+    type: none
   datasource:
     # 纯 PgVector 测试默认用 H2 作主库（业务表），向量数据走 PgVector 容器（由 AbstractTcPgVectorIT 注入）
     url: jdbc:h2:mem:tcpgvector;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL

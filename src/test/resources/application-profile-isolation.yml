@@ -1,4 +1,7 @@
 spring:
+  # 测试态关闭缓存：Caffeine 不随事务回滚，防跨测试类假命中（见 HotReadCacheTest）
+  cache:
+    type: none
   datasource:
     url: jdbc:h2:mem:isolationdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
     username: sa

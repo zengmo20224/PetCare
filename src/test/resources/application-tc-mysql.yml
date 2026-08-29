@@ -1,4 +1,7 @@
 spring:
+  # 测试态关闭缓存：Caffeine 不随事务回滚，防跨测试类假命中（见 HotReadCacheTest）
+  cache:
+    type: none
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
   sql:

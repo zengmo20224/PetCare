@@ -43,6 +43,7 @@ import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.admin.entity.AdminOperationLog;
 import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.admin.service.AdminManagementService;
+import org.springframework.cache.annotation.CacheEvict;
 import com.petcare.common.util.SqlLikeUtils;
 import com.petcare.admin.service.AdminOperationLogService;
 import com.petcare.common.util.SqlLikeUtils;
@@ -194,6 +195,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "storeProfile", allEntries = true)
     public StoreView updateStore(Long id, StoreUpdateRequest request, Long operatorId) {
         String url = "/api/v1/admin/stores/" + id;
         Store store = null;
@@ -260,6 +262,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "serviceCatalog", allEntries = true)
     public ServiceItemView createServiceItem(ServiceItemRequest request, Long operatorId) {
         String url = "/api/v1/admin/service-items";
         ServiceItem item = null;
@@ -282,6 +285,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "serviceCatalog", allEntries = true)
     public ServiceItemView updateServiceItem(Long id, ServiceItemRequest request, Long operatorId) {
         String url = "/api/v1/admin/service-items/" + id;
         ServiceItem item = null;
@@ -303,6 +307,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "serviceCatalog", allEntries = true)
     public ServiceItemView disableServiceItem(Long id, Long operatorId) {
         String url = "/api/v1/admin/service-items/" + id + "/disable";
         ServiceItem item = null;
@@ -322,6 +327,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "serviceCatalog", allEntries = true)
     public ServiceItemView enableServiceItem(Long id, Long operatorId) {
         String url = "/api/v1/admin/service-items/" + id + "/enable";
         ServiceItem item = null;
@@ -344,6 +350,7 @@ public class AdminManagementServiceImpl implements AdminManagementService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "serviceCatalog", allEntries = true)
     public void deleteServiceItem(Long id, Long operatorId) {
         String url = "/api/v1/admin/service-items/" + id;
         ServiceItem item = null;

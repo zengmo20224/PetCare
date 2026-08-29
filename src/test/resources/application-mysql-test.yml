@@ -1,4 +1,7 @@
 spring:
+  # 测试态关闭缓存：Caffeine 不随事务回滚，防跨测试类假命中（见 HotReadCacheTest）
+  cache:
+    type: none
   datasource:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/petcare_o2o_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
     username: ${DB_USERNAME:root}

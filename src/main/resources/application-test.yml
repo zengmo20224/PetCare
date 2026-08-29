@@ -8,6 +8,11 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema-h2.sql
+  # 测试态关闭二级缓存（NoOpCacheManager）：Caffeine 不随 @Transactional 回滚，
+  # 跨测试类的上下文共享会让热点读缓存"假命中"污染夹具断言。
+  # 缓存行为本身由 HotReadCacheTest 显式覆盖 spring.cache.type=caffeine 单独验证。
+  cache:
+    type: none
 
 petcare:
   security:
