@@ -26,6 +26,8 @@ public record PublicPostDetailResponse(
         List<String> imageUrls,
         List<String> tags,
         String authorName,
-        String authorAvatar
+        String authorAvatar,
+        boolean likedByMe,
+        boolean favoritedByMe
 ) {
 }

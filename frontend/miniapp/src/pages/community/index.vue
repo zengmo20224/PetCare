@@ -105,19 +105,19 @@
           <!-- 分割线（demo feed-divider） -->
           <view class="feed-card__divider" />
 
-          <!-- Footer actions（demo：PcIcon heart/chat/bookmark） -->
+          <!-- Footer actions（V2：点赞/收藏可直接在列表交互，评论进详情） -->
           <view class="feed-card__footer">
-            <view class="feed-card__action">
-              <PcIcon name="heart" :size="16" color="#999999" />
-              <text class="feed-card__action-count">{{ post.likeCount }}</text>
+            <view class="feed-card__action" @tap.stop="toggleLike(post)">
+              <PcIcon name="heart" :size="16" :color="likedMap[post.id] ? '#FA5151' : '#999999'" />
+              <text class="feed-card__action-count" :class="{ 'feed-card__action-count--liked': likedMap[post.id] }">{{ post.likeCount }}</text>
             </view>
-            <view class="feed-card__action">
+            <view class="feed-card__action" @tap.stop="goDetail(post.id)">
               <PcIcon name="chat" :size="16" color="#999999" />
               <text class="feed-card__action-count">{{ post.commentCount }}</text>
             </view>
-            <view class="feed-card__action">
-              <PcIcon name="bookmark" :size="16" color="#999999" />
-              <text class="feed-card__action-count">{{ post.favoriteCount }}</text>
+            <view class="feed-card__action" @tap.stop="toggleFavorite(post)">
+              <PcIcon name="bookmark" :size="16" :color="favMap[post.id] ? '#11796F' : '#999999'" />
+              <text class="feed-card__action-count" :class="{ 'feed-card__action-count--saved': favMap[post.id] }">{{ post.favoriteCount }}</text>
             </view>
           </view>
         </view>
@@ -136,8 +136,9 @@ import PcIcon from '@/components/PcIcon.vue'
 import PcFab from '@/components/PcFab.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import PcBottomNav from '@/components/PcBottomNav.vue'
-import { getPosts, getPopularTags } from '@/api/community'
+import { getPosts, getPopularTags, likePost, unlikePost, favoritePost, unfavoritePost } from '@/api/community'
 import type { PostItem, TagItem } from '@/types/community'
+import { useUserStore } from '@/store/user'
 import { normalizeRouteParam } from '@/utils/route-query'
 import { consumeCommunityTagIntent } from '@/utils/community-navigation'
 import { assetFullUrl } from '@/utils/asset-url'
@@ -147,6 +148,12 @@ const posts = ref<PostItem[]>([])
 const popularTags = ref<TagItem[]>([])
 const activeTag = ref('')
 const keyword = ref('')
+
+/** 列表页内联的点赞/收藏状态（进入页面时由后端按登录态回填） */
+const userStore = useUserStore()
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+const likedMap = ref<Record<string, boolean>>({})
+const favMap = ref<Record<string, boolean>>({})
 
 /** Whether the user is filtering by tag or keyword — affects empty-state copy. */
 const hasFilter = computed(() => !!activeTag.value || !!keyword.value.trim())
@@ -205,6 +212,8 @@ async function loadPosts() {
     }
 
     posts.value = res.data.items
+    likedMap.value = Object.fromEntries(posts.value.map(p => [p.id, p.likedByMe ?? false]))
+    favMap.value = Object.fromEntries(posts.value.map(p => [p.id, p.favoritedByMe ?? false]))
     listStatus.value = posts.value.length > 0 ? 'success' : 'empty'
   } catch {
     listStatus.value = 'error'
@@ -223,6 +232,35 @@ function handleSearch() {
 
 function goDetail(id: string) {
   uni.navigateTo({ url: `/pages/community/detail?id=${id}` })
+}
+
+/** 列表页内联点赞（@tap.stop 阻断卡片跳转；未登录提示） */
+async function toggleLike(post: PostItem) {
+  if (!isLoggedIn.value) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    return
+  }
+  const liked = !!likedMap.value[post.id]
+  const res = liked ? await unlikePost(post.id) : await likePost(post.id)
+  if (res.success) {
+    likedMap.value[post.id] = !liked
+    post.likeCount = Math.max(0, post.likeCount + (liked ? -1 : 1))
+  }
+}
+
+/** 列表页内联收藏 */
+async function toggleFavorite(post: PostItem) {
+  if (!isLoggedIn.value) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    return
+  }
+  const fav = !!favMap.value[post.id]
+  const res = fav ? await unfavoritePost(post.id) : await favoritePost(post.id)
+  if (res.success) {
+    favMap.value[post.id] = !fav
+    post.favoriteCount = Math.max(0, post.favoriteCount + (fav ? -1 : 1))
+    uni.showToast({ title: fav ? '已取消收藏' : '已收藏', icon: 'none' })
+  }
 }
 
 function goCreatePost() {
@@ -536,6 +574,16 @@ onShow(() => {
 .feed-card__action-count {
   font-size: 24rpx;
   color: #999999;
+}
+
+.feed-card__action-count--liked {
+  color: #FA5151;
+  font-weight: 600;
+}
+
+.feed-card__action-count--saved {
+  color: #11796F;
+  font-weight: 600;
 }
 
 /* ─── 空状态引导按钮（V2：圆角/投影与全局按钮统一）─── */

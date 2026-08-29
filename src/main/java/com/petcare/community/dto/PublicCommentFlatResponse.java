@@ -24,6 +24,7 @@ public record PublicCommentFlatResponse(
         String authorAvatar,
         @JsonSerialize(using = SnowflakeIdSerializer.class) Long authorUserId,
         @JsonSerialize(using = SnowflakeIdSerializer.class) Long replyToUserId,
-        String replyToName
+        String replyToName,
+        boolean likedByMe
 ) {
 }

@@ -27,6 +27,10 @@ export interface PostItem {
   tags: string[]
   authorName: string | null
   authorAvatar: string | null
+  /** 当前登录用户是否已点赞（后端按 token 回填，匿名请求为 false） */
+  likedByMe?: boolean
+  /** 当前登录用户是否已收藏（后端按 token 回填，匿名请求为 false） */
+  favoritedByMe?: boolean
 }
 
 /** Post detail as returned by public detail API */
@@ -45,6 +49,10 @@ export interface PostDetail {
   tags: string[]
   authorName: string | null
   authorAvatar: string | null
+  /** 当前登录用户是否已点赞 */
+  likedByMe: boolean
+  /** 当前登录用户是否已收藏 */
+  favoritedByMe: boolean
 }
 
 /** Public comment as returned by comment list API */
@@ -80,6 +88,8 @@ export interface CommentFlatItem {
   authorUserId: string | null
   replyToUserId: string | null
   replyToName: string | null
+  /** 当前登录用户是否已点赞该评论 */
+  likedByMe?: boolean
 }
 
 /** Tag as returned by tag search API */

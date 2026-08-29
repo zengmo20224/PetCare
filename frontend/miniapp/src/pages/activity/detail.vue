@@ -7,7 +7,7 @@
     >
       <template v-if="activity">
         <view v-if="activity.coverUrl" class="activity-detail__cover">
-          <image class="activity-detail__cover-img" :src="assetFullUrl(activity.coverUrl)" mode="aspectFill" />
+          <image class="activity-detail__cover-img" :src="assetFullUrl(activity.coverUrl)" mode="widthFix" />
         </view>
         <view class="activity-detail__card">
           <text class="activity-detail__title">{{ activity.title }}</text>
@@ -154,11 +154,16 @@ function serviceModeLabel(mode: string): string {
 
 .activity-detail__cover {
   width: 100%;
-  height: 380rpx;
-  margin-bottom: 28rpx;
-  border-radius: 40rpx;
+  margin-bottom: 24rpx;
+  border-radius: 24rpx;
   overflow: hidden;
-  background: var(--pc-user-soft);
+  background: #F5F6F6;
+}
+
+/* widthFix：封面按原始比例完整展示，不裁切 */
+.activity-detail__cover-img {
+  width: 100%;
+  display: block;
 }
 
 .activity-detail__cover-img {

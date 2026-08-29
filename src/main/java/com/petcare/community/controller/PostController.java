@@ -4,6 +4,7 @@ import com.petcare.common.api.ApiResponse;
 import com.petcare.common.exception.BusinessException;
 import com.petcare.common.exception.ErrorCode;
 import com.petcare.common.pagination.PageResponse;
+import com.petcare.common.security.SecurityContextHelper;
 import com.petcare.community.dto.CommentCreateRequest;
 import com.petcare.community.dto.CommentResponse;
 import com.petcare.community.dto.PostCreateRequest;
@@ -60,7 +61,10 @@ public class PostController {
             @RequestParam(required = false) String tag,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        PageResponse<PublicPostSummaryResponse> result = postService.listPublicPosts(topicId, keyword, tag, page, size);
+        // Viewer-aware: carries the caller's like/favorite state when a valid token is present.
+        Long viewerId = SecurityContextHelper.getCurrentUserId().orElse(null);
+        PageResponse<PublicPostSummaryResponse> result =
+                postService.listPublicPosts(topicId, keyword, tag, page, size, viewerId);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -70,7 +74,8 @@ public class PostController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PublicPostDetailResponse>> getPostDetail(@PathVariable Long id) {
-        PublicPostDetailResponse result = postService.getPublicPostDetail(id);
+        Long viewerId = SecurityContextHelper.getCurrentUserId().orElse(null);
+        PublicPostDetailResponse result = postService.getPublicPostDetail(id, viewerId);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
@@ -105,7 +110,8 @@ public class PostController {
     @GetMapping("/{postId}/comments/flat")
     public ResponseEntity<ApiResponse<List<PublicCommentFlatResponse>>> listCommentsFlat(
             @PathVariable Long postId) {
-        List<PublicCommentFlatResponse> result = postService.listPublicCommentsFlat(postId);
+        Long viewerId = SecurityContextHelper.getCurrentUserId().orElse(null);
+        List<PublicCommentFlatResponse> result = postService.listPublicCommentsFlat(postId, viewerId);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 

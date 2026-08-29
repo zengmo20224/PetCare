@@ -590,7 +590,7 @@ class CommunityPostApplicationServiceTest {
             when(userService.listByIds(any())).thenReturn(List.of(u1, u2));
 
             // Act
-            List<PublicCommentFlatResponse> result = service.listPublicCommentsFlat(POST_ID);
+            List<PublicCommentFlatResponse> result = service.listPublicCommentsFlat(POST_ID, null);
 
             // Assert — all three visible (no depth cap)
             assertThat(result).hasSize(3);
@@ -613,7 +613,7 @@ class CommunityPostApplicationServiceTest {
         void throwsWhenPostNotFound() {
             when(postMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
-            assertThatThrownBy(() -> service.listPublicCommentsFlat(9999L))
+            assertThatThrownBy(() -> service.listPublicCommentsFlat(9999L, null))
                     .isInstanceOf(BusinessException.class)
                     .extracting("code").isEqualTo(ErrorCode.COMMUNITY_POST_NOT_FOUND);
         }
@@ -625,7 +625,7 @@ class CommunityPostApplicationServiceTest {
             when(commentMapper.selectList(any(LambdaQueryWrapper.class)))
                     .thenReturn(Collections.emptyList());
 
-            List<PublicCommentFlatResponse> result = service.listPublicCommentsFlat(POST_ID);
+            List<PublicCommentFlatResponse> result = service.listPublicCommentsFlat(POST_ID, null);
             assertThat(result).isEmpty();
         }
 

@@ -89,8 +89,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -458,7 +460,7 @@ public class CommunityPostApplicationService {
      * Lists published posts for anonymous readers. Only PUBLISHED, non-deleted posts
      * are returned, without private identifiers or internal status.
      */
-    public PageResponse<PublicPostSummaryResponse> listPublicPosts(Long topicId, String keyword, String tag, int page, int size) {
+    public PageResponse<PublicPostSummaryResponse> listPublicPosts(Long topicId, String keyword, String tag, int page, int size, Long viewerId) {
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<Post>()
                 .eq(Post::getStatus, "PUBLISHED")
                 .eq(Post::getDeleted, 0);
@@ -512,6 +514,26 @@ public class CommunityPostApplicationService {
                 posts.stream().map(Post::getId).toList()
         );
 
+        // Batch load the viewer's like/favorite state for this page (single query each)
+        final Set<Long> likedIds;
+        final Set<Long> favoritedIds;
+        if (viewerId != null && !posts.isEmpty()) {
+            List<Long> pagePostIds = posts.stream().map(Post::getId).toList();
+            likedIds = postLikeMapper.selectList(
+                    new LambdaQueryWrapper<PostLike>()
+                            .eq(PostLike::getUserId, viewerId)
+                            .in(PostLike::getPostId, pagePostIds)
+            ).stream().map(PostLike::getPostId).collect(Collectors.toSet());
+            favoritedIds = postFavoriteMapper.selectList(
+                    new LambdaQueryWrapper<PostFavorite>()
+                            .eq(PostFavorite::getUserId, viewerId)
+                            .in(PostFavorite::getPostId, pagePostIds)
+            ).stream().map(PostFavorite::getPostId).collect(Collectors.toSet());
+        } else {
+            likedIds = Set.of();
+            favoritedIds = Set.of();
+        }
+
         List<PublicPostSummaryResponse> items = posts.stream()
                 .map(p -> {
                     AuthorInfo author = authorByUserId.get(p.getUserId());
@@ -519,7 +541,9 @@ public class CommunityPostApplicationService {
                             tagsByPostId.getOrDefault(p.getId(), Collections.emptyList()),
                             author != null ? author.name() : null,
                             author != null ? author.avatar() : null,
-                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()));
+                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()),
+                            likedIds.contains(p.getId()),
+                            favoritedIds.contains(p.getId()));
                 })
                 .toList();
         return PageResponse.of(items, pageResult.getTotal(), page, size);
@@ -530,7 +554,7 @@ public class CommunityPostApplicationService {
      * non-existent posts all resolve to COMMUNITY_POST_NOT_FOUND (404) so existence
      * and audit status are never leaked.
      */
-    public PublicPostDetailResponse getPublicPostDetail(Long postId) {
+    public PublicPostDetailResponse getPublicPostDetail(Long postId, Long viewerId) {
         Post post = postMapper.selectOne(
                 new LambdaQueryWrapper<Post>()
                         .eq(Post::getId, postId)
@@ -560,7 +584,17 @@ public class CommunityPostApplicationService {
                 imageUrls,
                 tags,
                 author != null ? author.name() : null,
-                author != null ? author.avatar() : null
+                author != null ? author.avatar() : null,
+                viewerId != null && postLikeMapper.exists(
+                        new LambdaQueryWrapper<PostLike>()
+                                .eq(PostLike::getPostId, postId)
+                                .eq(PostLike::getUserId, viewerId)
+                ),
+                viewerId != null && postFavoriteMapper.exists(
+                        new LambdaQueryWrapper<PostFavorite>()
+                                .eq(PostFavorite::getPostId, postId)
+                                .eq(PostFavorite::getUserId, viewerId)
+                )
         );
     }
 
@@ -617,7 +651,7 @@ public class CommunityPostApplicationService {
      * reply to a reply is a first-class list item with its parent's author as
      * {@code replyToName}.
      */
-    public List<PublicCommentFlatResponse> listPublicCommentsFlat(Long postId) {
+    public List<PublicCommentFlatResponse> listPublicCommentsFlat(Long postId, Long viewerId) {
         Long postCount = postMapper.selectCount(
                 new LambdaQueryWrapper<Post>()
                         .eq(Post::getId, postId)
@@ -659,6 +693,19 @@ public class CommunityPostApplicationService {
         }
         Map<Long, AuthorInfo> authorByUserId = loadAuthorInfo(userIds);
 
+        // Batch load the viewer's comment-like state (single query)
+        final Set<Long> likedIds;
+        if (viewerId != null) {
+            List<Long> pageCommentIds = allComments.stream().map(PostComment::getId).toList();
+            likedIds = commentLikeMapper.selectList(
+                    new LambdaQueryWrapper<CommentLike>()
+                            .eq(CommentLike::getUserId, viewerId)
+                            .in(CommentLike::getCommentId, pageCommentIds)
+            ).stream().map(CommentLike::getCommentId).collect(Collectors.toSet());
+        } else {
+            likedIds = Set.of();
+        }
+
         return allComments.stream()
                 .map(c -> {
                     AuthorInfo author = authorByUserId.get(c.getUserId());
@@ -678,7 +725,8 @@ public class CommunityPostApplicationService {
                             author != null ? author.name() : null,
                             author != null ? author.avatar() : null,
                             c.getUserId(),
-                            replyToUserId, replyToName
+                            replyToUserId, replyToName,
+                            likedIds.contains(c.getId())
                     );
                 })
                 .toList();
@@ -819,6 +867,13 @@ public class CommunityPostApplicationService {
                 posts.stream().map(Post::getId).toList()
         );
 
+        Set<Long> myLikedIds = postLikeMapper.selectList(
+                new LambdaQueryWrapper<PostLike>().eq(PostLike::getUserId, userId)
+        ).stream().map(PostLike::getPostId).collect(Collectors.toSet());
+        Set<Long> myFavoritedIds = postFavoriteMapper.selectList(
+                new LambdaQueryWrapper<PostFavorite>().eq(PostFavorite::getUserId, userId)
+        ).stream().map(PostFavorite::getPostId).collect(Collectors.toSet());
+
         List<PublicPostSummaryResponse> items = posts.stream()
                 .map(p -> {
                     AuthorInfo author = authorByUserId.get(p.getUserId());
@@ -826,7 +881,9 @@ public class CommunityPostApplicationService {
                             tagsByPostId.getOrDefault(p.getId(), Collections.emptyList()),
                             author != null ? author.name() : null,
                             author != null ? author.avatar() : null,
-                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()));
+                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()),
+                            myLikedIds.contains(p.getId()),
+                            myFavoritedIds.contains(p.getId()));
                 })
                 .toList();
         return PageResponse.of(items, pageResult.getTotal(), page, size);
@@ -864,6 +921,10 @@ public class CommunityPostApplicationService {
                 posts.stream().map(Post::getId).toList()
         );
 
+        Set<Long> myFavoritedIds = postFavoriteMapper.selectList(
+                new LambdaQueryWrapper<PostFavorite>().eq(PostFavorite::getUserId, userId)
+        ).stream().map(PostFavorite::getPostId).collect(Collectors.toSet());
+
         List<PublicPostSummaryResponse> items = posts.stream()
                 .map(p -> {
                     AuthorInfo author = authorByUserId.get(p.getUserId());
@@ -871,7 +932,9 @@ public class CommunityPostApplicationService {
                             tagsByPostId.getOrDefault(p.getId(), Collections.emptyList()),
                             author != null ? author.name() : null,
                             author != null ? author.avatar() : null,
-                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()));
+                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()),
+                            true,
+                            myFavoritedIds.contains(p.getId()));
                 })
                 .toList();
         return PageResponse.of(items, pageResult.getTotal(), page, size);
@@ -909,6 +972,10 @@ public class CommunityPostApplicationService {
                 posts.stream().map(Post::getId).toList()
         );
 
+        Set<Long> myLikedIds = postLikeMapper.selectList(
+                new LambdaQueryWrapper<PostLike>().eq(PostLike::getUserId, userId)
+        ).stream().map(PostLike::getPostId).collect(Collectors.toSet());
+
         List<PublicPostSummaryResponse> items = posts.stream()
                 .map(p -> {
                     AuthorInfo author = authorByUserId.get(p.getUserId());
@@ -916,7 +983,9 @@ public class CommunityPostApplicationService {
                             tagsByPostId.getOrDefault(p.getId(), Collections.emptyList()),
                             author != null ? author.name() : null,
                             author != null ? author.avatar() : null,
-                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()));
+                            imagesByPostId.getOrDefault(p.getId(), Collections.emptyList()),
+                            myLikedIds.contains(p.getId()),
+                            true);
                 })
                 .toList();
         return PageResponse.of(items, pageResult.getTotal(), page, size);
@@ -943,7 +1012,8 @@ public class CommunityPostApplicationService {
 
     private PublicPostSummaryResponse toPublicPostSummary(Post post, List<String> tags,
                                                             String authorName, String authorAvatar,
-                                                            List<String> imageUrls) {
+                                                            List<String> imageUrls,
+                                                            boolean likedByMe, boolean favoritedByMe) {
         return new PublicPostSummaryResponse(
                 post.getId(), post.getTopicId(),
                 post.getTitle(), post.getContent(),
@@ -952,7 +1022,9 @@ public class CommunityPostApplicationService {
                 imageUrls,
                 tags,
                 authorName,
-                authorAvatar
+                authorAvatar,
+                likedByMe,
+                favoritedByMe
         );
     }
 

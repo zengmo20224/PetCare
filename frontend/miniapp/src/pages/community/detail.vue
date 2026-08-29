@@ -46,15 +46,23 @@
             <text class="community-detail__stat">{{ post.viewCount }} 浏览</text>
           </view>
 
-          <!-- Action Buttons（V2：统一线性图标，激活态用色区分，不再用 emoji 拟物） -->
+          <!-- Action Buttons（V2：统一线性图标；激活态图标变色 + 文案切换 + 底色加深，可明确区分） -->
           <view class="community-detail__actions">
-            <view class="community-detail__action-btn" @tap="handleLike">
+            <view
+              class="community-detail__action-btn"
+              :class="{ 'community-detail__action-btn--active-red': hasLiked }"
+              @tap.stop="handleLike"
+            >
               <PcIcon name="heart" :size="16" :color="hasLiked ? '#FA5151' : '#666666'" />
-              <text>赞</text>
+              <text>{{ hasLiked ? '已赞' : '赞' }}</text>
             </view>
-            <view class="community-detail__action-btn" @tap="handleFavorite">
-              <PcIcon name="bookmark" :size="16" :color="hasFavorited ? '#11796F' : '#666666'" />
-              <text>收藏</text>
+            <view
+              class="community-detail__action-btn"
+              :class="{ 'community-detail__action-btn--active-green': hasFavorited }"
+              @tap.stop="handleFavorite"
+            >
+              <PcIcon name="bookmark" :size="16" :color="hasFavorited ? '#0C4D48' : '#666666'" />
+              <text>{{ hasFavorited ? '已收藏' : '收藏' }}</text>
             </view>
           </view>
         </view>
@@ -198,10 +206,16 @@ async function loadDetail(routeId?: unknown) {
   }
 
   post.value = postRes.data
+  // 回显当前用户的点赞/收藏状态（后端按 token 回填；匿名恒为 false）
+  hasLiked.value = postRes.data.likedByMe ?? false
+  hasFavorited.value = postRes.data.favoritedByMe ?? false
   pageStatus.value = 'success'
 
   if (commentRes.success && commentRes.data) {
     comments.value = commentRes.data
+    likedCommentIds.value = new Set(
+      commentRes.data.filter(c => c.likedByMe).map(c => c.id)
+    )
     commentsStatus.value = comments.value.length > 0 ? 'success' : 'empty'
   } else {
     commentsStatus.value = 'error'
@@ -424,6 +438,15 @@ function goTag(tag: string) {
   background: var(--pc-user-soft);
   font-size: 28rpx;
   color: var(--pc-user-primary);
+}
+
+/* 激活态：底色加深，与未收藏/未点赞一眼可分 */
+.community-detail__action-btn--active-red {
+  background: #FFE3E3;
+}
+
+.community-detail__action-btn--active-green {
+  background: #C8E6DC;
 }
 
 /* Comments */
