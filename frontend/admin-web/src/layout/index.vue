@@ -18,6 +18,11 @@
           <span>运营总览</span>
         </el-menu-item>
 
+        <el-menu-item v-if="userStore.hasPermission('analytics:dashboard:read')" index="/analytics">
+          <el-icon><DataLine /></el-icon>
+          <span>运营统计</span>
+        </el-menu-item>
+
         <el-menu-item v-if="userStore.hasPermission('user:profile:read')" index="/users">
           <el-icon><UserFilled /></el-icon>
           <span>用户管理</span>
@@ -143,6 +148,7 @@ import {
   Filter,
   Document,
   DataAnalysis,
+  DataLine,
   TrendCharts,
   Fold,
   Expand,

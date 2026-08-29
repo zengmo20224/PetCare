@@ -129,7 +129,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { showSuccess, showValidation } from '../../utils/feedback'
 import { Plus } from '@element-plus/icons-vue'
 import {
   generateReport,
@@ -234,11 +234,11 @@ const openCreateDialog = () => {
 
 const handleCreate = async () => {
   if (!createForm.reportType) {
-    ElMessage.warning('请选择报告类型')
+    showValidation('请选择报告类型')
     return
   }
   if (!dateRange.value || dateRange.value.length !== 2) {
-    ElMessage.warning('请选择统计区间')
+    showValidation('请选择统计区间')
     return
   }
   creating.value = true
@@ -249,7 +249,7 @@ const handleCreate = async () => {
       endDate: dateRange.value[1],
     })
     if (res.data) {
-      ElMessage.success('报告生成成功')
+      showSuccess('报告生成成功')
       createDialogVisible.value = false
       queryParams.page = 1
       await fetchData()

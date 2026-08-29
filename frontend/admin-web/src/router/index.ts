@@ -21,6 +21,12 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: 'Dashboard', icon: 'Menu' },
       },
       {
+        path: 'analytics',
+        name: 'Analytics',
+        component: () => import('../views/analytics/index.vue'),
+        meta: { title: '运营统计', icon: 'DataLine', permission: 'analytics:dashboard:read' },
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('../views/user/index.vue'),
