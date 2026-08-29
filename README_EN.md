@@ -2,9 +2,35 @@
 
 **[简体中文](README.md) ｜ [English](README_EN.md)**
 
-> **An O2O service / retail / community platform for single-location pet stores** — undergraduate capstone project
+[![CI](https://github.com/zengmo20224/PetCare/actions/workflows/ci.yml/badge.svg)](https://github.com/zengmo20224/PetCare/actions/workflows/ci.yml)
+
+> **An O2O full-stack platform for single-location pet stores**: service booking · retail · community · wallet ledger · AI Agents — undergraduate capstone project
 >
-> Milestones **M1–M8 all delivered** ｜ AI Agent v2 in production ｜ 1093+ backend tests passing ｜ End-to-end CI/CD ｜ Pre-launch security hardening closed out
+> **M1–M8 all delivered** ｜ AI Agents (RAG + restricted tool calls + SSE streaming) in production ｜ White-box security audit → fix → regression loop closed ｜ Docker one-command deploy + live VPS demo
+
+---
+
+## ✨ Five things worth seeing in this project
+
+### 1. AI Agents engineered end-to-end, not an API wrapper
+
+Three agents (customer-service / business-analytics / community-assistant) run on a single orchestration layer: intent recognition → PgVector RAG augmentation (HNSW vector index) → read-only tool whitelist calls (5 tools for support, 4 for analytics) → three-layer medical guardrails → SSE streaming responses. Embeddings run locally via ONNX (a small Chinese BGE model, 384 dims) — no external embedding API, zero extra cost. Every billable endpoint sits behind three-tier rate limiting (per-minute / per-user daily / global daily), and every call is audited by model / tokens / outcome (conversation content excluded).
+
+### 2. Architecture boundaries enforced by tests, not goodwill
+
+Three reflection-based architecture guard tests run in CI: `AiProviderArchitectureTest` / `AiAgentArchitectureTest` / `AiRagArchitectureTest` forbid AI code from depending on Mappers / DataSource / MyBatis, require every support tool to be `readOnly()`, and force business data access through whitelist tools → business services. PgVector stores derived knowledge only (rebuildable from MySQL at any time); MySQL remains the single source of truth. AI suggestions never mutate business data, and streamed output passes the same guardrails.
+
+### 3. Concurrency & consistency verified on real MySQL, not mocks
+
+Testcontainers spins up real MySQL / PgVector for integration tests (order idempotency under concurrency, no oversell, wallet-payment/inventory atomicity, booking slot races, illegal state transitions rejected) — see [Testing & quality](#-testing--quality) below.
+
+### 4. A closed white-box security audit loop
+
+Self-audit surfaced 2 high-severity findings (replayable order creation → oversell; zero rate limiting → credential brute force) plus 5 medium ones (missing upload magic-byte checks, user enumeration, stored XSS, a broken RBAC role model, a Spring CVE) — all fixed and regression-tested. The pre-launch hardening checklist is closed out (2 deploy-time items — production credentials / public domain — deferred to deployment). See the [security audit report](docs/11-security-audit-2026-07.md) (Chinese).
+
+### 5. Engineering governance by the book
+
+Configuration management per IEEE Std 828-2012 (76 registered config items, 8 baseline tags, 4 real change-request instances); Conventional Commits; a Jenkins 8-stage pipeline plus GitHub Actions with three parallel jobs; Docker Compose one-command deploy with health checks, deployed to a live VPS demo (Caddy + HTTPS).
 
 ---
 
@@ -83,7 +109,6 @@ PetCare O2O is a modular monolith serving a single pet store: service booking, p
 - **Wallet ledger** (M7): admin-managed balance ledger — deduction and inventory in one transaction, row locks, append-only statements, mandatory audit
 - **AI agents** (M8): see below
 - **Admin controls**: role-based access control, operation logs, user bans, content moderation, off-shelf-before-delete enforced server-side
-- **Configuration management**: 76 controlled configuration items, 8 baseline tags, an instantiated change-control process
 
 ---
 
@@ -98,7 +123,74 @@ PetCare O2O is a modular monolith serving a single pet store: service booking, p
 
 Technical foundation: **langchain4j + a dedicated PgVector instance** (stores derived knowledge copies only; MySQL remains the source of truth) + local ONNX Chinese embeddings (BGE-small-zh-v1.5) + DeepSeek LLM.
 
-Hard architectural boundaries — enforced by reflection in `AiProviderArchitectureTest` / `AiAgentArchitectureTest`: the AI never touches the database directly, never gives diagnoses/prescriptions/treatment promises, and its suggestions never mutate business data. Every billable AI endpoint sits behind three-tier rate limiting (per-minute / per-user daily / global daily). Full design in [`docs/09-ai-agent-design.md`](docs/09-ai-agent-design.md) (Chinese).
+Hard architectural boundaries — enforced by the reflection-based architecture guard tests described below: the AI never touches the database directly, never gives diagnoses/prescriptions/treatment promises, and its suggestions never mutate business data. Full design in [`docs/09-ai-agent-design.md`](docs/09-ai-agent-design.md) (Chinese).
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│        Users (browser / phone / WeChat devtools)            │
+└──────────────┬────────────────────────────┬─────────────────┘
+               │                            │
+        ┌──────▼──────┐             ┌───────▼─────┐
+        │ Admin Web   │             │ Customer H5 │
+        │ Vue3+Vite   │             │ UniApp+Vue3 │
+        │ :8080       │             │ :8081       │
+        └──────┬──────┘             └───────┬─────┘
+               │      nginx /api reverse proxy
+               └────────────┬────────────────┘
+                            │
+                   ┌────────▼────────┐
+                   │   Backend API   │
+                   │ Spring Boot 3.3 │
+                   │  langchain4j    │
+                   │  :8082          │
+                   └───┬─────────┬───┘
+                       │         │
+              ┌────────▼──┐  ┌───▼──────────────┐
+              │ MySQL 8.0 │  │ PgVector         │
+              │ source of │  │ derived AI index │
+              │ truth     │  │ (rebuildable)    │
+              └───────────┘  └──────────────────┘
+```
+
+- **Modular monolith**: organized by business domain (user / booking / product / service / wallet / community / marketing / ai / moderation), one deployable unit
+- **Security**: dual-track JWT HttpOnly cookies (Bearer fallback for the Mini Program), RBAC, input validation, SQL-injection protection, BCrypt + password strength policy, three-tier rate limiting on login/upload/billable AI endpoints
+- **Transactions**: multi-table state changes, inventory deduction, order amounts, booking capacity, wallet deduction — all validated server-side in transactions
+- **Testing**: risk-driven strategy — real-database concurrency/idempotency/consistency integration tests plus reflection architecture guards, detailed below
+
+---
+
+## 🧪 Testing & Quality
+
+**Risk-driven, aimed where it matters**: concurrency, idempotency, state transitions, permissions, order amounts, inventory, community privacy, and AI safety boundaries get direct tests; critical changes target ≥ 80% coverage. No low-value tests written to inflate counts.
+
+### Real-database integration tests (Testcontainers, 33 ITs)
+
+| Integration test (selected) | Rule verified |
+|---|---|
+| `ProductIdempotencyConcurrencyIT` | Order idempotency keys hold under real concurrency via unique constraints — replays never duplicate orders (fix for audit finding H1) |
+| `ProductInventoryConcurrencyIT` | Inventory deduction never oversells under concurrent checkout |
+| `WalletPaymentAtomicityIT` / `WalletRefundAtomicityIT` | Wallet payment/refund and inventory deduction are atomic in one transaction (CR-20260718-003) |
+| `WalletConcurrencyMySqlIT` | Concurrent balance deduction uses row locks — never goes negative |
+| `BookingConcurrencyMySqlIT` / `BookingReassignMySqlIT` | Booking slots never overbook under races; reassignment stays conflict-free |
+| `BookingStatusTransitionMySqlIT` | The booking state machine rejects illegal transitions |
+| `AddressDefaultConcurrencyMySqlIT` | Concurrent default-address switching stays unique |
+| `KnowledgeIndexingIT` | RAG knowledge ingestion and index rebuilds are idempotent |
+
+### Architecture guards (reflection tests, run in CI)
+
+- `AiProviderArchitectureTest`: the AI provider layer does not depend on Mappers / DataSource / MyBatis
+- `AiAgentArchitectureTest`: agent tools never touch the DB directly, all support tools are `readOnly()`, business data is reachable only via whitelist tools → business services
+- `AiRagArchitectureTest`: the RAG package reads business data only through business service interfaces; the vector store is a derived index only
+
+### Security audits & hardening
+
+- **2026-07 white-box audit**: 2 high + 5 medium findings, all fixed and regression-tested (order idempotency, global rate limiting, upload magic-byte validation, stored XSS, RBAC repair, CVE upgrade)
+- **2026-08 pre-launch hardening**: loopback-bound ports, `${VAR:?}` required variables, prod-by-default profile, nginx security headers, dual-track JWT HttpOnly cookies — checklist in the [security audit report](docs/11-security-audit-2026-07.md) §7
+- **2026-08-23 resource-exhaustion re-review**: P0 items fixed
 
 ---
 
@@ -120,14 +212,14 @@ Hard architectural boundaries — enforced by reflection in `AiProviderArchitect
 ### CI/CD pipelines
 
 ```
-commit → Jenkins auto-trigger → compile → test (1093+) → package → Docker build → deploy → health check
+commit → Jenkins auto-trigger → compile → test → package → Docker build → deploy → health check
              ↳ GitHub Actions (push/PR) → backend + admin + H5, three parallel jobs
 ```
 
 - **Jenkins** ([`Jenkinsfile`](Jenkinsfile)): Checkout → Backend Build → Backend Test → Backend Package → Docker Build → Deployment Check → Deploy → Health Check
 - **GitHub Actions** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): three parallel jobs + JaCoCo coverage
 - **Dockerized deployment** ([`docker-compose.yml`](docker-compose.yml)): MySQL + PgVector + API + admin nginx + H5 nginx
-- **Pre-launch hardening** (2026-08): loopback-bound ports, `${VAR:?}` required variables, prod-by-default profile, nginx security headers, AI/upload rate limiting, dual-track JWT HttpOnly cookies — checklist in [`docs/11-security-audit-2026-07.md`](docs/11-security-audit-2026-07.md) §7
+- **Live VPS demo**: Caddy + HTTPS deploy cheatsheet at [`docs/13-vps-deploy-cheatsheet.md`](docs/13-vps-deploy-cheatsheet.md)
 
 ### Baseline tags
 
@@ -178,58 +270,7 @@ cd frontend/admin-web && npm install && npm run dev
 cd frontend/miniapp && npm install && npm run dev:h5
 ```
 
-See [`.env.example`](.env.example) and [`docs/07-deployment-guide.md`](docs/07-deployment-guide.md) for configuration details; a VPS demo-deploy cheatsheet (Caddy + HTTPS) is at [`docs/13-vps-deploy-cheatsheet.md`](docs/13-vps-deploy-cheatsheet.md).
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│        Users (browser / phone / WeChat devtools)            │
-└──────────────┬────────────────────────────┬─────────────────┘
-               │                            │
-        ┌──────▼──────┐             ┌───────▼─────┐
-        │ Admin Web   │             │ Customer H5 │
-        │ Vue3+Vite   │             │ UniApp+Vue3 │
-        │ :8080       │             │ :8081       │
-        └──────┬──────┘             └───────┬─────┘
-               │      nginx /api reverse proxy
-               └────────────┬────────────────┘
-                            │
-                   ┌────────▼────────┐
-                   │   Backend API   │
-                   │ Spring Boot 3.3 │
-                   │  langchain4j    │
-                   │  :8082          │
-                   └───┬─────────┬───┘
-                       │         │
-              ┌────────▼──┐  ┌───▼──────────────┐
-              │ MySQL 8.0 │  │ PgVector         │
-              │ source of │  │ derived AI index │
-              │ truth     │  │ (rebuildable)    │
-              └───────────┘  └──────────────────┘
-```
-
-- **Modular monolith**: organized by business domain (user / booking / product / service / wallet / community / marketing / ai / moderation), one deployable unit
-- **AI boundary guards**: `AiProviderArchitectureTest` + `AiAgentArchitectureTest` reflectively forbid AI code from depending on Mappers/DataSources
-- **Security**: dual-track JWT HttpOnly cookies (Bearer fallback for the Mini Program), RBAC, input validation, SQL-injection protection, BCrypt + password strength policy, three-tier rate limiting on login/upload/billable AI endpoints
-- **Transactions**: multi-table state changes, inventory deduction, order amounts, booking capacity, wallet deduction — all validated server-side in transactions
-- **Testing**: 1093+ unit/integration/contract tests (plus 33 Testcontainers real-MySQL ITs), risk-driven coverage (≥ 80% on critical modules)
-
----
-
-## 📊 Quality Metrics
-
-| Metric | Value |
-|---|---|
-| Backend tests | **1093+** (2026-08-15 full-regression baseline, growing with each slice) |
-| Real-MySQL ITs (tc-mysql) | 33 (concurrency / idempotency / locking / state machines) |
-| H5 contract tests | 160 (re-anchored after the UI redesign) |
-| Controlled config items | 76 |
-| Baseline tags | 8 |
-| Change requests | 4 |
-| Security audits | 2026-07 white-box: 2 high + 5 medium, all fixed; 2026-08 pre-launch hardening: 7 of 8 done |
+See [`.env.example`](.env.example) and [`docs/07-deployment-guide.md`](docs/07-deployment-guide.md) for configuration details.
 
 ---
 

@@ -2,9 +2,35 @@
 
 **[简体中文](README.md) ｜ [English](README_EN.md)**
 
-> **面向单体宠物门店的 O2O 服务/商品/社区平台** —— 本科毕业设计项目
+[![CI](https://github.com/zengmo20224/PetCare/actions/workflows/ci.yml/badge.svg)](https://github.com/zengmo20224/PetCare/actions/workflows/ci.yml)
+
+> **面向单体宠物门店的 O2O 全栈平台**：服务预约 · 商品零售 · 社区互动 · 钱包台账 · AI Agent —— 本科毕业设计项目
 >
-> 里程碑 **M1–M8 全部交付** ｜ AI V2 Agent 已上线 ｜ 后端 1093+ 测试通过 ｜ CI/CD 全链路 ｜ 上线前安全加固收口
+> **M1–M8 全部交付** ｜ AI Agent（RAG + 受限 Tool 调用 + SSE 流式）已上线 ｜ 白盒安全审计 → 修复 → 回归闭环 ｜ Docker 一键部署 + VPS 实机演示
+
+---
+
+## ✨ 这个项目值得看的五个点
+
+### 1. AI Agent 全链路自研，不是套壳调 API
+
+三类 Agent（智能客服 / 经营分析 / 社区助手）运行在统一编排层：意图识别 → PgVector RAG 检索增强（HNSW 向量索引）→ 受限只读 Tool 白名单调用（客服 5 个 / 经营分析 4 个）→ 三层医疗护栏 → SSE 流式响应。Embedding 用本地 ONNX 推理（BGE 中文小模型，384 维），不依赖外部 embedding API，零额外费用。全部计费入口三层限流（分钟 / 用户日额 / 全站日额），调用按模型 / token / 成败入审计（不含对话原文）。
+
+### 2. 架构边界不靠自觉，靠测试强制
+
+三个反射架构守卫测试进 CI：`AiProviderArchitectureTest` / `AiAgentArchitectureTest` / `AiRagArchitectureTest` 强制 AI 代码禁止依赖 Mapper / DataSource / MyBatis，Tool 必须 `readOnly()`，业务数据只能经白名单 Tool → 业务 Service 访问。PgVector 只存派生知识索引（可随时从 MySQL 重建），业务真源唯一。AI 建议永不自动写业务数据，流式输出片段同样要过输出护栏。
+
+### 3. 并发与一致性在真实 MySQL 上验证，而不是 mock
+
+用 Testcontainers 拉起真实 MySQL / PgVector 跑集成测试（订单幂等并发兜底、库存并发不超卖、钱包扣款与扣库存同事务原子、预约并发不超订、状态机非法流转拒绝）——详见[测试与质量保障](#-测试与质量保障)。
+
+### 4. 白盒安全审计走完闭环
+
+自查发现 2 高危（订单无幂等可重放超卖、全站无限流可暴力破解）+ 5 中危（上传无魔数校验、用户枚举、存储型 XSS、RBAC 角色断裂、Spring CVE），全部修复并回归；上线前部署加固清单收口（生产凭据 / 公网域名 2 项留待部署时执行）。详见[安全审计报告](docs/11-security-audit-2026-07.md)。
+
+### 5. 工程治理按真实规范走
+
+配置管理依据 IEEE Std 828-2012（76 配置项登记、8 个基线 tag、4 个真实变更申请单实例）；Conventional Commits；Jenkins 8 阶段流水线 + GitHub Actions 三 job 并行；Docker Compose 一键部署 + 健康检查，已部署 VPS 实机演示（Caddy + HTTPS）。
 
 ---
 
@@ -83,7 +109,6 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
 - **钱包余额**（M7，CR-20260718-003）：管理端手工台账，扣款与扣库存同事务、行锁、只追加流水、强制审计
 - **AI Agent**（M8，D-013）：见下节
 - **后台风控**：管理员 RBAC、操作日志、用户封禁、内容审核、商品/服务先下架后删除（服务端状态守卫）
-- **配置管理**：76 个配置项受控、8 个基线 tag、变更控制流程实例化
 
 ---
 
@@ -98,7 +123,74 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
 
 技术底座：**langchain4j + PgVector 独立实例**（只存派生知识副本，业务真源仍在 MySQL）+ 本地 ONNX 中文 embedding（BGE-small-zh-v1.5）+ DeepSeek LLM。
 
-架构硬边界（由 `AiProviderArchitectureTest` / `AiAgentArchitectureTest` 反射守卫强制）：AI 不直连数据库、不做疾病诊断/处方/治疗承诺、建议不能自动改业务数据。全计费入口三层限流（分钟/用户日额/全站日额）。完整设计见 [`docs/09-ai-agent-design.md`](docs/09-ai-agent-design.md)。
+架构硬边界（由三个反射架构守卫测试强制，见下文）：AI 不直连数据库、不做疾病诊断/处方/治疗承诺、建议不能自动改业务数据。完整设计见 [`docs/09-ai-agent-design.md`](docs/09-ai-agent-design.md)。
+
+---
+
+## 🏗️ 技术架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    用户（浏览器 / 手机 / 微信开发者工具）        │
+└──────────────┬────────────────────────────┬─────────────────┘
+               │                            │
+        ┌──────▼──────┐             ┌───────▼─────┐
+        │  管理端 PC   │             │  用户端 H5   │
+        │  Vue3+Vite  │             │  UniApp+Vue3 │
+        │  :8080      │             │  :8081       │
+        └──────┬──────┘             └───────┬─────┘
+               │      nginx 反代 /api        │
+               └────────────┬────────────────┘
+                            │
+                   ┌────────▼────────┐
+                   │   后端 API      │
+                   │ Spring Boot 3.3 │
+                   │ langchain4j     │
+                   │  :8082          │
+                   └───┬─────────┬───┘
+                       │         │
+              ┌────────▼──┐  ┌───▼──────────────┐
+              │ MySQL 8.0 │  │ PgVector         │
+              │ 业务真源    │  │ AI 派生知识索引    │
+              │ :3306     │  │ (可从 MySQL 重建) │
+              └───────────┘  └──────────────────┘
+```
+
+- **模块化单体**：按业务域划分（user / booking / product / service / wallet / community / marketing / ai / moderation），单一可部署单元
+- **安全**：JWT HttpOnly Cookie 双轨（小程序 Bearer 回退）、RBAC、参数校验、SQL 注入防护、密码 BCrypt + 强度策略、登录/上传/AI 计费入口三层限流
+- **事务**：多表状态变更、库存扣减、订单金额、预约占用、钱包扣款均服务端事务校验
+- **测试**：风险驱动策略——真实数据库上的并发/幂等/一致性集成测试 + 反射架构守卫，详见下文
+
+---
+
+## 🧪 测试与质量保障
+
+**风险驱动，测在要害**：并发、幂等、状态流转、权限、订单金额、库存、社区隐私、AI 安全边界必须直接测试，关键变更逻辑覆盖率 ≥ 80%；不为凑数写低价值测试。
+
+### 真实数据库集成测试（Testcontainers，33 个）
+
+| 集成测试（节选） | 验证的规则 |
+|---|---|
+| `ProductIdempotencyConcurrencyIT` | 订单幂等键在真实并发下由唯一约束兜底，重放不重复下单（修复自审计高危 H1） |
+| `ProductInventoryConcurrencyIT` | 高并发下单库存扣减不超卖 |
+| `WalletPaymentAtomicityIT` / `WalletRefundAtomicityIT` | 钱包扣款/退款与扣库存同事务原子（CR-20260718-003） |
+| `WalletConcurrencyMySqlIT` | 余额并发扣减走行锁，不出现负余额 |
+| `BookingConcurrencyMySqlIT` / `BookingReassignMySqlIT` | 预约时段并发占用不超订、改派不冲突 |
+| `BookingStatusTransitionMySqlIT` | 预约状态机拒绝非法流转 |
+| `AddressDefaultConcurrencyMySqlIT` | 默认地址并发切换保持唯一 |
+| `KnowledgeIndexingIT` | RAG 知识入库与索引重建幂等 |
+
+### 架构守卫（反射测试，进 CI）
+
+- `AiProviderArchitectureTest`：AI Provider 层不依赖 Mapper / DataSource / MyBatis
+- `AiAgentArchitectureTest`：Agent Tool 不直连库、客服 Tool 全部 `readOnly()`、业务数据只经白名单 Tool → 业务 Service
+- `AiRagArchitectureTest`：RAG 包访问业务数据只通过业务 Service 接口，向量库仅作派生索引
+
+### 安全审计与加固
+
+- **2026-07 白盒审计**：2 高危 + 5 中危全部修复并回归（订单幂等、全站限流、上传魔数校验、存储型 XSS、RBAC 修复、CVE 升级）
+- **2026-08 上线加固**：端口绑回环、`${VAR:?}` 强制变量、默认 prod profile、nginx 安全头、JWT HttpOnly Cookie 双轨——清单见[安全审计报告](docs/11-security-audit-2026-07.md) §7
+- **2026-08-23 资源耗尽面复审**：P0 项修复
 
 ---
 
@@ -120,14 +212,14 @@ PetCare O2O 是一套面向单体宠物门店的模块化单体应用，覆盖�
 ### CI/CD 流水线
 
 ```
-提交代码 → Jenkins 自动触发 → 编译 → 测试(1093+) → 打包 → Docker 构建 → 部署 → 健康检查
+提交代码 → Jenkins 自动触发 → 编译 → 测试 → 打包 → Docker 构建 → 部署 → 健康检查
              ↳ GitHub Actions（push/PR）→ 后端 + 管理端 + H5 三 job 并行
 ```
 
 - **Jenkins 流水线**（[`Jenkinsfile`](Jenkinsfile)）：Checkout → Backend Build → Backend Test → Backend Package → Docker Build → Deployment Check → Deploy → Health Check
 - **GitHub Actions**（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）：三 job 并行 + JaCoCo 覆盖率
 - **Docker 化部署**（[`docker-compose.yml`](docker-compose.yml)）：MySQL + PgVector + API + 管理端 nginx + H5 nginx
-- **上线加固**（2026-08）：端口绑 127.0.0.1、`${VAR:?}` 强制变量、默认 prod profile、nginx 安全头、AI/上传限流、JWT HttpOnly Cookie 双轨——清单见 [`docs/11-security-audit-2026-07.md`](docs/11-security-audit-2026-07.md) §7
+- **VPS 实机演示**：Caddy + HTTPS 部署速查见 [`docs/13-vps-deploy-cheatsheet.md`](docs/13-vps-deploy-cheatsheet.md)
 
 ### 基线版本（git tag）
 
@@ -177,58 +269,7 @@ cd frontend/admin-web && npm install && npm run dev
 cd frontend/miniapp && npm install && npm run dev:h5
 ```
 
-详细环境变量和配置项见 [`.env.example`](.env.example) 与 [`docs/07-deployment-guide.md`](docs/07-deployment-guide.md)；VPS 演示部署（Caddy + HTTPS）速查见 [`docs/13-vps-deploy-cheatsheet.md`](docs/13-vps-deploy-cheatsheet.md)。
-
----
-
-## 🏗️ 技术架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    用户（浏览器 / 手机 / 微信开发者工具）        │
-└──────────────┬────────────────────────────┬─────────────────┘
-               │                            │
-        ┌──────▼──────┐             ┌───────▼─────┐
-        │  管理端 PC   │             │  用户端 H5   │
-        │  Vue3+Vite  │             │  UniApp+Vue3 │
-        │  :8080      │             │  :8081       │
-        └──────┬──────┘             └───────┬─────┘
-               │      nginx 反代 /api        │
-               └────────────┬────────────────┘
-                            │
-                   ┌────────▼────────┐
-                   │   后端 API      │
-                   │ Spring Boot 3.3 │
-                   │ langchain4j     │
-                   │  :8082          │
-                   └───┬─────────┬───┘
-                       │         │
-              ┌────────▼──┐  ┌───▼──────────────┐
-              │ MySQL 8.0 │  │ PgVector         │
-              │ 业务真源    │  │ AI 派生知识索引    │
-              │ :3306     │  │ (可从 MySQL 重建) │
-              └───────────┘  └──────────────────┘
-```
-
-- **模块化单体**：按业务域划分（user / booking / product / service / wallet / community / marketing / ai / moderation），单一可部署单元
-- **AI 边界守卫**：`AiProviderArchitectureTest` + `AiAgentArchitectureTest` 反射强制 AI 不依赖 Mapper/DataSource
-- **安全**：JWT HttpOnly Cookie 双轨（小程序 Bearer 回退）、RBAC、参数校验、SQL 注入防护、密码 BCrypt + 强度策略、登录/上传/AI 计费入口三层限流
-- **事务**：多表状态变更、库存扣减、订单金额、预约占用、钱包扣款均服务端事务校验
-- **测试**：1093+ 单元/集成/契约测试（另有 33 个 Testcontainers 真实 MySQL IT），风险驱动覆盖（关键模块覆盖率 ≥ 80%）
-
----
-
-## 📊 质量指标
-
-| 指标 | 数值 |
-|---|---|
-| 后端测试数 | **1093+**（2026-08-15 全量回归基线，随切片持续增长） |
-| 真实 MySQL IT（tc-mysql） | 33 个（并发/幂等/锁/状态机） |
-| 用户端契约测试 | 160 个（UI 改版后重锚定） |
-| 配置项（CI）总数 | 76 |
-| 基线 tag 数 | 8 |
-| 变更申请单实例 | 4 |
-| 安全审计 | 2026-07 白盒审计 2 高危 + 5 中危全部修复；2026-08 上线加固 8 项完成 7 项 |
+详细环境变量和配置项见 [`.env.example`](.env.example) 与 [`docs/07-deployment-guide.md`](docs/07-deployment-guide.md)。
 
 ---
 
