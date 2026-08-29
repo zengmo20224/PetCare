@@ -10,7 +10,7 @@
           <image
             class="service-detail__cover-img"
             :src="coverImage"
-            mode="aspectFill"
+            mode="aspectFit"
             @tap="previewCover"
           />
         </view>
@@ -169,16 +169,18 @@ onLoad((query) => {
 
 <style scoped>
 .service-detail {
-  padding: 40rpx;
+  padding: 32rpx;
 }
 
+/* 封面：与商品详情顶部画廊统一——24rpx 圆角 + 固定高 480rpx + aspectFit 不裁切 + 浅灰画布底 */
 .service-detail__cover {
   position: relative;
   width: 100%;
-  height: 400rpx;
-  border-radius: 40rpx;
+  height: 480rpx;
+  border-radius: 24rpx;
   overflow: hidden;
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
+  background: #F5F6F6;
 }
 
 .service-detail__cover-img {

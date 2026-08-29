@@ -1,7 +1,5 @@
 <template>
   <view class="pc-page product-detail">
-    <PcPageHeader title="" />
-
     <PcStatePanel
       :status="pageStatus"
       empty-text="商品不存在"
@@ -23,7 +21,7 @@
               <image
                 class="detail-gallery__image"
                 :src="url"
-                mode="aspectFill"
+                mode="aspectFit"
                 @tap="previewImage(index)"
               />
             </swiper-item>
@@ -101,7 +99,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import PcPageHeader from '@/components/PcPageHeader.vue'
 import PcStatePanel from '@/components/PcStatePanel.vue'
 import { getProductDetail } from '@/api/product'
 import { addCartItem, getCartItems, checkCartItems } from '@/api/cart'
@@ -290,15 +287,18 @@ onLoad((query) => {
 }
 
 /* Gallery swiper */
+/* 顶部画廊：与服务详情封面统一——圆角容器 + 固定高 + aspectFit 不裁切 + 浅灰画布底 */
 .detail-gallery {
   position: relative;
-  width: 100%;
-  background: #F3F7F5;
+  margin: 24rpx 32rpx 0;
+  background: #F5F6F6;
+  border-radius: 24rpx;
+  overflow: hidden;
 }
 
 .detail-gallery__swiper {
   width: 100%;
-  height: 640rpx;
+  height: 480rpx;
 }
 
 .detail-gallery__image {
