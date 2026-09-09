@@ -102,3 +102,6 @@ models/**/*.safetensors
 
 # video-agent-kit MCP 插件本地缓存（不入库）
 .video_agent/
+
+# video2code MCP 插件本地缓存（不入库）
+.v2c/

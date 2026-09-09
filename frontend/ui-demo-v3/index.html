@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PetCare V3 · 暖陶墨线 UI Demo</title>
+<style>
+/* ============================================================
+   PetCare V3「暖陶墨线」Warm Terracotta Ink 设计概念 Demo
+   —— 独立展示页，零依赖，不接入任何应用代码。
+   设计动机：脱离 V2 青绿微信原生扁平风，转向暖纸底 + 墨线描边 +
+   偏移硬投影的暖调贴纸风（soft-brutalist）。
+   ============================================================ */
+:root {
+  /* 品牌色 */
+  --primary: #C25426;       /* 焙陶橘：主交互色，与白字对比 4.6:1 */
+  --primary-dark: #7E3418;  /* 深焙：按下态 / 深色文字 */
+  --coral: #E88C5F;         /* 亮陶：装饰 */
+  --peach: #FBE0D1;         /* 蜜桃浅底 */
+
+  /* 暖纸系 */
+  --paper: #FAF3E7;         /* 页面奶油纸底 */
+  --sand: #F6EFE2;          /* 图片占位暖纸底 */
+  --surface-soft: #F6EEDD;  /* 次级面 */
+
+  /* 点缀与功能色 */
+  --honey: #F2B84B;         /* 蜜黄贴纸 */
+  --honey-soft: #FCF0CD;
+  --sage: #4F9D69;          /* 鼠尾草绿 */
+  --red: #E23D3D;           /* 价格红 / 危险 */
+  --blue: #4777C8;
+
+  /* 墨与暖灰阶 */
+  --ink: #27211B;
+  --ink-2: #3B322A;
+  --gray-1: #6E5F50;
+  --gray-2: #97897A;
+  --gray-3: #B8AA97;
+  --line: #E8DCC8;
+
+  /* 形状令牌 */
+  --card: #FFFFFF 2px solid var(--ink) / 4px 4px 0 rgba(39,33,27,.12) 圆角14px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  line-height: 1.6;
+  padding-bottom: 120px;
+}
+
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+
+/* ── 页头 ── */
+.page-head {
+  padding: 56px 0 36px;
+  border-bottom: 3px solid var(--ink);
+  background:
+    radial-gradient(circle at 90% -20%, rgba(242,184,75,.35) 0 180px, transparent 182px),
+    radial-gradient(circle at 78% 120%, rgba(194,84,38,.10) 0 220px, transparent 222px),
+    var(--paper);
+}
+.page-head .brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 18px; margin-bottom: 20px;
+  background: var(--honey); border: 2px solid var(--ink); border-radius: 999px;
+  font-weight: 800; font-size: 13px; letter-spacing: 2px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.page-head h1 { font-size: 44px; font-weight: 900; letter-spacing: 1px; }
+.page-head h1 em { font-style: normal; color: var(--primary); }
+.page-head p { margin-top: 12px; max-width: 760px; font-size: 15px; color: var(--gray-1); }
+.page-head .meta { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+.page-head .meta span {
+  font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 999px;
+  border: 2px solid var(--ink); background: #fff; box-shadow: 2px 2px 0 rgba(39,33,27,.12);
+}
+
+/* ── 区块标题 ── */
+.sec { margin-top: 56px; }
+.sec-title {
+  display: flex; align-items: center; font-size: 24px; font-weight: 800;
+  padding-left: 14px; border-left: 10px solid var(--honey); margin-bottom: 8px;
+}
+.sec-sub { color: var(--gray-1); font-size: 13px; margin-bottom: 24px; padding-left: 24px; }
+
+/* ── 调色板 ── */
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.swatch { background: #fff; border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; box-shadow: 4px 4px 0 rgba(39,33,27,.12); }
+.swatch .chip { height: 68px; border-bottom: 2px solid var(--ink); }
+.swatch .info { padding: 10px 14px; }
+.swatch .info b { display: block; font-size: 13px; }
+.swatch .info code { font-size: 11px; color: var(--gray-2); font-family: Consolas, monospace; }
+
+/* ── 形状语言 / 组件样张 ── */
+.spec-row { display: flex; gap: 24px; flex-wrap: wrap; align-items: stretch; }
+.spec-card {
+  flex: 1; min-width: 300px; background: #fff;
+  border: 2px solid var(--ink); border-radius: 18px; padding: 24px;
+  box-shadow: 5px 5px 0 rgba(39,33,27,.12);
+}
+.spec-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.spec-card h3::before { content: ''; width: 12px; height: 12px; background: var(--honey); border: 2px solid var(--ink); border-radius: 4px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px; padding: 0 30px; border-radius: 999px;
+  font-size: 15px; font-weight: 700; cursor: pointer; user-select: none;
+  border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-honey { background: var(--honey); color: var(--ink); }
+.btn-ghost { background: #fff; color: var(--ink-2); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn[disabled] { opacity: .4; pointer-events: none; }
+.btn-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.tag {
+  display: inline-flex; align-items: center; padding: 3px 12px;
+  border: 2px solid var(--ink); border-radius: 999px; font-size: 11px; font-weight: 700;
+}
+.tag-peach { background: var(--peach); color: var(--primary-dark); }
+.tag-honey { background: var(--honey-soft); color: #8A6410; }
+.tag-sage { background: #E4F0E4; color: var(--sage); }
+.tag-red { background: #F9E0E0; color: var(--red); }
+.tag-ink { background: var(--ink); color: var(--paper); }
+
+.interact-note { margin-top: 14px; padding: 12px 16px; border: 2px dashed var(--ink); border-radius: 12px; background: var(--honey-soft); font-size: 12.5px; color: var(--ink-2); }
+.interact-note b { color: var(--primary); }
+
+/* ── 手机框 ── */
+.phones { display: flex; gap: 36px; overflow-x: auto; padding: 16px 4px 32px; scroll-snap-type: x mandatory; }
+.phone-wrap { scroll-snap-align: start; flex-shrink: 0; }
+.phone-label { display: flex; align-items: center; gap: 10px; margin: 0 0 14px 8px; font-size: 15px; font-weight: 800; }
+.phone-label .no {
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--primary); color: #fff; border: 2px solid var(--ink); border-radius: 8px;
+  box-shadow: 2px 2px 0 var(--ink); font-size: 13px;
+}
+.phone-label small { font-weight: 500; color: var(--gray-2); font-size: 12px; }
+
+.phone {
+  width: 375px; height: 780px; background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 40px; overflow: hidden;
+  box-shadow: 10px 10px 0 rgba(39,33,27,.16);
+  display: flex; flex-direction: column; position: relative;
+}
+.statusbar {
+  height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px; font-size: 11px; font-weight: 700; color: var(--ink);
+  background: var(--paper); border-bottom: 2px solid var(--ink);
+}
+.navbar {
+  height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--paper); border-bottom: 2px solid var(--ink);
+  font-size: 15px; font-weight: 800; letter-spacing: 1px;
+}
+.screen { flex: 1; overflow: hidden; padding: 14px 14px 90px; position: relative; }
+.tabbar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 76px;
+  background: #fff; border-top: 2.5px solid var(--ink);
+  display: flex; padding: 8px 6px 10px;
+}
+.tabbar .t { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: var(--gray-2); }
+.tabbar .t .ic { width: 30px; height: 30px; border-radius: 9px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; }
+.tabbar .t.on { color: var(--primary); }
+.tabbar .t.on .ic { background: var(--honey-soft); border-color: var(--ink); }
+.ic svg { width: 19px; height: 19px; }
+
+/* ── 通用应用组件 ── */
+.sticker {
+  background: #fff; border: 2px solid var(--ink); border-radius: 16px;
+  box-shadow: 4px 4px 0 rgba(39,33,27,.12);
+}
+.pressable { cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.pressable:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(39,33,27,.12); }
+
+.sec-h {
+  display: flex; align-items: center; justify-content: space-between; margin: 18px 2px 12px;
+}
+.sec-h .t { display: flex; align-items: center; font-size: 16px; font-weight: 800; padding-left: 9px; border-left: 7px solid var(--honey); }
+.sec-h .more { font-size: 12px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 2px; }
+
+.pill {
+  display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 999px;
+  border: 2px solid var(--ink); background: #fff; font-size: 12px; color: var(--gray-1);
+  box-shadow: 2px 2px 0 rgba(39,33,27,.14); white-space: nowrap; cursor: pointer;
+}
+.pill.on { background: var(--primary); color: #fff; font-weight: 700; box-shadow: 2px 2px 0 var(--ink); }
+
+.searchbar { display: flex; gap: 10px; margin-bottom: 12px; }
+.searchbar .box {
+  flex: 1; display: flex; align-items: center; gap: 8px; background: #fff;
+  border: 2px solid var(--ink); border-radius: 12px; padding: 9px 14px;
+}
+.searchbar .box span { font-size: 13px; color: var(--gray-3); }
+.searchbar .go {
+  background: var(--primary); color: #fff; border: 2px solid var(--ink); border-radius: 999px;
+  padding: 0 20px; font-size: 13px; font-weight: 700; box-shadow: 3px 3px 0 var(--ink);
+  display: flex; align-items: center; cursor: pointer;
+}
+
+.price { color: var(--red); font-weight: 800; }
+.price small { font-size: 11px; font-weight: 500; color: var(--gray-2); }
+
+/* ── 首页 ── */
+.hero {
+  position: relative; overflow: hidden; background: var(--ink);
+  border: 2px solid var(--ink); border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--primary);
+  padding: 18px 16px 16px; color: var(--paper);
+}
+.hero .paw-bg { position: absolute; right: -12px; bottom: -18px; transform: rotate(-18deg); opacity: .9; }
+.hero .row1 { display: flex; align-items: center; justify-content: space-between; position: relative; }
+.hero .name { font-size: 15px; font-weight: 800; }
+.hero .badge-open {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+  background: var(--honey); border: 2px solid var(--ink); border-radius: 999px;
+  font-size: 10px; font-weight: 800; color: var(--ink);
+}
+.hero .badge-open i { width: 6px; height: 6px; background: var(--sage); border: 1.5px solid var(--ink); border-radius: 50%; }
+.hero .addr { position: relative; margin-top: 4px; font-size: 11px; color: rgba(250,243,231,.62); }
+.hero .slogan { position: relative; margin-top: 10px; font-size: 12px; letter-spacing: 2px; color: var(--honey); font-weight: 600; }
+
+.notice {
+  display: flex; align-items: center; gap: 8px; margin: 10px -14px 0;
+  background: #fff; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+  padding: 9px 14px; font-size: 12px; color: var(--ink-2);
+}
+.notice .flex { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notice .dot { width: 7px; height: 7px; background: var(--red); border: 1.5px solid var(--ink); border-radius: 50%; }
+
+.ai-card {
+  margin-top: 12px; display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+  background: var(--honey-soft); border: 2px solid var(--ink); border-radius: 16px;
+  box-shadow: 4px 4px 0 rgba(39,33,27,.14);
+}
+.ai-card .ic {
+  width: 38px; height: 38px; border-radius: 11px; background: #fff;
+  border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ai-card .tt { flex: 1; }
+.ai-card .tt b { display: block; font-size: 14px; font-weight: 800; }
+.ai-card .tt span { font-size: 11px; color: var(--gray-1); }
+
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.g4 { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.g4 .sq {
+  width: 48px; height: 48px; border-radius: 13px; background: #fff;
+  border: 2px solid var(--ink); box-shadow: 3px 3px 0 rgba(39,33,27,.14);
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.g4 b { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.g4 span { font-size: 9.5px; color: var(--gray-2); }
+
+.hscroll { display: flex; gap: 10px; overflow: hidden; }
+.prod-mini { width: 132px; flex-shrink: 0; border: 2px solid var(--ink); border-radius: 14px; background: #fff; box-shadow: 3px 3px 0 rgba(39,33,27,.12); overflow: hidden; }
+.prod-mini .img { height: 96px; background: var(--sand); border-bottom: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+.prod-mini .info { padding: 8px 10px 10px; }
+.prod-mini .info b { display: block; font-size: 11.5px; font-weight: 600; line-height: 1.35; height: 2.7em; overflow: hidden; }
+.prod-mini .info .p { font-size: 13px; font-weight: 800; color: var(--red); margin-top: 3px; }
+
+.act-card { display: flex; gap: 12px; padding: 12px; }
+.act-card + .act-card { margin-top: 10px; }
+.act-card .cover {
+  width: 78px; height: 58px; border-radius: 10px; border: 2px solid var(--ink);
+  background: var(--peach); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;
+}
+.act-card .bd { flex: 1; min-width: 0; }
+.act-card .bd b { display: block; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-card .bd .tm { font-size: 10.5px; color: var(--gray-2); margin-top: 3px; }
+.act-card .bd .tags { display: flex; gap: 6px; margin-top: 6px; }
+
+.post-mini { padding: 12px 14px; }
+.post-mini + .post-mini { margin-top: 10px; }
+.post-mini b { display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.post-mini .meta { display: flex; gap: 16px; margin-top: 6px; font-size: 11px; color: var(--gray-2); align-items: center; }
+.post-mini .meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── 服务页 ── */
+.cats { display: flex; gap: 8px; overflow: hidden; margin-bottom: 12px; }
+.pettabs { display: flex; border-bottom: 2px solid var(--ink); margin-bottom: 14px; }
+.pettabs .pt { flex: 1; text-align: center; padding: 9px 0; font-size: 13px; color: var(--gray-1); position: relative; }
+.pettabs .pt.on { color: var(--primary); font-weight: 800; }
+.pettabs .pt.on::after {
+  content: ''; position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 6px; background: var(--honey); border: 2px solid var(--ink); border-radius: 4px;
+}
+.svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.svc-card { border: 2px solid var(--ink); border-radius: 16px; background: #fff; box-shadow: 4px 4px 0 rgba(39,33,27,.12); overflow: hidden; }
+.svc-card .img { height: 108px; background: var(--sand); border-bottom: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 46px; }
+.svc-card .bd { padding: 10px 12px 12px; }
+.svc-card .bd b { display: block; font-size: 13.5px; font-weight: 700; }
+.svc-card .attr { display: flex; gap: 10px; margin-top: 4px; font-size: 10.5px; color: var(--gray-2); }
+.svc-card .pr { margin-top: 6px; font-size: 15px; font-weight: 800; color: var(--red); }
+.svc-card .pr small { font-size: 10.5px; font-weight: 400; color: var(--gray-2); }
+
+/* ── 社区页 ── */
+.feed { padding: 14px; }
+.feed + .feed { margin-top: 12px; }
+.feed .head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.feed .avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--peach);
+  border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: var(--primary); flex-shrink: 0;
+}
+.feed .nick { font-size: 12.5px; font-weight: 700; color: var(--ink-2); flex: 1; }
+.feed .time { font-size: 10.5px; color: var(--gray-2); }
+.feed .title { font-size: 14.5px; font-weight: 800; margin-bottom: 4px; }
+.feed .text { font-size: 12.5px; color: var(--gray-1); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.feed .ftags { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+.feed .imgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px; }
+.feed .imgs div {
+  height: 84px; border-radius: 8px; border: 2px solid var(--ink); background: var(--sand);
+  display: flex; align-items: center; justify-content: center; font-size: 30px; overflow: hidden;
+}
+.feed .divider { height: 2px; background: var(--line); margin: 10px 0; }
+.feed .acts { display: flex; justify-content: space-around; font-size: 11.5px; color: var(--gray-2); }
+.feed .acts span { display: inline-flex; align-items: center; gap: 5px; }
+.feed .acts .liked { color: var(--red); font-weight: 800; }
+.feed .acts .saved { color: var(--primary); font-weight: 800; }
+
+.fab {
+  position: absolute; right: 16px; bottom: 92px; width: 48px; height: 48px; z-index: 5;
+  background: var(--primary); border: 2px solid var(--ink); border-radius: 50%;
+  box-shadow: 4px 4px 0 var(--ink); display: flex; align-items: center; justify-content: center;
+  color: #fff; cursor: pointer;
+}
+
+/* ── 商品页 ── */
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.toolbar .cats2 { flex: 1; display: flex; gap: 8px; overflow: hidden; }
+.cartpill {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  background: var(--honey-soft); border: 2px solid var(--ink); border-radius: 999px;
+  box-shadow: 2px 2px 0 rgba(39,33,27,.14); font-size: 11px; font-weight: 700; flex-shrink: 0; cursor: pointer;
+}
+.cartpill .n {
+  min-width: 15px; height: 15px; padding: 0 4px; background: var(--red); border: 1.5px solid var(--ink);
+  border-radius: 999px; color: #fff; font-size: 9px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.prod-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── 我的 ── */
+.user-card { display: flex; align-items: center; gap: 14px; padding: 16px; }
+.user-card .ava {
+  width: 56px; height: 56px; border-radius: 50%; background: var(--peach);
+  border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 800; color: var(--primary); flex-shrink: 0;
+}
+.user-card .info { flex: 1; }
+.user-card .info b { display: block; font-size: 16px; font-weight: 800; }
+.user-card .info span { font-size: 12px; color: var(--gray-2); }
+.menu-g { margin-top: 14px; }
+.menu-g .gt {
+  font-size: 11.5px; font-weight: 800; color: var(--gray-1);
+  border-left: 6px solid var(--honey); padding-left: 9px; margin: 0 2px 8px;
+}
+.menu { overflow: hidden; }
+.menu .mi { display: flex; align-items: center; padding: 13px 15px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); }
+.menu .mi + .mi { border-top: 2px solid var(--line); }
+.menu .mi .ico { width: 24px; display: flex; justify-content: center; margin-right: 12px; }
+.menu .mi .arr { margin-left: auto; }
+.menu .mi .bdg {
+  background: var(--red); color: #fff; border: 2px solid var(--ink); border-radius: 999px;
+  font-size: 9.5px; font-weight: 800; min-width: 17px; height: 17px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center; margin-left: auto; margin-right: 8px;
+}
+.logout { margin-top: 16px; padding: 13px; text-align: center; font-size: 14px; font-weight: 700; color: var(--red); }
+
+/* ── AI 客服 ── */
+.chat { display: flex; flex-direction: column; gap: 12px; }
+.msg { display: flex; gap: 8px; }
+.msg .m-ava {
+  width: 30px; height: 30px; border-radius: 9px; background: var(--honey);
+  border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.msg .bubble {
+  max-width: 74%; padding: 10px 13px; font-size: 12.5px; line-height: 1.6;
+  border: 2px solid var(--ink); border-radius: 14px; box-shadow: 3px 3px 0 rgba(39,33,27,.10);
+}
+.msg.ai .bubble { background: #fff; border-top-left-radius: 4px; }
+.msg.me { flex-direction: row-reverse; }
+.msg.me .bubble { background: var(--primary); color: #fff; border-top-right-radius: 4px; }
+.msg .bubble .hint { display: block; margin-top: 6px; font-size: 10px; color: var(--gray-2); }
+.chat-input {
+  position: absolute; left: 0; right: 0; bottom: 0; background: #fff;
+  border-top: 2.5px solid var(--ink); padding: 10px 14px 14px;
+  display: flex; gap: 10px; align-items: center;
+}
+.chat-input .fld {
+  flex: 1; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper);
+  padding: 8px 16px; font-size: 12.5px; color: var(--gray-3);
+}
+.chat-input .send {
+  background: var(--primary); color: #fff; border: 2px solid var(--ink); border-radius: 999px;
+  padding: 8px 18px; font-size: 12.5px; font-weight: 800; box-shadow: 3px 3px 0 var(--ink);
+}
+.typing { display: inline-flex; gap: 4px; align-items: center; }
+.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--gray-2); animation: blink 1.2s infinite; }
+.typing i:nth-child(2) { animation-delay: .2s; }
+.typing i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+/* ── 页脚 ── */
+.foot { margin-top: 64px; padding-top: 24px; border-top: 3px solid var(--ink); font-size: 12px; color: var(--gray-2); }
+.foot b { color: var(--ink-2); }
+</style>
+</head>
+<body>
+
+<!-- 内联图标库（stroke 风格与现有 PcIcon 一致） -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-home" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></g>
+    <g id="i-cal" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></g>
+    <g id="i-chat" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.6-.8L3 21l1.9-5.9A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></g>
+    <g id="i-bag" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></g>
+    <g id="i-user" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></g>
+    <g id="i-search" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></g>
+    <g id="i-robot" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 4h6"/><circle cx="9" cy="14" r="1.2" fill="currentColor"/><circle cx="15" cy="14" r="1.2" fill="currentColor"/><path d="M2 13v2M22 13v2"/></g>
+    <g id="i-paw" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="8" r="1.8"/><circle cx="10" cy="5.5" r="1.8"/><circle cx="14" cy="5.5" r="1.8"/><circle cx="18" cy="8" r="1.8"/><path d="M12 11c-3 0-5 2.5-5 5 0 1.7 1.5 3 3.2 3 1 0 1.3-.5 1.8-.5s.8.5 1.8.5c1.7 0 3.2-1.3 3.2-3 0-2.5-2-5-5-5z"/></g>
+    <g id="i-mega" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8a4 4 0 0 1 0 8M18 5a8 8 0 0 1 0 14"/></g>
+    <g id="i-arrow" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></g>
+    <g id="i-heart" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></g>
+    <g id="i-bmk" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></g>
+    <g id="i-edit" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></g>
+    <g id="i-wallet" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V8a2 2 0 0 0-2-2H5a2 2 0 0 1 0-4h14v4"/><path d="M3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><circle cx="17" cy="14" r="1.2" fill="currentColor"/></g>
+    <g id="i-receipt" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M8 8h8M8 12h8M8 16h5"/></g>
+    <g id="i-pin" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></g>
+    <g id="i-bell" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.5 21a2 2 0 0 1-3 0"/></g>
+    <g id="i-shield" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></g>
+    <g id="i-lock" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g>
+  </defs>
+</svg>
+
+<!-- ══════════ 页头 ══════════ -->
+<header class="page-head">
+  <div class="wrap">
+    <span class="brand">🐾 PETCARE · UI V3 CONCEPT</span>
+    <h1>暖陶墨线 <em>Warm Terracotta Ink</em></h1>
+    <p>这是脱离现有 V2 青绿微信原生风的<b>第二版全新视觉方案</b>（纯静态演示，未接入应用代码）。核心想法：宠物品牌应该有体温——冷灰底换成奶油暖纸，青绿换成焙陶橘；形状语言采用「贴纸感」：白卡 + 墨色描边 + 偏移硬投影，像贴在手账上的贴纸；可按压元素按下时投影塌陷，有真实的「按下去」手感。</p>
+    <div class="meta">
+      <span>纸感奶油底 #FAF3E7</span><span>焙陶橘主色 #C25426</span><span>墨线 2px #27211B</span><span>蜜黄贴纸 #F2B84B</span><span>价格红保留 #E23D3D</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ══════════ 1. 调色板 ══════════ -->
+<section class="sec">
+  <div class="sec-title">01 · 调色板</div>
+  <div class="sec-sub">从「冷灰 + 青绿」整体迁移到「暖纸 + 焙陶橘」；灰阶全部暖化（带棕调），功能色去荧光感。主色与白字对比 4.6:1，可直接用于小号文字。</div>
+  <div class="palette">
+    <div class="swatch"><div class="chip" style="background:#C25426"></div><div class="info"><b>焙陶橘 Primary</b><code>#C25426</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#7E3418"></div><div class="info"><b>深焙 Dark</b><code>#7E3418</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#E88C5F"></div><div class="info"><b>亮陶 Coral</b><code>#E88C5F</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#FBE0D1"></div><div class="info"><b>蜜桃浅底 Soft</b><code>#FBE0D1</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#FAF3E7;border-bottom-color:#ddd"></div><div class="info"><b>奶油纸 Paper</b><code>#FAF3E7</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#F2B84B"></div><div class="info"><b>蜜黄 Accent</b><code>#F2B84B</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#4F9D69"></div><div class="info"><b>鼠尾草 Success</b><code>#4F9D69</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#E23D3D"></div><div class="info"><b>价格红 Danger</b><code>#E23D3D</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#27211B"></div><div class="info"><b>墨色 Ink</b><code>#27211B</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#6E5F50"></div><div class="info"><b>暖灰 1</b><code>#6E5F50</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#97897A"></div><div class="info"><b>暖灰 2</b><code>#97897A</code></div></div>
+    <div class="swatch"><div class="chip" style="background:#E8DCC8"></div><div class="info"><b>分隔线 Line</b><code>#E8DCC8</code></div></div>
+  </div>
+</section>
+
+<!-- ══════════ 2. 形状语言 ══════════ -->
+<section class="sec">
+  <div class="sec-title">02 · 形状语言与组件</div>
+  <div class="sec-sub">贴纸卡 = 白底 + 2px 墨线 + 6px 偏移硬投影；按钮胶囊化；标签全部带描边；交互统一为「按压位移 + 投影塌陷」。</div>
+  <div class="spec-row">
+    <div class="spec-card">
+      <h3>按钮体系</h3>
+      <div class="btn-row">
+        <div class="btn btn-primary">立即预约</div>
+        <div class="btn btn-honey">加入购物车</div>
+      </div>
+      <div class="btn-row">
+        <div class="btn btn-ghost">再看看</div>
+        <div class="btn btn-danger">取消订单</div>
+        <div class="btn btn-primary" disabled>已约满</div>
+      </div>
+      <div class="interact-note">👆 <b>试试点按上面的按钮</b>——按压时按钮位移、硬投影塌陷，像真的把贴纸按进纸里。这是 V3 的核心手感。</div>
+    </div>
+    <div class="spec-card">
+      <h3>标签与贴纸</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <span class="tag tag-peach">洗护</span><span class="tag tag-honey">3 件商品</span><span class="tag tag-sage">已完成</span>
+        <span class="tag tag-red">待确认</span><span class="tag tag-ink">#萌宠日常</span><span class="tag" style="background:#fff">到店 / 上门</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <span class="pill on">全部服务</span><span class="pill">洗护</span><span class="pill">美容</span><span class="pill">寄养</span>
+      </div>
+      <div class="interact-note">选中态 = 焙陶橘实底 + 墨线加粗投影，未选中 = 白底贴纸。</div>
+    </div>
+    <div class="spec-card">
+      <h3>卡片层次</h3>
+      <div class="sticker" style="padding:14px;display:flex;gap:12px;align-items:center">
+        <div style="width:52px;height:52px;border-radius:12px;border:2px solid var(--ink);background:var(--peach);display:flex;align-items:center;justify-content:center;font-size:24px">🐕</div>
+        <div style="flex:1">
+          <b style="font-size:14px">犬类洗护 · 标准套餐</b>
+          <div style="font-size:11px;color:var(--gray-2);margin-top:2px">约 60 分钟 · 到店</div>
+          <div class="price" style="font-size:16px;margin-top:3px">¥128 <small>起</small></div>
+        </div>
+      </div>
+      <div class="interact-note">白卡贴在奶油纸上，边界由墨线声明，而非模糊阴影——层次更「印刷」、更手作。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 3. 核心页面 ══════════ -->
+<section class="sec">
+  <div class="sec-title">03 · 核心页面</div>
+  <div class="sec-sub">按现有功能结构 1:1 重绘（门店卡 / AI 入口 / 服务宫格 / 分类筛选 / 社区信息流 / 购物车 / 菜单组 / AI 客服），仅换视觉语言，不动信息架构。横向滚动查看 →</div>
+
+  <div class="phones">
+
+    <!-- ─────── 手机 1：首页 ─────── -->
+    <div class="phone-wrap">
+      <div class="phone-label"><span class="no">1</span>首页 <small>门店卡 · AI 入口 · 服务宫格</small></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="navbar">PetCare</div>
+        <div class="screen">
+          <!-- 品牌门店卡 -->
+          <div class="hero">
+            <svg class="paw-bg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="rgba(250,243,231,.12)" stroke-width="1.5"><use href="#i-paw"/></svg>
+            <div class="row1">
+              <span class="name">萌宠家园 · 上海徐汇店</span>
+              <span class="badge-open"><i></i>营业中</span>
+            </div>
+            <div class="addr">徐汇区漕溪北路 88 号</div>
+            <div class="slogan">把每一份牵挂，都妥帖安放</div>
+          </div>
+          <!-- 公告条 -->
+          <div class="notice">
+            <svg width="15" height="15" style="color:var(--primary);flex-shrink:0"><use href="#i-mega"/></svg>
+            <span class="flex">国庆照护排班公告：10/1-10/3 正常营业</span>
+            <span class="dot"></span>
+            <svg width="13" height="13" style="color:var(--gray-3);flex-shrink:0"><use href="#i-arrow"/></svg>
+          </div>
+          <!-- AI 入口 -->
+          <div class="ai-card pressable">
+            <div class="ic"><svg width="21" height="21" style="color:var(--primary)"><use href="#i-robot"/></svg></div>
+            <div class="tt"><b>AI 智能助手</b><span>营业时间 / 服务价格 / 宠物日常，随时问</span></div>
+            <svg width="15" height="15" style="color:var(--gray-3)"><use href="#i-arrow"/></svg>
+          </div>
+          <!-- 常用服务 -->
+          <div class="sec-h"><span class="t">常用服务</span></div>
+          <div class="grid4">
+            <div class="g4 pressable"><span class="sq" style="color:#4777C8">🛁</span><b>洗护</b><span>清爽洁净</span></div>
+            <div class="g4 pressable"><span class="sq" style="color:#C98A1F">✂️</span><b>美容</b><span>精致造型</span></div>
+            <div class="g4 pressable"><span class="sq" style="color:#C25426">🏠</span><b>上门照护</b><span>省心到家</span></div>
+            <div class="g4 pressable"><span class="sq" style="color:#C25B6E">🐾</span><b>安心寄养</b><span>贴心陪伴</span></div>
+          </div>
+          <!-- 精选好物 -->
+          <div class="sec-h"><span class="t">精选好物</span><span class="more">逛逛商店 ›</span></div>
+          <div class="hscroll">
+            <div class="prod-mini pressable"><div class="img">🦴</div><div class="info"><b>冻干鸡肉小粒训练奖励</b><div class="p">¥45.0</div></div></div>
+            <div class="prod-mini pressable"><div class="img">🧴</div><div class="info"><b>燕麦温和宠物香波</b><div class="p">¥68.0</div></div></div>
+            <div class="prod-mini pressable"><div class="img">🎾</div><div class="info"><b>耐咬漏食玩具球</b><div class="p">¥29.9</div></div></div>
+          </div>
+          <!-- 门店活动 -->
+          <div class="sec-h"><span class="t">门店活动</span><span class="more">查看全部 ›</span></div>
+          <div class="act-card sticker pressable">
+            <div class="cover">🎉</div>
+            <div class="bd"><b>双 11 洗护囤货节</b><div class="tm">11/01 - 11/11</div>
+              <div class="tags"><span class="tag tag-honey">6 件商品</span><span class="tag tag-peach">2 项服务</span></div>
+            </div>
+          </div>
+          <!-- 社区动态 -->
+          <div class="sec-h"><span class="t">社区动态</span><span class="more">去逛社区 ›</span></div>
+          <div class="post-mini sticker pressable">
+            <b>今天毛孩子三岁啦，蛋糕走起！</b>
+            <div class="meta"><span>❤ 24</span><span>💬 6</span></div>
+          </div>
+          <!-- tabbar -->
+          <div class="tabbar">
+            <div class="t on"><span class="ic"><svg><use href="#i-home"/></svg></span>首页</div>
+            <div class="t"><span class="ic"><svg><use href="#i-cal"/></svg></span>预约</div>
+            <div class="t"><span class="ic"><svg><use href="#i-chat"/></svg></span>社区</div>
+            <div class="t"><span class="ic"><svg><use href="#i-bag"/></svg></span>商品</div>
+            <div class="t"><span class="ic"><svg><use href="#i-user"/></svg></span>我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────── 手机 2：服务 ─────── -->
+    <div class="phone-wrap">
+      <div class="phone-label"><span class="no">2</span>服务 <small>搜索 · 分类 · 体型价目卡</small></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="navbar">服务</div>
+        <div class="screen">
+          <div class="searchbar">
+            <div class="box"><svg width="15" height="15" style="color:var(--gray-3)"><use href="#i-search"/></svg><span>搜索服务名称</span></div>
+            <div class="go">搜索</div>
+          </div>
+          <div class="cats">
+            <span class="pill on">全部服务</span><span class="pill">洗护</span><span class="pill">美容</span><span class="pill">上门照护</span><span class="pill">寄养</span>
+          </div>
+          <div class="pettabs"><span class="pt on">全部</span><span class="pt">狗狗</span><span class="pt">猫咪</span></div>
+          <div class="svc-grid">
+            <div class="svc-card pressable">
+              <div class="img">🛁</div>
+              <div class="bd"><b>犬类洗护</b>
+                <div class="attr"><span>⏱ 约60分钟</span><span>🏪 到店</span></div>
+                <div class="pr">¥128 <small>起</small></div>
+              </div>
+            </div>
+            <div class="svc-card pressable">
+              <div class="img">✂️</div>
+              <div class="bd"><b>犬类精修美容</b>
+                <div class="attr"><span>⏱ 约90分钟</span><span>🏪 到店</span></div>
+                <div class="pr">¥228 <small>起</small></div>
+              </div>
+            </div>
+            <div class="svc-card pressable">
+              <div class="img">🏠</div>
+              <div class="bd"><b>上门喂养照护</b>
+                <div class="attr"><span>⏱ 约45分钟</span><span>🚪 上门</span></div>
+                <div class="pr">¥80</div>
+              </div>
+            </div>
+            <div class="svc-card pressable">
+              <div class="img">🐾</div>
+              <div class="bd"><b>安心寄养套房</b>
+                <div class="attr"><span>⏱ 全天候</span><span>🏪 到店</span></div>
+                <div class="pr">¥158 <small>/天</small></div>
+              </div>
+            </div>
+            <div class="svc-card pressable">
+              <div class="img">💊</div>
+              <div class="bd"><b>药浴皮肤护理</b>
+                <div class="attr"><span>⏱ 约70分钟</span><span>🏪 到店</span></div>
+                <div class="pr">¥198 <small>起</small></div>
+              </div>
+            </div>
+            <div class="svc-card pressable">
+              <div class="img">🐱</div>
+              <div class="bd"><b>猫咪基础洗护</b>
+                <div class="attr"><span>⏱ 约50分钟</span><span>🏪 到店</span></div>
+                <div class="pr">¥108 <small>起</small></div>
+              </div>
+            </div>
+          </div>
+          <div class="interact-note" style="margin-top:14px">💡 体型差异价（小型/中型/大型犬）点卡片后弹出「体型选择」底部抽屉——抽屉白底墨线顶边，选项为奶油纸贴纸行。</div>
+          <div class="tabbar">
+            <div class="t"><span class="ic"><svg><use href="#i-home"/></svg></span>首页</div>
+            <div class="t on"><span class="ic"><svg><use href="#i-cal"/></svg></span>预约</div>
+            <div class="t"><span class="ic"><svg><use href="#i-chat"/></svg></span>社区</div>
+            <div class="t"><span class="ic"><svg><use href="#i-bag"/></svg></span>商品</div>
+            <div class="t"><span class="ic"><svg><use href="#i-user"/></svg></span>我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────── 手机 3：社区 ─────── -->
+    <div class="phone-wrap">
+      <div class="phone-label"><span class="no">3</span>社区 <small>信息流 · 内联点赞收藏 · 发帖 FAB</small></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="navbar">社区</div>
+        <div class="screen">
+          <div class="searchbar">
+            <div class="box"><svg width="15" height="15" style="color:var(--gray-3)"><use href="#i-search"/></svg><span>搜索帖子标题或内容</span></div>
+            <div class="go">搜索</div>
+          </div>
+          <div class="cats">
+            <span class="pill on">全部</span><span class="pill">#萌宠日常</span><span class="pill">#洗护心得</span><span class="pill">#领养</span>
+          </div>
+          <div class="feed sticker">
+            <div class="head"><span class="avatar">糖</span><span class="nick">糖糖妈妈</span><span class="time">8月29日</span></div>
+            <div class="title">毛孩子药浴初体验，皮肤问题终于有救了</div>
+            <div class="text">之前一直挠个不停，店里的药浴套餐做了两次，配合医生建议的护理流程，现在挠痒频率明显下降了……</div>
+            <div class="ftags"><span class="tag tag-honey">#药浴心得</span><span class="tag tag-honey">#皮肤护理</span></div>
+            <div class="imgs"><div>🐶</div><div>🛁</div><div>✨</div></div>
+            <div class="divider"></div>
+            <div class="acts">
+              <span class="liked">❤ 24</span>
+              <span>💬 6</span>
+              <span class="saved">🔖 9</span>
+            </div>
+          </div>
+          <div class="feed sticker" style="margin-top:12px">
+            <div class="head"><span class="avatar">豆</span><span class="nick">豆豆爸</span><span class="time">8月28日</span></div>
+            <div class="title">寄养三天回来，狗子胖了一圈</div>
+            <div class="text">寄养套房每天有运动报告，还附照片，出差也放心。就是伙食太好了……</div>
+            <div class="divider"></div>
+            <div class="acts"><span>🤍 18</span><span>💬 3</span><span>🔖 2</span></div>
+          </div>
+          <div class="fab"><svg width="20" height="20"><use href="#i-edit"/></svg></div>
+          <div class="tabbar">
+            <div class="t"><span class="ic"><svg><use href="#i-home"/></svg></span>首页</div>
+            <div class="t"><span class="ic"><svg><use href="#i-cal"/></svg></span>预约</div>
+            <div class="t on"><span class="ic"><svg><use href="#i-chat"/></svg></span>社区</div>
+            <div class="t"><span class="ic"><svg><use href="#i-bag"/></svg></span>商品</div>
+            <div class="t"><span class="ic"><svg><use href="#i-user"/></svg></span>我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────── 手机 4：商品 ─────── -->
+    <div class="phone-wrap">
+      <div class="phone-label"><span class="no">4</span>商品 <small>分类筛选 · 购物车胶囊</small></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="navbar">商品</div>
+        <div class="screen">
+          <div class="searchbar">
+            <div class="box"><svg width="15" height="15" style="color:var(--gray-3)"><use href="#i-search"/></svg><span>搜索商品名称</span></div>
+            <div class="go">搜索</div>
+          </div>
+          <div class="toolbar">
+            <div class="cats2">
+              <span class="pill on">全部</span><span class="pill">粮食</span><span class="pill">零食</span><span class="pill">洗护</span>
+            </div>
+            <span class="cartpill">🛒 购物车 <span class="n">3</span></span>
+          </div>
+          <div class="prod-grid">
+            <div class="prod-mini pressable" style="width:auto"><div class="img" style="height:128px">🦴</div><div class="info"><b>冻干鸡肉小粒训练奖励 中大型犬 2kg 袋装</b><div class="p">¥45.0</div></div></div>
+            <div class="prod-mini pressable" style="width:auto"><div class="img" style="height:128px">🧴</div><div class="info"><b>燕麦温和宠物香波 无泪配方 500ml</b><div class="p">¥68.0</div></div></div>
+            <div class="prod-mini pressable" style="width:auto"><div class="img" style="height:128px">🐟</div><div class="info"><b>主食罐头三文鱼口味 全年龄段 12 罐</b><div class="p">¥96.0</div></div></div>
+            <div class="prod-mini pressable" style="width:auto"><div class="img" style="height:128px">🎾</div><div class="info"><b>耐咬漏食玩具球 中号 蓝色</b><div class="p">¥29.9</div></div></div>
+          </div>
+          <div class="tabbar">
+            <div class="t"><span class="ic"><svg><use href="#i-home"/></svg></span>首页</div>
+            <div class="t"><span class="ic"><svg><use href="#i-cal"/></svg></span>预约</div>
+            <div class="t"><span class="ic"><svg><use href="#i-chat"/></svg></span>社区</div>
+            <div class="t on"><span class="ic"><svg><use href="#i-bag"/></svg></span>商品</div>
+            <div class="t"><span class="ic"><svg><use href="#i-user"/></svg></span>我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────── 手机 5：我的 ─────── -->
+    <div class="phone-wrap">
+      <div class="phone-label"><span class="no">5</span>我的 <small>用户卡 · 菜单组 · 钱包余额</small></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="navbar">我的</div>
+        <div class="screen">
+          <div class="user-card sticker pressable">
+            <span class="ava">曾</span>
+            <div class="info"><b>铲屎官小曾</b><span>138****6688</span></div>
+            <svg width="15" height="15" style="color:var(--gray-3)"><use href="#i-arrow"/></svg>
+          </div>
+          <div class="menu-g">
+            <div class="gt">我的订单</div>
+            <div class="menu sticker">
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-cal"/></svg></span>我的预约<span class="bdg">2</span><span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-receipt"/></svg></span>我的订单<span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-wallet"/></svg></span>我的钱包 <b style="margin-left:8px;font-size:13px;color:var(--primary)">¥268.50</b><span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+            </div>
+          </div>
+          <div class="menu-g">
+            <div class="gt">我的档案</div>
+            <div class="menu sticker">
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)">🐾</span>我的宠物<span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-pin"/></svg></span>我的地址<span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-chat"/></svg></span>我的社区<span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+            </div>
+          </div>
+          <div class="menu-g">
+            <div class="gt">消息与安全</div>
+            <div class="menu sticker">
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-bell"/></svg></span>消息通知<span class="bdg">5</span><span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-shield"/></svg></span>密保管理<span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+              <div class="mi pressable"><span class="ico" style="color:var(--primary)"><svg width="19" height="19"><use href="#i-lock"/></svg></span>修改密码<span class="arr"><svg width="13" height="13" style="color:var(--gray-3)"><use href="#i-arrow"/></svg></span></div>
+            </div>
+          </div>
+          <div class="logout sticker pressable">退出登录</div>
+          <div class="tabbar">
+            <div class="t"><span class="ic"><svg><use href="#i-home"/></svg></span>首页</div>
+            <div class="t"><span class="ic"><svg><use href="#i-cal"/></svg></span>预约</div>
+            <div class="t"><span class="ic"><svg><use href="#i-chat"/></svg></span>社区</div>
+            <div class="t"><span class="ic"><svg><use href="#i-bag"/></svg></span>商品</div>
+            <div class="t on"><span class="ic"><svg><use href="#i-user"/></svg></span>我的</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─────── 手机 6：AI 客服 ─────── -->
+    <div class="phone-wrap">
+      <div class="phone-label"><span class="no">6</span>AI 客服 <small>智能对话 · 医疗护栏内建议</small></div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="navbar">智能客服</div>
+        <div class="screen" style="padding-bottom:70px">
+          <div class="interact-note" style="margin:0 0 12px">💡 对话内建议仅供参考，不做疾病诊断 / 药物处方 / 治疗承诺（与现网 AI 护栏一致）。</div>
+          <div class="chat">
+            <div class="msg ai">
+              <span class="m-ava"><svg width="17" height="17" style="color:var(--ink)"><use href="#i-robot"/></svg></span>
+              <div class="bubble">你好呀，我是 PetCare 智能助手 🐾 可以帮你查营业时间、服务价格、预约流程，也可以聊聊宠物日常护理～</div>
+            </div>
+            <div class="msg me"><div class="bubble">狗狗多久洗一次澡比较合适？</div></div>
+            <div class="msg ai">
+              <span class="m-ava"><svg width="17" height="17" style="color:var(--ink)"><use href="#i-robot"/></svg></span>
+              <div class="bubble">一般健康犬只每 3-4 周洗一次即可，短毛犬可适当延长。频繁清洗会破坏皮肤油脂屏障。如果出现明显皮肤问题，建议到店由专业人员检查后再定制方案～<span class="hint">ℹ️ 以上为日常护理参考，不构成医疗建议</span></div>
+            </div>
+            <div class="msg me"><div class="bubble">那预约洗护需要提前多久？</div></div>
+            <div class="msg ai">
+              <span class="m-ava"><svg width="17" height="17" style="color:var(--ink)"><use href="#i-robot"/></svg></span>
+              <div class="bubble"><span class="typing"><i></i><i></i><i></i></span></div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <div class="fld">输入你的问题…</div>
+            <div class="send">发送</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ 页脚 ══════════ -->
+<footer class="foot wrap">
+  <p><b>V2 → V3 变化速览：</b>冷灰底→奶油纸底 ｜ 青绿→焙陶橘 ｜ 无边白卡→墨线贴纸卡+硬投影 ｜ 透明度按压→位移+投影塌陷 ｜ 价格红 / 微信原生布局习惯保留，学习成本不变。</p>
+  <p style="margin-top:8px">本页为纯静态设计概念演示（单文件、零依赖、无网络请求），未修改任何应用代码。数据均为演示假想内容。PetCare O2O · UI V3 Concept · 2026-08-29</p>
+</footer>
+
+</body>
+</html>
